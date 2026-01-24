@@ -1,6 +1,21 @@
 {
   "name": "cronoz",
   "version": "0.1.0",
+  "description": "PWA para gerenciar múltiplos cronômetros",
+  "author": "Braian Calot <braian.s.calot@gmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "pwa",
+    "timer",
+    "stopwatch"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/braiancalot/cronoz"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev",
