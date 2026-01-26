@@ -135,7 +135,11 @@ export default function Home() {
 
   return (
     <main className="w-full h-dvh flex flex-col items-center justify-center gap-10">
-      <div className="flex gap-1 text-3xl font-medium">
+      <header className="flex h-16 items-center justify-center">
+        <h1 className="text-lg font-bold tracking-tight">Cronoz</h1>
+      </header>
+
+      <section className="flex flex-1 text-6xl font-medium items-center justify-center">
         {hours !== "00" && (
           <>
             <span>{hours}</span>
@@ -148,25 +152,25 @@ export default function Home() {
         <span>{seconds}</span>
         <span>.</span>
         <span>{milliseconds}</span>
-      </div>
+      </section>
 
-      <div className="flex gap-4">
+      <div className="flex w-full p-4 gap-4">
         <button
-          className="px-3 py-1 border border-red-600 hover:bg-neutral-900 active:bg-red-600 text-white rounded active:scale-95 text-sm"
+          className="flex-1 px-3 py-2 border border-red-600 hover:bg-neutral-900 active:bg-red-600 text-white rounded active:scale-95 text-sm"
           onClick={handleReset}
         >
           Reset
         </button>
 
         <button
-          className="px-3 py-1 border border-yellow-600 hover:bg-neutral-900 active:bg-yellow-600 text-white rounded active:scale-95 text-sm"
+          className="flex-1 px-3 py-2 border border-yellow-600 hover:bg-neutral-900 active:bg-yellow-600 text-white rounded active:scale-95 text-sm"
           onClick={handlePause}
         >
           Pause
         </button>
 
         <button
-          className="px-3 py-1 border border-green-600 hover:bg-neutral-900 active:bg-green-600 text-white rounded active:scale-95 text-sm"
+          className="flex-1 px-3 py-2 border border-green-600 hover:bg-neutral-900 active:bg-green-600 text-white rounded active:scale-95 text-sm transition-all"
           onClick={handleStart}
         >
           Start
