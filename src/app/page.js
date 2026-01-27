@@ -1,10 +1,14 @@
 "use client";
 
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useTimer } from "@/hooks/useTimer.js";
 import { formatTime } from "@/lib/timer.js";
 
 export default function Home() {
-  const { displayTime, isRunning, mounted, start, pause, reset } = useTimer();
+  const { displayTime, isRunning, mounted, start, pause, reset, toggle } =
+    useTimer();
+
+  useKeyboardShortcuts({ onToggle: toggle });
 
   if (!mounted)
     return (

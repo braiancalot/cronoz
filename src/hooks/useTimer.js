@@ -56,6 +56,12 @@ export function useTimer() {
     setTimerState(resetTimer());
   }, []);
 
+  const toggle = useCallback(() => {
+    setTimerState((prev) =>
+      prev.isRunning ? pauseTimer(prev) : startTimer(prev),
+    );
+  }, []);
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -93,5 +99,6 @@ export function useTimer() {
     start,
     pause,
     reset,
+    toggle,
   };
 }
