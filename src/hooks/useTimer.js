@@ -25,7 +25,7 @@ export function useTimer() {
 
   useEffect(() => {
     if (mounted) {
-      saveTimerState();
+      saveTimerState(timerState);
     }
   }, [timerState, mounted]);
 
