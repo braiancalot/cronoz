@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   calculateDisplayTime,
   DEFAULT_TIMER_STATE,
@@ -17,6 +17,11 @@ export function useTimer() {
   const [timerState, setTimerState] = useState(DEFAULT_TIMER_STATE);
   const [displayTime, setDisplayTime] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const stateRef = useRef(timerState);
+
+  useEffect(() => {
+    stateRef.current = timerState;
+  }, [timerState]);
 
   useEffect(() => {
     setTimerState(loadTimerState()); // eslint-disable-line
