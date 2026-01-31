@@ -1,8 +1,7 @@
 "use client";
 
-// import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
-
 import { useStopwatch } from "@/hooks/useStopwatch.js";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
@@ -11,7 +10,7 @@ export default function Home() {
   const { isLoading, project, displayTime, start, pause, reset, toggle } =
     useStopwatch("8f2a6bda-c6b6-40c1-8667-28c4364980a2");
 
-  //   useKeyboardShortcuts({ onToggle: toggle });
+  useKeyboardShortcuts({ onToggle: toggle });
 
   if (isLoading) return null;
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import projectRepository from "@/services/projectRepository.js";
+import { useAutoPause } from "./useAutoPause.js";
 
 function calculateTime(project) {
   if (!project) return 0;
@@ -20,18 +21,11 @@ export function useStopwatch(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  const projectRef = useRef(project);
-
-  useEffect(() => {
-    projectRef.current = project;
-  }, [project]);
-
   useEffect(() => {
     if (!projectId) return;
 
     const data = projectRepository.getById(projectId);
     setProject(data); // eslint-disable-line
-    projectRef.current = data;
     setDisplayTime(calculateTime(data));
 
     setIsLoading(false);
@@ -57,6 +51,8 @@ export function useStopwatch(projectId) {
     projectRepository.save(data);
     setDisplayTime(calculateTime(data));
   }, []);
+
+  useAutoPause(pause);
 
   function start() {
     updateProject({ ...project, isRunning: true, startTimestamp: Date.now() });
@@ -86,36 +82,6 @@ export function useStopwatch(projectId) {
   function toggle() {
     project?.isRunning ? pause() : start();
   }
-
-  //   useEffect(() => {
-  //     const handleVisibilityChange = () => {
-  //       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  //       if (
-  //         isMobile &&
-  //         document.visibilityState === "hidden" &&
-  //         stateRef.current.isRunning
-  //       ) {
-  //         setTimerState((prev) => pauseTimer(prev));
-  //       }
-  //     };
-
-  //     const handleExit = () => {
-  //       if (stateRef.current.isRunning) {
-  //         setTimerState((prev) => pauseTimer(prev));
-  //       }
-  //     };
-
-  //     document.addEventListener("visibilitychange", handleVisibilityChange);
-  //     window.addEventListener("pagehide", handleExit);
-  //     window.addEventListener("beforeunload", handleExit);
-
-  //     return () => {
-  //       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  //       window.removeEventListener("pagehide", handleExit);
-  //       window.removeEventListener("beforeunload", handleExit);
-  //     };
-  //   }, []);
 
   return {
     isLoading,
