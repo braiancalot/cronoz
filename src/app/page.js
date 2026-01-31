@@ -1,21 +1,24 @@
 "use client";
 
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
-import { useTimer } from "@/hooks/useTimer.js";
+// import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
+
+import { useStopwatch } from "@/hooks/useStopwatch.js";
 
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 
 export default function Home() {
-  const { displayTime, isRunning, mounted, start, pause, reset, toggle } =
-    useTimer();
+  const { isLoading, project, displayTime, start, pause, reset, toggle } =
+    useStopwatch("8f2a6bda-c6b6-40c1-8667-28c4364980a2");
 
-  useKeyboardShortcuts({ onToggle: toggle });
+  //   useKeyboardShortcuts({ onToggle: toggle });
 
-  if (!mounted) {
+  if (isLoading) return null;
+
+  if (!project) {
     return (
       <main className="w-full h-dvh flex items-center justify-center">
-        <span className="text-neutral-500">Carregando...</span>
+        <span className="text-white">Projeto não encontrado.</span>
       </main>
     );
   }
@@ -31,7 +34,7 @@ export default function Home() {
       </section>
 
       <TimerControls
-        isRunning={isRunning}
+        isRunning={project.isRunning}
         hasTime={displayTime > 0}
         onStart={start}
         onPause={pause}

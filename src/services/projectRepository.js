@@ -25,7 +25,7 @@ function saveDB(db) {
 }
 
 function getAll() {
-  Object.values(getDB());
+  return Object.values(getDB());
 }
 
 function getById(id) {
@@ -46,11 +46,11 @@ function create() {
   return newProject;
 }
 
-const ProjectRepository = {
+const projectRepository = {
   getAll,
   getById,
   save,
   create,
 };
 
-export default ProjectRepository;
+export default projectRepository;
