@@ -21,7 +21,7 @@ export function TimerControls({
       <button
         className={`px-5 py-2 border min-w-20 border-transparent outline-hidden text-white rounded-lg active:scale-95 text-sm font-medium transition-all ${
           isRunning
-            ? "bg-cyan-600 hover:bg-cyan-700 active:bg-cyan-800"
+            ? "bg-teal-600 hover:bg-teal-700 active:bg-teal-800"
             : "bg-green-600 hover:bg-green-700 active:bg-green-800"
         }`}
         onClick={isRunning ? onPause : onStart}

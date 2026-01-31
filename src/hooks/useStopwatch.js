@@ -4,17 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import projectRepository from "@/services/projectRepository.js";
 import { useAutoPause } from "./useAutoPause.js";
-
-function calculateTime(project) {
-  if (!project) return 0;
-
-  const { isRunning, startTimestamp, totalTime } = project;
-  if (isRunning && startTimestamp) {
-    return totalTime + (Date.now() - startTimestamp);
-  }
-
-  return totalTime;
-}
+import { calculateTime } from "@/lib/stopwatch.js";
 
 export function useStopwatch(projectId) {
   const [project, setProject] = useState(null);

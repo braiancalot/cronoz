@@ -1,6 +1,6 @@
 "use client";
 
-import { formatTime } from "@/lib/timer";
+import { formatTime } from "@/lib/stopwatch";
 
 function hasHours(hours) {
   hours !== "00";
