@@ -3,14 +3,29 @@
 import { formatTime } from "@/lib/stopwatch";
 
 function hasHours(hours) {
-  hours !== "00";
+  return hours !== "00";
 }
 
 export function TimerDisplay({ time }) {
   const { hours, minutes, seconds, milliseconds } = formatTime(time);
 
+  console.log({ hours, minutes, seconds, milliseconds });
+
+  async function handleCopyToClipboard() {
+    let formatted = "";
+
+    if (hasHours(hours)) formatted += `${hours}h`;
+    formatted += `${minutes}m${seconds}s`;
+
+    await navigator.clipboard.writeText(formatted);
+    alert("Tempo copiado.");
+  }
+
   return (
-    <div className="flex text-6xl md:text-8xl font-medium items-center justify-center">
+    <div
+      className="flex text-6xl md:text-8xl font-medium items-center justify-center cursor-pointer"
+      onClick={handleCopyToClipboard}
+    >
       {hasHours(hours) && (
         <>
           <span>{hours}</span>
