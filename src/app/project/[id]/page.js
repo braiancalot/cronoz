@@ -92,7 +92,7 @@ export default function ProjectPage({ params }) {
       </header>
 
       <section className="flex flex-1 items-center justify-center">
-        <TimerDisplay time={displayTime} />
+        <TimerDisplay time={displayTime} isRunning={project.isRunning} />
       </section>
 
       <TimerControls
