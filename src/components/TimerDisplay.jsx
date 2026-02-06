@@ -9,8 +9,6 @@ function hasHours(hours) {
 export function TimerDisplay({ time }) {
   const { hours, minutes, seconds, milliseconds } = formatTime(time);
 
-  console.log({ hours, minutes, seconds, milliseconds });
-
   async function handleCopyToClipboard() {
     let formatted = "";
 

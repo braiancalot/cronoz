@@ -6,9 +6,21 @@ import Link from "next/link";
 
 import projectRepository from "@/services/projectRepository.js";
 
+function NewProjectButton({ onCreate }) {
+  return (
+    <button
+      onClick={onCreate}
+      className="mt-8 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 px-5 py-2 rounded-lg transition-colors text-sm font-medium"
+    >
+      + Novo projeto
+    </button>
+  );
+}
+
 export default function Home() {
   const [projects, setProjects] = useState([]);
   const router = useRouter();
+  const isEmpty = projects.length === 0;
 
   useEffect(() => {
     setProjects(projectRepository.getAll()); // eslint-disable-line
@@ -26,12 +38,11 @@ export default function Home() {
       </header>
 
       <div className="px-8 flex flex-col">
-        <button
-          onClick={handleCreate}
-          className="mt-8 md:self-end bg-teal-600 hover:bg-teal-700 active:bg-teal-800 px-5 py-2 rounded-lg transition-colors text-sm font-medium"
-        >
-          + Novo projeto
-        </button>
+        {!isEmpty && (
+          <div className="self-end">
+            <NewProjectButton onCreate={handleCreate} />
+          </div>
+        )}
 
         <div className="flex flex-col gap-2 mt-6 w-full">
           {projects.map((project) => (
@@ -44,8 +55,14 @@ export default function Home() {
           ))}
         </div>
 
-        {projects.length === 0 && (
-          <p className="text-center text-neutral-500">Nenhum projeto criado.</p>
+        {isEmpty && (
+          <div className="flex flex-col items-center">
+            <p className="text-center text-neutral-500">
+              Nenhum projeto criado.
+            </p>
+
+            <NewProjectButton onCreate={handleCreate} />
+          </div>
         )}
       </div>
     </main>

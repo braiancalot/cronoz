@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link.js";
 
 import { useStopwatch } from "@/hooks/useStopwatch.js";
@@ -8,9 +8,12 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
+import projectRepository from "@/services/projectRepository.js";
 
 export default function ProjectPage({ params }) {
   const { id } = use(params);
+  const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const { isLoading, project, displayTime, start, pause, reset, toggle } =
     useStopwatch(id);
@@ -18,6 +21,12 @@ export default function ProjectPage({ params }) {
   useKeyboardShortcuts({ onToggle: toggle });
 
   if (isLoading) return null;
+
+  function handleRename() {
+    if (!newName) return;
+    projectRepository.rename({ id, name: newName });
+    window.location.reload();
+  }
 
   if (!project) {
     return (
@@ -29,14 +38,57 @@ export default function ProjectPage({ params }) {
 
   return (
     <main className="w-full h-dvh flex flex-col items-center justify-center px-8">
-      <header className="w-full flex items-center h-16 justify-start gap-4">
-        <Link href="/" className="text-lg">
-          ←
-        </Link>
+      <header className="w-full h-16 flex items-center justify-between">
+        <div className="flex items-center gap-4 justify-start">
+          <Link href="/" className="text-lg">
+            ←
+          </Link>
 
-        <h1 className="text-lg font-medium">
-          {isLoading ? "Carregando..." : project?.name}
-        </h1>
+          {isRenaming ? (
+            <input
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              className="border border-teal-500 rounded text-white py-2 px-3"
+            />
+          ) : (
+            <h1 className="text-lg font-medium">{project.name}</h1>
+          )}
+        </div>
+
+        {isRenaming ? (
+          <div className="flex gap-4">
+            <button
+              className="cursor-pointer"
+              onClick={() => {
+                setIsRenaming(false);
+                setNewName("");
+              }}
+            >
+              Cancelar
+            </button>
+
+            <button
+              className="cursor-pointer"
+              onClick={() => {
+                handleRename();
+                setIsRenaming(false);
+                setNewName("");
+              }}
+            >
+              Salvar
+            </button>
+          </div>
+        ) : (
+          <button
+            className="cursor-pointer"
+            onClick={() => {
+              setNewName(project.name);
+              setIsRenaming(true);
+            }}
+          >
+            Renomear
+          </button>
+        )}
       </header>
 
       <section className="flex flex-1 items-center justify-center">

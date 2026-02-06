@@ -46,11 +46,24 @@ function create() {
   return newProject;
 }
 
+function rename({ id, name }) {
+  const db = getDB();
+  const project = db[id];
+
+  if (!project) {
+    console.error("Projeto não encontrado.");
+    return;
+  }
+
+  save({ ...project, name });
+}
+
 const projectRepository = {
   getAll,
   getById,
   save,
   create,
+  rename,
 };
 
 export default projectRepository;
