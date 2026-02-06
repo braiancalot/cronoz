@@ -48,7 +48,8 @@ export default function ProjectPage({ params }) {
             <input
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
-              className="border border-teal-500 rounded text-white py-2 px-3"
+              className="border border-teal-500 rounded text-white py-2 px-3 outline-none w-24 md:w-auto"
+              autoFocus
             />
           ) : (
             <h1 className="text-lg font-medium">{project.name}</h1>
