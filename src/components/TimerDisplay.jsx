@@ -1,13 +1,9 @@
 "use client";
 
-import { formatTime } from "@/lib/stopwatch";
+import { formatTime, hasHours } from "@/lib/stopwatch";
 
 const HOURLY_PRICE = 10;
 const MS_PER_HOUR = 60 * 60 * 1000;
-
-function hasHours(hours) {
-  return hours !== "00";
-}
 
 function calculateTotalPrice(totalTime) {
   return (totalTime / MS_PER_HOUR) * HOURLY_PRICE;

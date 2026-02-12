@@ -28,3 +28,7 @@ export function calculateTime(project) {
 
   return totalTime;
 }
+
+export function hasHours(hours) {
+  return hours !== "00";
+}
