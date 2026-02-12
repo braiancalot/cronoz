@@ -11,7 +11,7 @@ function NewProjectButton({ onCreate }) {
   return (
     <button
       onClick={onCreate}
-      className="mt-8 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 px-5 py-2 rounded-lg transition-colors text-sm font-medium"
+      className="mt-8 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 px-5 py-2 rounded-lg transition-colors text-sm font-medium w-full"
     >
       + Novo projeto
     </button>
@@ -34,13 +34,13 @@ export default function Home() {
 
   return (
     <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">
-      <header className="flex py-4 items-center justify-center">
+      <header className="flex py-4 justify-center">
         <h1 className="text-lg font-bold tracking-tight">Cronoz</h1>
       </header>
 
       <div className="px-8 flex flex-col">
         {!isEmpty && (
-          <div className="self-end">
+          <div className="md:self-end">
             <NewProjectButton onCreate={handleCreate} />
           </div>
         )}
@@ -77,7 +77,9 @@ export default function Home() {
               Nenhum projeto criado.
             </p>
 
-            <NewProjectButton onCreate={handleCreate} />
+            <div>
+              <NewProjectButton onCreate={handleCreate} />
+            </div>
           </div>
         )}
       </div>
