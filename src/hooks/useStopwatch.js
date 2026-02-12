@@ -42,6 +42,18 @@ export function useStopwatch(projectId) {
     setDisplayTime(calculateTime(data));
   }, []);
 
+  const refresh = useCallback(() => {
+    const data = projectRepository.getById(projectId);
+    if (!data) return;
+
+    setProject((current) => ({
+      ...data,
+      isRunning: current.isRunning,
+      startTimestamp: current.startTimestamp,
+      totalTime: current.totalTime,
+    }));
+  }, [projectId]);
+
   useAutoPause(pause);
 
   function start() {
@@ -73,6 +85,23 @@ export function useStopwatch(projectId) {
     project?.isRunning ? pause() : start();
   }
 
+  function rename(name) {
+    if (!name) return;
+
+    projectRepository.rename({ id: project.id, name });
+    refresh();
+  }
+
+  function addLap() {
+    if (!project?.isRunning) return;
+
+    const elapsed = Date.now() - project.startTimestamp;
+    const totalTime = project.totalTime + elapsed;
+
+    projectRepository.addLap({ id: project.id, time: totalTime });
+    refresh();
+  }
+
   return {
     isLoading,
     project,
@@ -81,5 +110,8 @@ export function useStopwatch(projectId) {
     pause,
     reset,
     toggle,
+    addLap,
+    rename,
+    refresh,
   };
 }

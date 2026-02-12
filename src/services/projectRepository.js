@@ -6,6 +6,7 @@ function getDefaultProject(id) {
     name: `Projeto #${id.substr(0, 4)}`,
     startTimestamp: null,
     totalTime: 0,
+    laps: [],
     isRunning: false,
     createdAt: Date.now(),
   };
@@ -58,12 +59,31 @@ function rename({ id, name }) {
   save({ ...project, name });
 }
 
+function addLap({ id, time }) {
+  const db = getDB();
+  const project = db[id];
+
+  if (!project) {
+    console.error("Projeto não encontrado.");
+    return;
+  }
+
+  const laps = project.laps || [];
+  const name = `Lap #${laps.length + 1}`;
+  const lapId = crypto.randomUUID();
+
+  laps.unshift({ id: lapId, name, time });
+
+  save({ ...project, laps });
+}
+
 const projectRepository = {
   getAll,
   getById,
   save,
   create,
   rename,
+  addLap,
 };
 
 export default projectRepository;

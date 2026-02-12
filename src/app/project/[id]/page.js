@@ -8,15 +8,24 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
-import projectRepository from "@/services/projectRepository.js";
+import { Laps } from "@/components/Laps.jsx";
 
 export default function ProjectPage({ params }) {
   const { id } = use(params);
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
 
-  const { isLoading, project, displayTime, start, pause, reset, toggle } =
-    useStopwatch(id);
+  const {
+    isLoading,
+    project,
+    displayTime,
+    start,
+    pause,
+    reset,
+    toggle,
+    addLap,
+    rename,
+  } = useStopwatch(id);
 
   useKeyboardShortcuts({ onToggle: toggle });
 
@@ -26,13 +35,13 @@ export default function ProjectPage({ params }) {
     setIsRenaming(true);
   }
 
-  function handleRename() {
+  function handleRename(event) {
+    event.preventDefault();
     if (!newName) return;
 
-    projectRepository.rename({ id, name: newName });
+    rename(newName);
     setIsRenaming(false);
     setNewName("");
-    window.location.reload();
   }
 
   function handleCancel() {
@@ -94,12 +103,15 @@ export default function ProjectPage({ params }) {
         <TimerDisplay time={displayTime} isRunning={project.isRunning} />
       </section>
 
+      {project.laps?.length && <Laps laps={project.laps} />}
+
       <TimerControls
         isRunning={project.isRunning}
         hasTime={displayTime > 0}
         onStart={start}
         onPause={pause}
         onReset={reset}
+        onAddLap={addLap}
       />
     </main>
   );
