@@ -102,6 +102,20 @@ export function useStopwatch(projectId) {
     refresh();
   }
 
+  function deleteProject() {
+    projectRepository.remove(project.id);
+  }
+
+  function renameLap(lapId, name) {
+    projectRepository.renameLap({ id: project.id, lapId, name });
+    refresh();
+  }
+
+  function deleteLap(lapId) {
+    projectRepository.removeLap({ id: project.id, lapId });
+    refresh();
+  }
+
   return {
     isLoading,
     project,
@@ -113,5 +127,8 @@ export function useStopwatch(projectId) {
     addLap,
     rename,
     refresh,
+    deleteProject,
+    renameLap,
+    deleteLap,
   };
 }

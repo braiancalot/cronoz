@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import projectRepository from "@/services/projectRepository.js";
-import { formatTime, hasHours } from "@/lib/stopwatch.js";
+import { FormattedTime } from "@/components/FormattedTime.jsx";
 
 function NewProjectButton({ onCreate }) {
   return (
@@ -32,6 +32,7 @@ export default function Home() {
     router.push(`/project/${newProject.id}`);
   }
 
+
   return (
     <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">
       <header className="flex py-4 justify-center">
@@ -46,29 +47,14 @@ export default function Home() {
         )}
 
         <div className="flex flex-col gap-2 mt-6 w-full">
-          {projects.map((project) => {
-            const { hours, minutes, seconds } = formatTime(project.totalTime);
-
-            return (
+          {projects.map((project) => (
               <Link key={project.id} href={`/project/${project.id}`}>
                 <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors">
                   <span>{project.name}</span>
-
-                  <div className="flex font-medium items-center justify-center cursor-pointer">
-                    {hasHours(hours) && (
-                      <>
-                        <span>{hours}</span>
-                        <span className="opacity-50">:</span>
-                      </>
-                    )}
-                    <span>{minutes}</span>
-                    <span className="opacity-50">:</span>
-                    <span>{seconds}</span>
-                  </div>
+                  <FormattedTime time={project.totalTime} />
                 </div>
               </Link>
-            );
-          })}
+          ))}
         </div>
 
         {isEmpty && (

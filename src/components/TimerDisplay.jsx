@@ -1,6 +1,7 @@
 "use client";
 
 import { formatTime, hasHours } from "@/lib/stopwatch";
+import { FormattedTime } from "@/components/FormattedTime.jsx";
 
 const HOURLY_PRICE = 10;
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -10,14 +11,14 @@ function calculateTotalPrice(totalTime) {
 }
 
 export function TimerDisplay({ time, isRunning = false }) {
-  const { hours, minutes, seconds, milliseconds } = formatTime(time);
+  const { hours, minutes } = formatTime(time);
   const price = calculateTotalPrice(time);
 
   async function handleCopyToClipboard() {
     let formatted = "";
 
     if (hasHours(hours)) formatted += `${hours}h`;
-    formatted += `${minutes}m${seconds}s`;
+    formatted += `${minutes}m`;
 
     await navigator.clipboard.writeText(formatted);
     alert("Tempo copiado.");
@@ -25,23 +26,13 @@ export function TimerDisplay({ time, isRunning = false }) {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div
-        className="flex text-6xl md:text-8xl font-medium items-center justify-center cursor-pointer"
-        onClick={handleCopyToClipboard}
-      >
-        {hasHours(hours) && (
-          <>
-            <span>{hours}</span>
-            <span className="opacity-50">:</span>
-          </>
-        )}
-        <span>{minutes}</span>
-        <span className="opacity-50">:</span>
-        <span>{seconds}</span>
-        <span className="opacity-30">.</span>
-        <span className="text-4xl md:text-6xl opacity-60 w-12">
-          {milliseconds}
-        </span>
+      <div onClick={handleCopyToClipboard} className="cursor-pointer">
+        <FormattedTime
+          time={time}
+          showMilliseconds
+          className="text-6xl md:text-8xl"
+          millisecondsClassName="text-4xl md:text-6xl opacity-60 w-12"
+        />
       </div>
 
       <span

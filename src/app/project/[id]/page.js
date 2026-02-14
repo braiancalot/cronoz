@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link.js";
+import { useRouter } from "next/navigation.js";
 
 import { useStopwatch } from "@/hooks/useStopwatch.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
@@ -12,6 +13,7 @@ import { Laps } from "@/components/Laps.jsx";
 
 export default function ProjectPage({ params }) {
   const { id } = use(params);
+  const router = useRouter();
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
 
@@ -25,6 +27,9 @@ export default function ProjectPage({ params }) {
     toggle,
     addLap,
     rename,
+    deleteProject,
+    renameLap,
+    deleteLap,
   } = useStopwatch(id);
 
   useKeyboardShortcuts({ onToggle: toggle });
@@ -47,6 +52,11 @@ export default function ProjectPage({ params }) {
   function handleCancel() {
     setIsRenaming(false);
     setNewName("");
+  }
+
+  function handleDeleteProject() {
+    deleteProject();
+    router.push("/");
   }
 
   if (!project) {
@@ -90,12 +100,20 @@ export default function ProjectPage({ params }) {
             </button>
           </div>
         ) : (
-          <button
-            className="cursor-pointer text-sm"
-            onClick={handleStartRename}
-          >
-            Renomear
-          </button>
+          <div className="flex gap-4">
+            <button
+              className="cursor-pointer text-sm"
+              onClick={handleStartRename}
+            >
+              Renomear
+            </button>
+            <button
+              className="cursor-pointer text-sm text-red-400 hover:text-red-300"
+              onClick={handleDeleteProject}
+            >
+              Deletar
+            </button>
+          </div>
         )}
       </header>
 
@@ -103,7 +121,9 @@ export default function ProjectPage({ params }) {
         <TimerDisplay time={displayTime} isRunning={project.isRunning} />
       </section>
 
-      {project.laps?.length && <Laps laps={project.laps} />}
+      {project.laps?.length > 0 && (
+        <Laps laps={project.laps} onRenameLap={renameLap} onDeleteLap={deleteLap} />
+      )}
 
       <TimerControls
         isRunning={project.isRunning}

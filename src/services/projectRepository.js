@@ -59,6 +59,12 @@ function rename({ id, name }) {
   save({ ...project, name });
 }
 
+function remove(id) {
+  const db = getDB();
+  delete db[id];
+  saveDB(db);
+}
+
 function addLap({ id, time }) {
   const db = getDB();
   const project = db[id];
@@ -77,13 +83,46 @@ function addLap({ id, time }) {
   save({ ...project, laps });
 }
 
+function renameLap({ id, lapId, name }) {
+  const db = getDB();
+  const project = db[id];
+
+  if (!project) {
+    console.error("Projeto não encontrado.");
+    return;
+  }
+
+  const laps = (project.laps || []).map((lap) =>
+    lap.id === lapId ? { ...lap, name } : lap,
+  );
+
+  save({ ...project, laps });
+}
+
+function removeLap({ id, lapId }) {
+  const db = getDB();
+  const project = db[id];
+
+  if (!project) {
+    console.error("Projeto não encontrado.");
+    return;
+  }
+
+  const laps = (project.laps || []).filter((lap) => lap.id !== lapId);
+
+  save({ ...project, laps });
+}
+
 const projectRepository = {
   getAll,
   getById,
   save,
   create,
   rename,
+  remove,
   addLap,
+  renameLap,
+  removeLap,
 };
 
 export default projectRepository;
