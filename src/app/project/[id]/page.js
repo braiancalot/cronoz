@@ -21,6 +21,7 @@ export default function ProjectPage({ params }) {
     isLoading,
     project,
     displayTime,
+    splitDisplayTime,
     start,
     pause,
     reset,
@@ -67,10 +68,12 @@ export default function ProjectPage({ params }) {
     );
   }
 
+  const hasLaps = project.stopwatch.laps?.length > 0;
+
   return (
     <main className="w-full h-dvh flex flex-col items-center justify-center px-8">
       <header className="w-full h-16 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 justify-start ">
+        <div className="flex items-center gap-4 justify-start">
           <Link href="/" className="text-lg">
             ←
           </Link>
@@ -94,7 +97,6 @@ export default function ProjectPage({ params }) {
             <button className="cursor-pointer text-sm" onClick={handleCancel}>
               Cancelar
             </button>
-
             <button className="cursor-pointer text-sm" onClick={handleRename}>
               Salvar
             </button>
@@ -107,6 +109,7 @@ export default function ProjectPage({ params }) {
             >
               Renomear
             </button>
+
             <button
               className="cursor-pointer text-sm text-red-400 hover:text-red-300"
               onClick={handleDeleteProject}
@@ -118,15 +121,23 @@ export default function ProjectPage({ params }) {
       </header>
 
       <section className="flex flex-1 items-center justify-center">
-        <TimerDisplay time={displayTime} isRunning={project.isRunning} />
+        <TimerDisplay
+          time={hasLaps ? splitDisplayTime : displayTime}
+          totalTime={hasLaps ? displayTime : null}
+          isRunning={project.stopwatch.isRunning}
+        />
       </section>
 
-      {project.laps?.length > 0 && (
-        <Laps laps={project.laps} onRenameLap={renameLap} onDeleteLap={deleteLap} />
+      {hasLaps && (
+        <Laps
+          laps={project.stopwatch.laps}
+          onRenameLap={renameLap}
+          onDeleteLap={deleteLap}
+        />
       )}
 
       <TimerControls
-        isRunning={project.isRunning}
+        isRunning={project.stopwatch.isRunning}
         hasTime={displayTime > 0}
         onStart={start}
         onPause={pause}

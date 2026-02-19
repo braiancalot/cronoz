@@ -18,15 +18,24 @@ export function formatTime(ms) {
   return { hours, minutes, seconds, milliseconds };
 }
 
-export function calculateTime(project) {
-  if (!project) return 0;
+export function calculateTotalTime(stopwatch) {
+  if (!stopwatch) return 0;
 
-  const { isRunning, startTimestamp, totalTime } = project;
+  const { isRunning, startTimestamp, totalTime } = stopwatch;
+
   if (isRunning && startTimestamp) {
     return totalTime + (Date.now() - startTimestamp);
   }
 
   return totalTime;
+}
+
+export function calculateSplitTime(stopwatch) {
+  if (!stopwatch) return 0;
+
+  const total = calculateTotalTime(stopwatch);
+  const lastLapTime = stopwatch.laps[0]?.totalTime ?? 0;
+  return total - lastLapTime;
 }
 
 export function hasHours(hours) {

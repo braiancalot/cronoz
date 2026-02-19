@@ -50,7 +50,9 @@ function LapItem({ lap, onRename, onDelete }) {
         <>
           <span>{lap.name}</span>
           <div className="flex items-center gap-3">
-            <FormattedTime time={lap.time} />
+            <FormattedTime time={lap.lapTime} />
+
+            <FormattedTime time={lap.totalTime} />
             <button
               onClick={handleStartRename}
               className="text-sm text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"

@@ -10,22 +10,25 @@ function calculateTotalPrice(totalTime) {
   return (totalTime / MS_PER_HOUR) * HOURLY_PRICE;
 }
 
-export function TimerDisplay({ time, isRunning = false }) {
-  const { hours, minutes } = formatTime(time);
-  const price = calculateTotalPrice(time);
+export function TimerDisplay({ time, totalTime = null, isRunning = false }) {
+  const priceBase = totalTime !== null ? totalTime : time;
+  const price = calculateTotalPrice(priceBase);
 
   async function handleCopyToClipboard() {
+    const { hours: h, minutes: m } = formatTime(
+      totalTime !== null ? totalTime : time,
+    );
     let formatted = "";
 
-    if (hasHours(hours)) formatted += `${hours}h`;
-    formatted += `${minutes}m`;
+    if (hasHours(h)) formatted += `${h}h`;
+    formatted += `${m}m`;
 
     await navigator.clipboard.writeText(formatted);
     alert("Tempo copiado.");
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-4">
       <div onClick={handleCopyToClipboard} className="cursor-pointer">
         <FormattedTime
           time={time}
@@ -35,16 +38,27 @@ export function TimerDisplay({ time, isRunning = false }) {
         />
       </div>
 
-      <span
-        className={`font-medium text-md md:text-lg text-teal-700 ${isRunning && "invisible "}`}
-      >
-        (
-        {new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(price)}
-        )
-      </span>
+      <div className="flex gap-2 items-center">
+        {totalTime !== null && !isRunning && (
+          <>
+            <FormattedTime
+              time={totalTime}
+              className="text-lg text-neutral-400"
+            />
+
+            <span className="text-lg text-neutral-400">•</span>
+          </>
+        )}
+
+        <span
+          className={`font-medium text-md md:text-lg text-teal-700 ${isRunning && "invisible"}`}
+        >
+          {new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format(price)}
+        </span>
+      </div>
     </div>
   );
 }

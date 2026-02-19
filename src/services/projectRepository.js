@@ -1,116 +1,123 @@
-const STORAGE_KEY = "cronoz-projects-db";
+import { getDB } from "./db.js";
+
+export const DEFAULT_STOPWATCH = {
+  startTimestamp: null,
+  totalTime: 0,
+  isRunning: false,
+  laps: [],
+};
 
 function getDefaultProject(id) {
   return {
     id,
     name: `Projeto #${id.substr(0, 4)}`,
-    startTimestamp: null,
-    totalTime: 0,
-    laps: [],
-    isRunning: false,
+    completedAt: null,
     createdAt: Date.now(),
+    stopwatch: { ...DEFAULT_STOPWATCH },
   };
 }
 
-function getDB() {
-  if (typeof window === "undefined") return {};
-
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : {};
+async function getAll() {
+  const db = await getDB();
+  return db.getAll("projects");
 }
 
-function saveDB(db) {
-  if (typeof window === "undefined") return;
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+async function getById(id) {
+  const db = await getDB();
+  return (await db.get("projects", id)) || null;
 }
 
-function getAll() {
-  return Object.values(getDB());
+async function save(project) {
+  const db = await getDB();
+  await db.put("projects", project);
 }
 
-function getById(id) {
-  const db = getDB();
-  return db[id] || null;
-}
-
-function save(project) {
-  const db = getDB();
-  db[project.id] = project;
-  saveDB(db);
-}
-
-function create() {
+async function create() {
   const id = crypto.randomUUID();
-  const newProject = getDefaultProject(id);
-  save(newProject);
-  return newProject;
+  const project = getDefaultProject(id);
+  await save(project);
+  return project;
 }
 
-function rename({ id, name }) {
-  const db = getDB();
-  const project = db[id];
+async function rename({ id, newName }) {
+  const project = await getById(id);
+  if (!project) return;
 
-  if (!project) {
-    console.error("Projeto não encontrado.");
-    return;
-  }
-
-  save({ ...project, name });
+  await save({ ...project, name: newName });
 }
 
-function remove(id) {
-  const db = getDB();
-  delete db[id];
-  saveDB(db);
+async function remove(id) {
+  const db = await getDB();
+  await db.delete("projects", id);
 }
 
-function addLap({ id, time }) {
-  const db = getDB();
-  const project = db[id];
+async function complete(id) {
+  const project = await getById(id);
+  if (!project) return;
 
-  if (!project) {
-    console.error("Projeto não encontrado.");
-    return;
-  }
-
-  const laps = project.laps || [];
-  const name = `Lap #${laps.length + 1}`;
-  const lapId = crypto.randomUUID();
-
-  laps.unshift({ id: lapId, name, time });
-
-  save({ ...project, laps });
+  await save({ ...project, completedAt: Date.now() });
 }
 
-function renameLap({ id, lapId, name }) {
-  const db = getDB();
-  const project = db[id];
+async function reopen(id) {
+  const project = await getById(id);
+  if (!project) return;
 
-  if (!project) {
-    console.error("Projeto não encontrado.");
-    return;
-  }
+  await save({ ...project, completedAt: null });
+}
 
-  const laps = (project.laps || []).map((lap) =>
+async function addLap({ id, totalTime }) {
+  const project = await getById(id);
+  if (!project) return;
+
+  const laps = project.stopwatch.laps;
+  const lastLapTime = laps.length > 0 ? laps[0].totalTime : 0;
+
+  const newLap = {
+    id: crypto.randomUUID(),
+    name: `Lap #${laps.length + 1}`,
+    totalTime,
+    lapTime: totalTime - lastLapTime,
+    createdAt: Date.now(),
+  };
+
+  await save({
+    ...project,
+    stopwatch: {
+      ...project.stopwatch,
+      laps: [newLap, ...laps],
+    },
+  });
+}
+
+async function renameLap({ id, lapId, name }) {
+  const project = await getById(id);
+  if (!project) return;
+
+  const laps = project.stopwatch.laps.map((lap) =>
     lap.id === lapId ? { ...lap, name } : lap,
   );
 
-  save({ ...project, laps });
+  await save({
+    ...project,
+    stopwatch: { ...project.stopwatch, laps },
+  });
 }
 
-function removeLap({ id, lapId }) {
-  const db = getDB();
-  const project = db[id];
+async function removeLap({ id, lapId }) {
+  const project = await getById(id);
+  if (!project) return;
 
-  if (!project) {
-    console.error("Projeto não encontrado.");
-    return;
-  }
+  const laps = project.stopwatch.laps.filter((lap) => lap.id !== lapId);
 
-  const laps = (project.laps || []).filter((lap) => lap.id !== lapId);
+  const recalculated = laps.map((lap, index) => {
+    const older = laps[index + 1];
+    return { ...lap, lapTime: lap.totalTime - (older?.totalTime ?? 0) };
+  });
 
-  save({ ...project, laps });
+  await save({
+    ...project,
+    stopwatch: { ...project.stopwatch, laps: recalculated },
+  });
 }
 
 const projectRepository = {
@@ -120,6 +127,8 @@ const projectRepository = {
   create,
   rename,
   remove,
+  complete,
+  reopen,
   addLap,
   renameLap,
   removeLap,

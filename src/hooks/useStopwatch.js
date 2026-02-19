@@ -2,32 +2,42 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import projectRepository from "@/services/projectRepository.js";
+import projectRepository, {
+  DEFAULT_STOPWATCH,
+} from "@/services/projectRepository.js";
+import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
-import { calculateTime } from "@/lib/stopwatch.js";
 
 export function useStopwatch(projectId) {
   const [project, setProject] = useState(null);
-  const [displayTime, setDisplayTime] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [displayTime, setDisplayTime] = useState(0);
+  const [splitDisplayTime, setSplitDisplayTime] = useState(0);
 
   useEffect(() => {
     if (!projectId) return;
 
-    const data = projectRepository.getById(projectId);
-    setProject(data); // eslint-disable-line
-    setDisplayTime(calculateTime(data));
-
-    setIsLoading(false);
-  }, [projectId, setProject, setIsLoading]);
+    (async () => {
+      const data = await projectRepository.getById(projectId);
+      setProject(data);
+      setIsLoading(false);
+    })();
+  }, [projectId]);
 
   useEffect(() => {
-    if (!project?.isRunning) return;
+    if (!project?.stopwatch?.isRunning) {
+      if (project) {
+        setDisplayTime(calculateTotalTime(project.stopwatch)); // eslint-disable-line
+        setSplitDisplayTime(calculateSplitTime(project.stopwatch));
+      }
+      return;
+    }
 
     let frameId;
 
     const tick = () => {
-      setDisplayTime(calculateTime(project));
+      setDisplayTime(calculateTotalTime(project.stopwatch));
+      setSplitDisplayTime(calculateSplitTime(project.stopwatch));
       frameId = requestAnimationFrame(tick);
     };
 
@@ -39,95 +49,108 @@ export function useStopwatch(projectId) {
   const updateProject = useCallback((data) => {
     setProject(data);
     projectRepository.save(data);
-    setDisplayTime(calculateTime(data));
   }, []);
 
-  const refresh = useCallback(() => {
-    const data = projectRepository.getById(projectId);
-    if (!data) return;
-
-    setProject((current) => ({
-      ...data,
-      isRunning: current.isRunning,
-      startTimestamp: current.startTimestamp,
-      totalTime: current.totalTime,
-    }));
-  }, [projectId]);
+  async function refresh() {
+    const updated = await projectRepository.getById(projectId);
+    setProject(updated);
+  }
 
   useAutoPause(pause);
 
   function start() {
-    updateProject({ ...project, isRunning: true, startTimestamp: Date.now() });
+    updateProject({
+      ...project,
+      stopwatch: {
+        ...project.stopwatch,
+        isRunning: true,
+        startTimestamp: Date.now(),
+      },
+    });
   }
 
   function pause() {
-    if (!project?.isRunning) return;
+    if (!project?.stopwatch?.isRunning) return;
 
-    const elapsed = Date.now() - project.startTimestamp;
+    const elapsed = Date.now() - project.stopwatch.startTimestamp;
+
     updateProject({
       ...project,
-      isRunning: false,
-      startTimestamp: null,
-      totalTime: project.totalTime + elapsed,
+      stopwatch: {
+        ...project.stopwatch,
+        isRunning: false,
+        startTimestamp: null,
+        totalTime: project.stopwatch.totalTime + elapsed,
+      },
     });
   }
 
   function reset() {
     updateProject({
       ...project,
-      isRunning: false,
-      startTimestamp: null,
-      totalTime: 0,
+      stopwatch: { ...DEFAULT_STOPWATCH },
     });
   }
 
   function toggle() {
-    project?.isRunning ? pause() : start();
+    project?.stopwatch?.isRunning ? pause() : start();
   }
 
-  function rename(name) {
+  async function rename(name) {
     if (!name) return;
 
-    projectRepository.rename({ id: project.id, name });
-    refresh();
+    await projectRepository.rename({ id: project.id, newName: name });
+    setProject((p) => ({ ...p, name }));
   }
 
-  function addLap() {
-    if (!project?.isRunning) return;
+  async function addLap() {
+    if (!project?.stopwatch?.isRunning) return;
 
-    const elapsed = Date.now() - project.startTimestamp;
-    const totalTime = project.totalTime + elapsed;
+    const elapsed = Date.now() - project.stopwatch.startTimestamp;
+    const totalTime = project.stopwatch.totalTime + elapsed;
 
-    projectRepository.addLap({ id: project.id, time: totalTime });
-    refresh();
+    await projectRepository.addLap({ id: project.id, totalTime });
+    await refresh();
   }
 
-  function deleteProject() {
-    projectRepository.remove(project.id);
+  async function deleteProject() {
+    await projectRepository.remove(project.id);
   }
 
-  function renameLap(lapId, name) {
-    projectRepository.renameLap({ id: project.id, lapId, name });
-    refresh();
+  async function completeProject() {
+    await projectRepository.complete(project.id);
+    await refresh();
   }
 
-  function deleteLap(lapId) {
-    projectRepository.removeLap({ id: project.id, lapId });
-    refresh();
+  async function reopenProject() {
+    await projectRepository.reopen(project.id);
+    await refresh();
+  }
+
+  async function renameLap(lapId, name) {
+    await projectRepository.renameLap({ id: project.id, lapId, name });
+    await refresh();
+  }
+
+  async function deleteLap(lapId) {
+    await projectRepository.removeLap({ id: project.id, lapId });
+    await refresh();
   }
 
   return {
     isLoading,
     project,
     displayTime,
+    splitDisplayTime,
     start,
     pause,
     reset,
     toggle,
     addLap,
     rename,
-    refresh,
     deleteProject,
+    completeProject,
+    reopenProject,
     renameLap,
     deleteLap,
   };

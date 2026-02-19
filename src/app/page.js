@@ -20,18 +20,39 @@ function NewProjectButton({ onCreate }) {
 
 export default function Home() {
   const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const isEmpty = projects.length === 0;
 
   useEffect(() => {
-    setProjects(projectRepository.getAll()); // eslint-disable-line
+    (async () => {
+      const data = await projectRepository.getAll();
+      setProjects(data);
+      setIsLoading(false);
+    })();
   }, []);
 
-  function handleCreate() {
-    const newProject = projectRepository.create();
+  async function handleCreate() {
+    const newProject = await projectRepository.create();
     router.push(`/project/${newProject.id}`);
   }
 
+  async function handleComplete(e, id) {
+    e.preventDefault();
+    await projectRepository.complete(id);
+    setProjects(await projectRepository.getAll());
+  }
+
+  async function handleReopen(e, id) {
+    e.preventDefault();
+    await projectRepository.reopen(id);
+    setProjects(await projectRepository.getAll());
+  }
+
+  const activeProjects = projects.filter((p) => p.completedAt === null);
+  const completedProjects = projects.filter((p) => p.completedAt !== null);
+  const isEmpty = projects.length === 0;
+
+  if (isLoading) return null;
 
   return (
     <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">
@@ -47,22 +68,53 @@ export default function Home() {
         )}
 
         <div className="flex flex-col gap-2 mt-6 w-full">
-          {projects.map((project) => (
-              <Link key={project.id} href={`/project/${project.id}`}>
-                <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors">
-                  <span>{project.name}</span>
-                  <FormattedTime time={project.totalTime} />
+          {activeProjects.map((project) => (
+            <Link key={project.id} href={`/project/${project.id}`}>
+              <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors">
+                <span>{project.name}</span>
+                <div className="flex items-center gap-4">
+                  <FormattedTime time={project.stopwatch.totalTime} />
+                  <button
+                    onClick={(e) => handleComplete(e, project.id)}
+                    className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
+                  >
+                    Concluir
+                  </button>
                 </div>
-              </Link>
+              </div>
+            </Link>
           ))}
         </div>
+
+        {completedProjects.length > 0 && (
+          <div className="flex flex-col gap-2 mt-8 w-full">
+            <span className="text-xs text-neutral-500 uppercase tracking-wider">
+              Concluídos
+            </span>
+            {completedProjects.map((project) => (
+              <Link key={project.id} href={`/project/${project.id}`}>
+                <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors opacity-50">
+                  <span>{project.name}</span>
+                  <div className="flex items-center gap-4">
+                    <FormattedTime time={project.stopwatch.totalTime} />
+                    <button
+                      onClick={(e) => handleReopen(e, project.id)}
+                      className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
+                    >
+                      Reabrir
+                    </button>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {isEmpty && (
           <div className="flex flex-col items-center">
             <p className="text-center text-neutral-500">
               Nenhum projeto criado.
             </p>
-
             <div>
               <NewProjectButton onCreate={handleCreate} />
             </div>
