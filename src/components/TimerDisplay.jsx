@@ -34,7 +34,7 @@ export function TimerDisplay({ time, totalTime = null, isRunning = false }) {
           time={time}
           showMilliseconds
           className="text-6xl md:text-8xl"
-          millisecondsClassName="text-4xl md:text-6xl opacity-60 w-12"
+          millisecondsClassName="text-4xl md:text-6xl opacity-60"
         />
       </div>
 
