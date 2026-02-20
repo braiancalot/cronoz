@@ -26,8 +26,8 @@
     "commit": "cz"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.90.21",
-    "idb": "^8.0.3",
+    "dexie": "^4.3.0",
+    "dexie-react-hooks": "^4.2.0",
     "next": "16.1.4",
     "react": "19.2.3",
     "react-dom": "19.2.3"
