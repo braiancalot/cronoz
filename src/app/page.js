@@ -47,7 +47,7 @@ export default function Home() {
     (p) => p.completedAt === null && p.id !== creatingProjectId,
   );
   const completedProjects = projects.filter((p) => p.completedAt !== null);
-  const isEmpty = projects.length === 0;
+  const isEmpty = activeProjects.length === 0 && completedProjects.length === 0;
 
   return (
     <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">
