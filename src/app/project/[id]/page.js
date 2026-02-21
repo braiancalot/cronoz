@@ -5,7 +5,7 @@ import Link from "next/link.js";
 import { useRouter } from "next/navigation.js";
 import { useLiveQuery } from "dexie-react-hooks";
 
-import { useStopwatch } from "@/hooks/useStopwatch.js";
+import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import settingsRepository from "@/services/settingsRepository.js";
 
@@ -40,7 +40,7 @@ export default function ProjectPage({ params }) {
     deleteProject,
     renameLap,
     deleteLap,
-  } = useStopwatch(id);
+  } = useProject(id);
 
   useKeyboardShortcuts({ onToggle: toggle });
 

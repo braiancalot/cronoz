@@ -9,7 +9,7 @@ import projectRepository, {
 import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
 
-export function useStopwatch(projectId) {
+export function useProject(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
   const [splitDisplayTime, setSplitDisplayTime] = useState(0);
 
@@ -42,14 +42,10 @@ export function useStopwatch(projectId) {
     return () => cancelAnimationFrame(frameId);
   }, [project]);
 
-  function updateProject(data) {
-    projectRepository.save(data);
-  }
-
   useAutoPause(pause);
 
   function start() {
-    updateProject({
+    projectRepository.save({
       ...project,
       stopwatch: {
         ...project.stopwatch,
@@ -64,7 +60,7 @@ export function useStopwatch(projectId) {
 
     const elapsed = Date.now() - project.stopwatch.startTimestamp;
 
-    updateProject({
+    projectRepository.save({
       ...project,
       stopwatch: {
         ...project.stopwatch,
@@ -76,7 +72,7 @@ export function useStopwatch(projectId) {
   }
 
   function reset() {
-    updateProject({
+    projectRepository.save({
       ...project,
       stopwatch: { ...DEFAULT_STOPWATCH },
     });
