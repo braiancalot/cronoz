@@ -18,6 +18,7 @@ export default function ProjectPage({ params }) {
   const router = useRouter();
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const hourlyPrice = useLiveQuery(
     () => settingsRepository.get("hourlyPrice"),
@@ -43,17 +44,17 @@ export default function ProjectPage({ params }) {
 
   useKeyboardShortcuts({ onToggle: toggle });
 
-  if (isLoading) return null;
+  if (isLoading || isDeleting) return null;
 
   function handleStartRename() {
     setIsRenaming(true);
   }
 
-  function handleRename(event) {
+  async function handleRename(event) {
     event.preventDefault();
     if (!newName) return;
 
-    rename(newName);
+    await rename(newName);
     setIsRenaming(false);
     setNewName("");
   }
@@ -64,6 +65,7 @@ export default function ProjectPage({ params }) {
   }
 
   async function handleDeleteProject() {
+    setIsDeleting(true);
     await deleteProject();
     router.push("/");
   }

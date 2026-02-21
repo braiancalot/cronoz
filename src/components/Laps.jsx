@@ -12,11 +12,11 @@ function LapItem({ lap, onRename, onDelete }) {
     setIsRenaming(true);
   }
 
-  function handleRename(event) {
+  async function handleRename(event) {
     event.preventDefault();
     if (!newName) return;
 
-    onRename(lap.id, newName);
+    await onRename(lap.id, newName);
     setIsRenaming(false);
     setNewName("");
   }

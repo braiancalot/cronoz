@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -20,10 +21,13 @@ function NewProjectButton({ onCreate }) {
 export default function Home() {
   const router = useRouter();
 
+  const [creatingProjectId, setCreatingProjectId] = useState(null);
+
   const projects = useLiveQuery(() => projectRepository.getAll(), []);
 
   async function handleCreate() {
     const newProject = await projectRepository.create();
+    setCreatingProjectId(newProject.id);
     router.push(`/project/${newProject.id}`);
   }
 
@@ -39,7 +43,9 @@ export default function Home() {
 
   if (projects === undefined) return null;
 
-  const activeProjects = projects.filter((p) => p.completedAt === null);
+  const activeProjects = projects.filter(
+    (p) => p.completedAt === null && p.id !== creatingProjectId,
+  );
   const completedProjects = projects.filter((p) => p.completedAt !== null);
   const isEmpty = projects.length === 0;
 
