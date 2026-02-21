@@ -3,9 +3,11 @@
 import { use, useState } from "react";
 import Link from "next/link.js";
 import { useRouter } from "next/navigation.js";
+import { useLiveQuery } from "dexie-react-hooks";
 
 import { useStopwatch } from "@/hooks/useStopwatch.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
+import settingsRepository from "@/services/settingsRepository.js";
 
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
@@ -16,6 +18,12 @@ export default function ProjectPage({ params }) {
   const router = useRouter();
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+
+  const hourlyPrice = useLiveQuery(
+    () => settingsRepository.get("hourlyPrice"),
+    [],
+    10,
+  );
 
   const {
     isLoading,
@@ -55,8 +63,8 @@ export default function ProjectPage({ params }) {
     setNewName("");
   }
 
-  function handleDeleteProject() {
-    deleteProject();
+  async function handleDeleteProject() {
+    await deleteProject();
     router.push("/");
   }
 
@@ -125,6 +133,7 @@ export default function ProjectPage({ params }) {
           time={hasLaps ? splitDisplayTime : displayTime}
           totalTime={hasLaps ? displayTime : null}
           isRunning={project.stopwatch.isRunning}
+          hourlyPrice={hourlyPrice}
         />
       </section>
 

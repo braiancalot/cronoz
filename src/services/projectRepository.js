@@ -1,4 +1,4 @@
-import { getDB } from "./db.js";
+import db from "./db.js";
 
 export const DEFAULT_STOPWATCH = {
   startTimestamp: null,
@@ -18,18 +18,15 @@ function getDefaultProject(id) {
 }
 
 async function getAll() {
-  const db = await getDB();
-  return db.getAll("projects");
+  return db.projects.toArray();
 }
 
 async function getById(id) {
-  const db = await getDB();
-  return (await db.get("projects", id)) || null;
+  return (await db.projects.get(id)) ?? null;
 }
 
 async function save(project) {
-  const db = await getDB();
-  await db.put("projects", project);
+  await db.projects.put(project);
 }
 
 async function create() {
@@ -40,29 +37,19 @@ async function create() {
 }
 
 async function rename({ id, newName }) {
-  const project = await getById(id);
-  if (!project) return;
-
-  await save({ ...project, name: newName });
+  await db.projects.update(id, { name: newName });
 }
 
 async function remove(id) {
-  const db = await getDB();
-  await db.delete("projects", id);
+  await db.projects.delete(id);
 }
 
 async function complete(id) {
-  const project = await getById(id);
-  if (!project) return;
-
-  await save({ ...project, completedAt: Date.now() });
+  await db.projects.update(id, { completedAt: Date.now() });
 }
 
 async function reopen(id) {
-  const project = await getById(id);
-  if (!project) return;
-
-  await save({ ...project, completedAt: null });
+  await db.projects.update(id, { completedAt: null });
 }
 
 async function addLap({ id, totalTime }) {
@@ -80,8 +67,7 @@ async function addLap({ id, totalTime }) {
     createdAt: Date.now(),
   };
 
-  await save({
-    ...project,
+  await db.projects.update(id, {
     stopwatch: {
       ...project.stopwatch,
       laps: [newLap, ...laps],
@@ -97,8 +83,7 @@ async function renameLap({ id, lapId, name }) {
     lap.id === lapId ? { ...lap, name } : lap,
   );
 
-  await save({
-    ...project,
+  await db.projects.update(id, {
     stopwatch: { ...project.stopwatch, laps },
   });
 }
@@ -114,8 +99,7 @@ async function removeLap({ id, lapId }) {
     return { ...lap, lapTime: lap.totalTime - (older?.totalTime ?? 0) };
   });
 
-  await save({
-    ...project,
+  await db.projects.update(id, {
     stopwatch: { ...project.stopwatch, laps: recalculated },
   });
 }

@@ -3,16 +3,15 @@
 import { formatTime, hasHours } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 
-const HOURLY_PRICE = 10;
 const MS_PER_HOUR = 60 * 60 * 1000;
 
-function calculateTotalPrice(totalTime) {
-  return (totalTime / MS_PER_HOUR) * HOURLY_PRICE;
+function calculateTotalPrice(totalTime, hourlyPrice) {
+  return (totalTime / MS_PER_HOUR) * hourlyPrice;
 }
 
-export function TimerDisplay({ time, totalTime = null, isRunning = false }) {
+export function TimerDisplay({ time, totalTime = null, isRunning = false, hourlyPrice = 10 }) {
   const priceBase = totalTime !== null ? totalTime : time;
-  const price = calculateTotalPrice(priceBase);
+  const price = calculateTotalPrice(priceBase, hourlyPrice);
 
   async function handleCopyToClipboard() {
     const { hours: h, minutes: m } = formatTime(

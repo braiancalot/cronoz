@@ -1,11 +1,10 @@
 "use client";
-
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import projectRepository from "@/services/projectRepository.js";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { useLiveQuery } from "dexie-react-hooks";
 
 function NewProjectButton({ onCreate }) {
   return (
@@ -19,17 +18,9 @@ function NewProjectButton({ onCreate }) {
 }
 
 export default function Home() {
-  const [projects, setProjects] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    (async () => {
-      const data = await projectRepository.getAll();
-      setProjects(data);
-      setIsLoading(false);
-    })();
-  }, []);
+  const projects = useLiveQuery(() => projectRepository.getAll(), []);
 
   async function handleCreate() {
     const newProject = await projectRepository.create();
@@ -39,20 +30,18 @@ export default function Home() {
   async function handleComplete(e, id) {
     e.preventDefault();
     await projectRepository.complete(id);
-    setProjects(await projectRepository.getAll());
   }
 
   async function handleReopen(e, id) {
     e.preventDefault();
     await projectRepository.reopen(id);
-    setProjects(await projectRepository.getAll());
   }
+
+  if (projects === undefined) return null;
 
   const activeProjects = projects.filter((p) => p.completedAt === null);
   const completedProjects = projects.filter((p) => p.completedAt !== null);
   const isEmpty = projects.length === 0;
-
-  if (isLoading) return null;
 
   return (
     <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 
 import projectRepository, {
   DEFAULT_STOPWATCH,
@@ -9,20 +10,15 @@ import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
 
 export function useStopwatch(projectId) {
-  const [project, setProject] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [displayTime, setDisplayTime] = useState(0);
   const [splitDisplayTime, setSplitDisplayTime] = useState(0);
 
-  useEffect(() => {
-    if (!projectId) return;
+  const project = useLiveQuery(
+    () => projectRepository.getById(projectId),
+    [projectId],
+  );
 
-    (async () => {
-      const data = await projectRepository.getById(projectId);
-      setProject(data);
-      setIsLoading(false);
-    })();
-  }, [projectId]);
+  const isLoading = project === undefined;
 
   useEffect(() => {
     if (!project?.stopwatch?.isRunning) {
@@ -46,14 +42,8 @@ export function useStopwatch(projectId) {
     return () => cancelAnimationFrame(frameId);
   }, [project]);
 
-  const updateProject = useCallback((data) => {
-    setProject(data);
+  function updateProject(data) {
     projectRepository.save(data);
-  }, []);
-
-  async function refresh() {
-    const updated = await projectRepository.getById(projectId);
-    setProject(updated);
   }
 
   useAutoPause(pause);
@@ -98,9 +88,7 @@ export function useStopwatch(projectId) {
 
   async function rename(name) {
     if (!name) return;
-
     await projectRepository.rename({ id: project.id, newName: name });
-    setProject((p) => ({ ...p, name }));
   }
 
   async function addLap() {
@@ -110,31 +98,18 @@ export function useStopwatch(projectId) {
     const totalTime = project.stopwatch.totalTime + elapsed;
 
     await projectRepository.addLap({ id: project.id, totalTime });
-    await refresh();
   }
 
   async function deleteProject() {
     await projectRepository.remove(project.id);
   }
 
-  async function completeProject() {
-    await projectRepository.complete(project.id);
-    await refresh();
-  }
-
-  async function reopenProject() {
-    await projectRepository.reopen(project.id);
-    await refresh();
-  }
-
   async function renameLap(lapId, name) {
     await projectRepository.renameLap({ id: project.id, lapId, name });
-    await refresh();
   }
 
   async function deleteLap(lapId) {
     await projectRepository.removeLap({ id: project.id, lapId });
-    await refresh();
   }
 
   return {
@@ -149,8 +124,6 @@ export function useStopwatch(projectId) {
     addLap,
     rename,
     deleteProject,
-    completeProject,
-    reopenProject,
     renameLap,
     deleteLap,
   };

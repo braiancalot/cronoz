@@ -1,24 +1,13 @@
-import { openDB } from "idb";
+import Dexie from "dexie";
 
 const DB_NAME = "cronoz-db";
 const DB_VERSION = 1;
 
-let dbPromise;
+const db = new Dexie(DB_NAME);
 
-export function getDB() {
-  if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains("projects")) {
-          db.createObjectStore("projects", { keyPath: "id" });
-        }
+db.version(DB_VERSION).stores({
+  projects: "id, completedAt, createdAt",
+  settings: "key",
+});
 
-        if (!db.objectStoreNames.contains("settings")) {
-          db.createObjectStore("settings", { keyPath: "key" });
-        }
-      },
-    });
-  }
-
-  return dbPromise;
-}
+export default db;
