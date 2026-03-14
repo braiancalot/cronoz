@@ -29,8 +29,14 @@ vi.mock("@/services/projectRepository.js", async (importOriginal) => {
 });
 
 // Stub requestAnimationFrame
-vi.stubGlobal("requestAnimationFrame", vi.fn((cb) => setTimeout(cb, 0)));
-vi.stubGlobal("cancelAnimationFrame", vi.fn((id) => clearTimeout(id)));
+vi.stubGlobal(
+  "requestAnimationFrame",
+  vi.fn((cb) => setTimeout(cb, 0)),
+);
+vi.stubGlobal(
+  "cancelAnimationFrame",
+  vi.fn((id) => clearTimeout(id)),
+);
 
 // Import after mocks are set up
 const { useProject } = await import("@/hooks/useProject.js");

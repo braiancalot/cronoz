@@ -11,7 +11,9 @@ export function FormattedTime({
   const { hours, minutes, seconds, milliseconds } = formatTime(time);
 
   return (
-    <div className={`flex font-medium items-center justify-center tabular-nums ${className}`}>
+    <div
+      className={`flex font-medium items-center justify-center tabular-nums ${className}`}
+    >
       {hasHours(hours) && (
         <>
           <span>{hours}</span>
