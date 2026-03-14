@@ -6,13 +6,12 @@ const DISMISSED_KEY = "cronoz-install-dismissed";
 
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(
+    () => window.matchMedia("(display-mode: standalone)").matches,
+  );
 
   useEffect(() => {
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true);
-      return;
-    }
+    if (isInstalled) return;
 
     function handleBeforeInstallPrompt(e) {
       e.preventDefault();
@@ -34,7 +33,7 @@ export function useInstallPrompt() {
       );
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, []);
+  }, [isInstalled]);
 
   const isDismissed =
     typeof window !== "undefined" &&
