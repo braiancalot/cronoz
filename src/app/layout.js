@@ -1,5 +1,6 @@
 import { IBM_Plex_Sans } from "next/font/google";
 import { SerwistProvider } from "@/app/serwist-provider.js";
+import { InstallBanner } from "@/components/InstallBanner";
 import "./globals.css";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
         className={`${ibmPlexSans.className} antialiased bg-black text-white`}
       >
         <SerwistProvider swUrl="/serwist/sw.js">{children}</SerwistProvider>
+        <InstallBanner />
       </body>
     </html>
   );
