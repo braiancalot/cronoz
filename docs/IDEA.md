@@ -17,6 +17,7 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 ## Stack
 
 **Em uso:**
+
 - Next.js 16 (App Router) + React 19
 - Tailwind CSS 4
 - Dexie (IndexedDB) — persistência local
@@ -24,6 +25,7 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 - Node 24
 
 **Planejado:**
+
 - shadcn/ui — componentes de UI (após funcionalidades base prontas)
 - Neon (Postgres serverless) — banco remoto para sincronização
 - Vercel — deploy

@@ -9,7 +9,12 @@ function calculateTotalPrice(totalTime, hourlyPrice) {
   return (totalTime / MS_PER_HOUR) * hourlyPrice;
 }
 
-export function TimerDisplay({ time, totalTime = null, isRunning = false, hourlyPrice = 10 }) {
+export function TimerDisplay({
+  time,
+  totalTime = null,
+  isRunning = false,
+  hourlyPrice = 10,
+}) {
   const priceBase = totalTime !== null ? totalTime : time;
   const price = calculateTotalPrice(priceBase, hourlyPrice);
 
