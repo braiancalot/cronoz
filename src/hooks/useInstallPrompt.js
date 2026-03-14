@@ -6,9 +6,10 @@ const DISMISSED_KEY = "cronoz-install-dismissed";
 
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(
-    () => window.matchMedia("(display-mode: standalone)").matches,
-  );
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(display-mode: standalone)").matches;
+  });
 
   useEffect(() => {
     if (isInstalled) return;
