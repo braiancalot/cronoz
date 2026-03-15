@@ -7,8 +7,9 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 ## Requisitos Principais
 
 - Múltiplos cronômetros independentes, um por projeto (peça)
-- Etapas nomeadas dentro de cada projeto (base, corpo, alça, acabamento...)
+- Etapas nomeadas dentro de cada projeto (base, corpo, alça, acabamento...), cada uma com seu próprio tempo
 - Ao marcar etapa: pausar cronômetro, abrir modal para nomear, retomar depois
+- Deletar uma etapa reduz o tempo total do projeto (etapas são a fonte de verdade)
 - Projetos ativos separados dos concluídos na tela inicial
 - Sincronização entre dispositivos sem login (código de pareamento)
 - Cálculo de valor da peça por preço/hora
@@ -17,6 +18,7 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 ## Stack
 
 **Em uso:**
+
 - Next.js 16 (App Router) + React 19
 - Tailwind CSS 4
 - Dexie (IndexedDB) — persistência local
@@ -24,6 +26,7 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 - Node 24
 
 **Planejado:**
+
 - shadcn/ui — componentes de UI (após funcionalidades base prontas)
 - Neon (Postgres serverless) — banco remoto para sincronização
 - Vercel — deploy
