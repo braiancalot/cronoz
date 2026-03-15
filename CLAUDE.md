@@ -35,10 +35,12 @@ Cronoz is a PWA multi-project stopwatch application built with Next.js 16 App Ro
 ### Data Layer
 
 Persistence uses **Dexie** (IndexedDB wrapper) via `src/services/db.js`. There are two stores:
+
 - `projects` — indexed by `id`, `completedAt`, `createdAt`
 - `settings` — key/value store (e.g. `hourlyPrice`)
 
 Repository modules wrap all DB access:
+
 - `src/services/projectRepository.js` — CRUD, lap management, complete/reopen
 - `src/services/settingsRepository.js` — get/set with defaults
 
@@ -47,9 +49,11 @@ Pages and hooks subscribe to live DB queries using `useLiveQuery` from `dexie-re
 ### Key Patterns
 
 **Stopwatch state** is stored as a plain object inside each project record:
+
 ```js
 { isRunning, startTimestamp, totalTime, laps: [] }
 ```
+
 Time is computed on the fly from `startTimestamp` (no stored elapsed during running) — see `calculateTotalTime` / `calculateSplitTime` in `src/lib/stopwatch.js`.
 
 **`useProject` hook** (`src/hooks/useProject.js`) drives the project detail page: subscribes to live DB data, runs a `requestAnimationFrame` loop to update display time while running, and exposes start/pause/reset/toggle/addLap/rename/deleteProject/renameLap/deleteLap.
@@ -73,6 +77,7 @@ Este projeto segue a metodologia Senior Agile Vibe Coding — Engenharia de Soft
 ### Pair Programming
 
 Claude é o piloto, o usuário é o navegador/arquiteto. Antes de executar mudanças grandes no código:
+
 1. Descrever o plano de ação com clareza
 2. Aguardar confirmação do usuário antes de prosseguir
 3. Mudanças pequenas e localizadas podem ser feitas diretamente
