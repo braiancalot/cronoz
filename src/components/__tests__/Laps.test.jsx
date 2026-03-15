@@ -4,8 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { Laps } from "@/components/Laps.jsx";
 
 const mockLaps = [
-  { id: "lap-1", name: "Lap #1", lapTime: 3000, totalTime: 3000 },
-  { id: "lap-2", name: "Lap #2", lapTime: 5000, totalTime: 8000 },
+  { id: "lap-1", name: "Lap #1", lapTime: 3000 },
+  { id: "lap-2", name: "Lap #2", lapTime: 5000 },
 ];
 
 describe("Laps", () => {
