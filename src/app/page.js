@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import projectRepository from "@/services/projectRepository.js";
+import { calculateTotalTime } from "@/lib/stopwatch.js";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -68,7 +69,7 @@ export default function Home() {
               <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors">
                 <span>{project.name}</span>
                 <div className="flex items-center gap-4">
-                  <FormattedTime time={project.stopwatch.totalTime} />
+                  <FormattedTime time={calculateTotalTime(project.stopwatch)} />
                   <button
                     onClick={(e) => handleComplete(e, project.id)}
                     className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
@@ -91,7 +92,9 @@ export default function Home() {
                 <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors opacity-50">
                   <span>{project.name}</span>
                   <div className="flex items-center gap-4">
-                    <FormattedTime time={project.stopwatch.totalTime} />
+                    <FormattedTime
+                      time={calculateTotalTime(project.stopwatch)}
+                    />
                     <button
                       onClick={(e) => handleReopen(e, project.id)}
                       className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
