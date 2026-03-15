@@ -2,7 +2,7 @@ import db from "./db.js";
 
 export const DEFAULT_STOPWATCH = {
   startTimestamp: null,
-  totalTime: 0,
+  currentLapTime: 0,
   isRunning: false,
   laps: [],
 };
@@ -52,24 +52,23 @@ async function reopen(id) {
   await db.projects.update(id, { completedAt: null });
 }
 
-async function addLap({ id, totalTime }) {
+async function addLap({ id, lapTime, name }) {
   const project = await getById(id);
   if (!project) return;
 
   const laps = project.stopwatch.laps;
-  const lastLapTime = laps.length > 0 ? laps[0].totalTime : 0;
 
   const newLap = {
     id: crypto.randomUUID(),
-    name: `Lap #${laps.length + 1}`,
-    totalTime,
-    lapTime: totalTime - lastLapTime,
+    name,
+    lapTime,
     createdAt: Date.now(),
   };
 
   await db.projects.update(id, {
     stopwatch: {
       ...project.stopwatch,
+      currentLapTime: 0,
       laps: [newLap, ...laps],
     },
   });
@@ -94,13 +93,8 @@ async function removeLap({ id, lapId }) {
 
   const laps = project.stopwatch.laps.filter((lap) => lap.id !== lapId);
 
-  const recalculated = laps.map((lap, index) => {
-    const older = laps[index + 1];
-    return { ...lap, lapTime: lap.totalTime - (older?.totalTime ?? 0) };
-  });
-
   await db.projects.update(id, {
-    stopwatch: { ...project.stopwatch, laps: recalculated },
+    stopwatch: { ...project.stopwatch, laps },
   });
 }
 

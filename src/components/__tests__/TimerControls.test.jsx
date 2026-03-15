@@ -5,10 +5,9 @@ import { TimerControls } from "@/components/TimerControls.jsx";
 
 const defaultProps = {
   isRunning: false,
-  hasTime: false,
+  hasLapTime: false,
   onStart: vi.fn(),
   onPause: vi.fn(),
-  onReset: vi.fn(),
   onAddLap: vi.fn(),
 };
 
@@ -25,34 +24,36 @@ describe("TimerControls", () => {
   });
 
   it("shows Pause button when running", () => {
-    renderControls({ isRunning: true, hasTime: true });
+    renderControls({ isRunning: true });
 
     expect(screen.getByText("Pause")).toBeInTheDocument();
     expect(screen.queryByText("Start")).not.toBeInTheDocument();
   });
 
-  it("shows Reset button when stopped with time", () => {
-    renderControls({ hasTime: true });
-
-    expect(screen.getByText("Reset")).toBeInTheDocument();
-  });
-
-  it("does not show Reset when stopped without time", () => {
+  it("shows Lap button always", () => {
     renderControls();
-
-    expect(screen.queryByText("Reset")).not.toBeInTheDocument();
-  });
-
-  it("shows Lap button when running with time", () => {
-    renderControls({ isRunning: true, hasTime: true });
 
     expect(screen.getByText("Lap")).toBeInTheDocument();
   });
 
-  it("does not show Lap when stopped", () => {
-    renderControls({ hasTime: true });
+  it("disables Lap button when hasLapTime is false", () => {
+    renderControls({ hasLapTime: false });
 
-    expect(screen.queryByText("Lap")).not.toBeInTheDocument();
+    expect(screen.getByText("Lap")).toBeDisabled();
+  });
+
+  it("enables Lap button when hasLapTime is true", () => {
+    renderControls({ hasLapTime: true });
+
+    expect(screen.getByText("Lap")).toBeEnabled();
+  });
+
+  it("does not call onAddLap when Lap is disabled", async () => {
+    const onAddLap = vi.fn();
+    renderControls({ hasLapTime: false, onAddLap });
+
+    await userEvent.click(screen.getByText("Lap"));
+    expect(onAddLap).not.toHaveBeenCalled();
   });
 
   it("calls onStart when Start is clicked", async () => {
@@ -65,23 +66,15 @@ describe("TimerControls", () => {
 
   it("calls onPause when Pause is clicked", async () => {
     const onPause = vi.fn();
-    renderControls({ isRunning: true, hasTime: true, onPause });
+    renderControls({ isRunning: true, onPause });
 
     await userEvent.click(screen.getByText("Pause"));
     expect(onPause).toHaveBeenCalledOnce();
   });
 
-  it("calls onReset when Reset is clicked", async () => {
-    const onReset = vi.fn();
-    renderControls({ hasTime: true, onReset });
-
-    await userEvent.click(screen.getByText("Reset"));
-    expect(onReset).toHaveBeenCalledOnce();
-  });
-
-  it("calls onAddLap when Lap is clicked", async () => {
+  it("calls onAddLap when Lap is clicked and enabled", async () => {
     const onAddLap = vi.fn();
-    renderControls({ isRunning: true, hasTime: true, onAddLap });
+    renderControls({ hasLapTime: true, onAddLap });
 
     await userEvent.click(screen.getByText("Lap"));
     expect(onAddLap).toHaveBeenCalledOnce();

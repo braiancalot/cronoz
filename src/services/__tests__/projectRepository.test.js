@@ -8,6 +8,17 @@ beforeEach(async () => {
   await db.projects.clear();
 });
 
+describe("DEFAULT_STOPWATCH", () => {
+  it("has currentLapTime instead of totalTime", () => {
+    expect(DEFAULT_STOPWATCH).toEqual({
+      startTimestamp: null,
+      currentLapTime: 0,
+      isRunning: false,
+      laps: [],
+    });
+  });
+});
+
 describe("create", () => {
   it("creates a project with UUID, default name and initial stopwatch", async () => {
     const project = await projectRepository.create();
@@ -110,36 +121,69 @@ describe("complete / reopen", () => {
 });
 
 describe("addLap", () => {
-  it("first lap has lapTime equal to totalTime", async () => {
+  it("saves lap with lapTime and resets currentLapTime", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({ id: project.id, totalTime: 5000 });
+
+    // Simulate a running stopwatch with accumulated time
+    await projectRepository.save({
+      ...project,
+      stopwatch: {
+        ...project.stopwatch,
+        isRunning: true,
+        startTimestamp: 1000,
+        currentLapTime: 0,
+      },
+    });
+
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
 
     const found = await projectRepository.getById(project.id);
     const lap = found.stopwatch.laps[0];
 
-    expect(lap.totalTime).toBe(5000);
     expect(lap.lapTime).toBe(5000);
-    expect(lap.name).toBe("Lap #1");
+    expect(lap.name).toBe("Etapa #1");
+    expect(lap.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    expect(lap.createdAt).toBeTypeOf("number");
+    expect(found.stopwatch.currentLapTime).toBe(0);
+    expect(found.stopwatch.startTimestamp).toBe(1000); // preserves original value
   });
 
-  it("second lap calculates difference from first", async () => {
+  it("adds multiple laps each with their own lapTime", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({ id: project.id, totalTime: 3000 });
-    await projectRepository.addLap({ id: project.id, totalTime: 8000 });
+
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 3000,
+      name: "Etapa #1",
+    });
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 5000,
+      name: "Etapa #2",
+    });
 
     const found = await projectRepository.getById(project.id);
     const [secondLap, firstLap] = found.stopwatch.laps;
 
-    expect(firstLap.totalTime).toBe(3000);
     expect(firstLap.lapTime).toBe(3000);
-    expect(secondLap.totalTime).toBe(8000);
-    expect(secondLap.lapTime).toBe(5000); // 8000 - 3000
-    expect(secondLap.name).toBe("Lap #2");
+    expect(firstLap.name).toBe("Etapa #1");
+    expect(secondLap.lapTime).toBe(5000);
+    expect(secondLap.name).toBe("Etapa #2");
   });
 
   it("does nothing for non-existent project", async () => {
     await expect(
-      projectRepository.addLap({ id: "non-existent", totalTime: 1000 }),
+      projectRepository.addLap({
+        id: "non-existent",
+        lapTime: 1000,
+        name: "Etapa #1",
+      }),
     ).resolves.toBeUndefined();
   });
 });
@@ -147,7 +191,11 @@ describe("addLap", () => {
 describe("renameLap", () => {
   it("renames a specific lap", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({ id: project.id, totalTime: 5000 });
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
 
     const withLap = await projectRepository.getById(project.id);
     const lapId = withLap.stopwatch.laps[0].id;
@@ -164,15 +212,27 @@ describe("renameLap", () => {
 });
 
 describe("removeLap", () => {
-  it("removes a lap and recalculates lapTimes", async () => {
+  it("removes a lap without recalculating (just filters)", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({ id: project.id, totalTime: 2000 });
-    await projectRepository.addLap({ id: project.id, totalTime: 5000 });
-    await projectRepository.addLap({ id: project.id, totalTime: 9000 });
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 2000,
+      name: "Etapa #1",
+    });
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 3000,
+      name: "Etapa #2",
+    });
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 4000,
+      name: "Etapa #3",
+    });
 
-    // laps order (newest first): [9000, 5000, 2000]
+    // laps order (newest first): [4000, 3000, 2000]
     const before = await projectRepository.getById(project.id);
-    const middleLapId = before.stopwatch.laps[1].id; // totalTime 5000
+    const middleLapId = before.stopwatch.laps[1].id; // lapTime 3000
 
     await projectRepository.removeLap({ id: project.id, lapId: middleLapId });
 
@@ -180,9 +240,7 @@ describe("removeLap", () => {
     expect(found.stopwatch.laps).toHaveLength(2);
 
     const [newest, oldest] = found.stopwatch.laps;
-    expect(oldest.totalTime).toBe(2000);
-    expect(oldest.lapTime).toBe(2000); // 2000 - 0
-    expect(newest.totalTime).toBe(9000);
-    expect(newest.lapTime).toBe(7000); // 9000 - 2000 (recalculated)
+    expect(oldest.lapTime).toBe(2000); // unchanged
+    expect(newest.lapTime).toBe(4000); // unchanged — no recalculation
   });
 });

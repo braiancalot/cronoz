@@ -94,14 +94,14 @@ describe("useProject", () => {
     );
   });
 
-  it("pause saves project with isRunning false and accumulated time", () => {
+  it("pause saves project with isRunning false and accumulated currentLapTime", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(10000));
 
     const project = createProject({
       isRunning: true,
       startTimestamp: 7000,
-      totalTime: 2000,
+      currentLapTime: 2000,
     });
     mockUseLiveQuery.mockReturnValue(project);
 
@@ -116,7 +116,7 @@ describe("useProject", () => {
         stopwatch: expect.objectContaining({
           isRunning: false,
           startTimestamp: null,
-          totalTime: 5000, // 2000 + (10000 - 7000)
+          currentLapTime: 5000, // 2000 + (10000 - 7000)
         }),
       }),
     );
@@ -138,7 +138,7 @@ describe("useProject", () => {
   });
 
   it("reset saves project with DEFAULT_STOPWATCH", () => {
-    const project = createProject({ totalTime: 5000 });
+    const project = createProject({ currentLapTime: 5000 });
     mockUseLiveQuery.mockReturnValue(project);
 
     const { result } = renderHook(() => useProject("test-id"));
@@ -175,7 +175,7 @@ describe("useProject", () => {
     const project = createProject({
       isRunning: true,
       startTimestamp: Date.now(),
-      totalTime: 1000,
+      currentLapTime: 1000,
     });
     mockUseLiveQuery.mockReturnValue(project);
 
@@ -192,42 +192,30 @@ describe("useProject", () => {
     );
   });
 
-  it("addLap calls repository with calculated totalTime", () => {
+  it("addLap calls repository with calculated lapTime and name", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(10000));
 
     const project = createProject({
       isRunning: true,
       startTimestamp: 7000,
-      totalTime: 2000,
+      currentLapTime: 2000,
     });
     mockUseLiveQuery.mockReturnValue(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
     act(() => {
-      result.current.addLap();
+      result.current.addLap("Etapa #1");
     });
 
     expect(mockRepository.addLap).toHaveBeenCalledWith({
       id: "test-id",
-      totalTime: 5000, // 2000 + (10000 - 7000)
+      lapTime: 5000, // currentLapTime (2000) + elapsed (10000 - 7000)
+      name: "Etapa #1",
     });
 
     vi.useRealTimers();
-  });
-
-  it("addLap does nothing when not running", () => {
-    const project = createProject({ isRunning: false });
-    mockUseLiveQuery.mockReturnValue(project);
-
-    const { result } = renderHook(() => useProject("test-id"));
-
-    act(() => {
-      result.current.addLap();
-    });
-
-    expect(mockRepository.addLap).not.toHaveBeenCalled();
   });
 
   it("rename calls repository with new name", async () => {
@@ -287,6 +275,30 @@ describe("useProject", () => {
       lapId: "lap-1",
       name: "Custom",
     });
+  });
+
+  it("addLap works correctly when stopwatch is paused (regression: stale state overwrite)", () => {
+    const project = createProject({
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 5000,
+    });
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    act(() => {
+      result.current.addLap("Etapa #1");
+    });
+
+    expect(mockRepository.addLap).toHaveBeenCalledWith({
+      id: "test-id",
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
+
+    // Must NOT call save — that was the bug (start() called save with stale state)
+    expect(mockRepository.save).not.toHaveBeenCalled();
   });
 
   it("deleteLap calls repository", async () => {

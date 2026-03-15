@@ -3,6 +3,7 @@ import {
   formatTime,
   calculateTotalTime,
   calculateSplitTime,
+  sumLapTimes,
   hasHours,
 } from "@/lib/stopwatch.js";
 
@@ -74,6 +75,21 @@ describe("formatTime", () => {
   });
 });
 
+describe("sumLapTimes", () => {
+  it("returns 0 for empty array", () => {
+    expect(sumLapTimes([])).toBe(0);
+  });
+
+  it("sums lapTime from all laps", () => {
+    const laps = [{ lapTime: 3000 }, { lapTime: 5000 }, { lapTime: 2000 }];
+    expect(sumLapTimes(laps)).toBe(10000);
+  });
+
+  it("returns single lap time for one lap", () => {
+    expect(sumLapTimes([{ lapTime: 7000 }])).toBe(7000);
+  });
+});
+
 describe("calculateTotalTime", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -91,14 +107,15 @@ describe("calculateTotalTime", () => {
     expect(calculateTotalTime(undefined)).toBe(0);
   });
 
-  it("returns totalTime when stopped", () => {
+  it("returns currentLapTime + sumLapTimes when stopped", () => {
     const stopwatch = {
       isRunning: false,
       startTimestamp: null,
-      totalTime: 5000,
-      laps: [],
+      currentLapTime: 5000,
+      laps: [{ lapTime: 3000 }, { lapTime: 2000 }],
     };
-    expect(calculateTotalTime(stopwatch)).toBe(5000);
+    // 5000 + 3000 + 2000 = 10000
+    expect(calculateTotalTime(stopwatch)).toBe(10000);
   });
 
   it("adds elapsed time when running", () => {
@@ -107,19 +124,33 @@ describe("calculateTotalTime", () => {
     const stopwatch = {
       isRunning: true,
       startTimestamp: 7000,
-      totalTime: 2000,
+      currentLapTime: 2000,
       laps: [],
     };
 
-    // totalTime (2000) + (Date.now (10000) - startTimestamp (7000)) = 5000
+    // currentLapTime (2000) + (Date.now (10000) - startTimestamp (7000)) = 5000
     expect(calculateTotalTime(stopwatch)).toBe(5000);
   });
 
-  it("returns totalTime when running but no startTimestamp", () => {
+  it("includes lap times and elapsed when running", () => {
+    vi.setSystemTime(new Date(10000));
+
+    const stopwatch = {
+      isRunning: true,
+      startTimestamp: 7000,
+      currentLapTime: 1000,
+      laps: [{ lapTime: 4000 }],
+    };
+
+    // sumLaps (4000) + currentLapTime (1000) + elapsed (3000) = 8000
+    expect(calculateTotalTime(stopwatch)).toBe(8000);
+  });
+
+  it("returns currentLapTime + sumLapTimes when running but no startTimestamp", () => {
     const stopwatch = {
       isRunning: true,
       startTimestamp: null,
-      totalTime: 3000,
+      currentLapTime: 3000,
       laps: [],
     };
     expect(calculateTotalTime(stopwatch)).toBe(3000);
@@ -139,39 +170,37 @@ describe("calculateSplitTime", () => {
     expect(calculateSplitTime(null)).toBe(0);
   });
 
-  it("returns total time when no laps exist", () => {
+  it("returns currentLapTime when stopped with no laps", () => {
     const stopwatch = {
       isRunning: false,
       startTimestamp: null,
-      totalTime: 5000,
+      currentLapTime: 5000,
       laps: [],
     };
     expect(calculateSplitTime(stopwatch)).toBe(5000);
   });
 
-  it("returns time since last lap", () => {
+  it("returns currentLapTime when stopped with laps (ignores laps)", () => {
     const stopwatch = {
       isRunning: false,
       startTimestamp: null,
-      totalTime: 8000,
-      laps: [{ totalTime: 5000 }, { totalTime: 2000 }],
+      currentLapTime: 3000,
+      laps: [{ lapTime: 5000 }, { lapTime: 2000 }],
     };
-    // total (8000) - laps[0].totalTime (5000) = 3000
     expect(calculateSplitTime(stopwatch)).toBe(3000);
   });
 
-  it("calculates split time while running", () => {
+  it("returns currentLapTime + elapsed when running", () => {
     vi.setSystemTime(new Date(20000));
 
     const stopwatch = {
       isRunning: true,
       startTimestamp: 15000,
-      totalTime: 5000,
-      laps: [{ totalTime: 7000 }],
+      currentLapTime: 2000,
+      laps: [{ lapTime: 7000 }],
     };
-    // total = 5000 + (20000 - 15000) = 10000
-    // split = 10000 - 7000 = 3000
-    expect(calculateSplitTime(stopwatch)).toBe(3000);
+    // currentLapTime (2000) + elapsed (5000) = 7000
+    expect(calculateSplitTime(stopwatch)).toBe(7000);
   });
 });
 
