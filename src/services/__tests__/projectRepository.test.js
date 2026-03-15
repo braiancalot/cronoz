@@ -151,7 +151,7 @@ describe("addLap", () => {
     );
     expect(lap.createdAt).toBeTypeOf("number");
     expect(found.stopwatch.currentLapTime).toBe(0);
-    expect(found.stopwatch.startTimestamp).toBeTypeOf("number");
+    expect(found.stopwatch.startTimestamp).toBe(1000); // preserves original value
   });
 
   it("adds multiple laps each with their own lapTime", async () => {

@@ -78,13 +78,11 @@ export default function ProjectPage({ params }) {
     if (!lapName) return;
 
     await addLap(lapName);
-    start();
     setIsAddingLap(false);
     setLapName("");
   }
 
   function handleCancelAddLap() {
-    start();
     setIsAddingLap(false);
     setLapName("");
   }

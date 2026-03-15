@@ -277,6 +277,30 @@ describe("useProject", () => {
     });
   });
 
+  it("addLap works correctly when stopwatch is paused (regression: stale state overwrite)", () => {
+    const project = createProject({
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 5000,
+    });
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    act(() => {
+      result.current.addLap("Etapa #1");
+    });
+
+    expect(mockRepository.addLap).toHaveBeenCalledWith({
+      id: "test-id",
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
+
+    // Must NOT call save — that was the bug (start() called save with stale state)
+    expect(mockRepository.save).not.toHaveBeenCalled();
+  });
+
   it("deleteLap calls repository", async () => {
     const project = createProject();
     mockUseLiveQuery.mockReturnValue(project);

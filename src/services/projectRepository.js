@@ -69,7 +69,6 @@ async function addLap({ id, lapTime, name }) {
     stopwatch: {
       ...project.stopwatch,
       currentLapTime: 0,
-      startTimestamp: Date.now(),
       laps: [newLap, ...laps],
     },
   });
