@@ -35,7 +35,6 @@ export default function ProjectPage({ params }) {
     splitDisplayTime,
     start,
     pause,
-    reset,
     toggle,
     addLap,
     rename,
@@ -204,10 +203,9 @@ export default function ProjectPage({ params }) {
 
       <TimerControls
         isRunning={project.stopwatch.isRunning}
-        hasTime={displayTime > 0}
+        hasLapTime={splitDisplayTime > 0}
         onStart={start}
         onPause={pause}
-        onReset={reset}
         onAddLap={handleStartAddLap}
       />
     </main>
