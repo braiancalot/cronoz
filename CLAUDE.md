@@ -5,32 +5,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Development Commands
 
 ```bash
-npm run dev          # Start development server (http://localhost:3000)
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
+npm run dev          # Start all apps in dev mode (Vite on :5173, API on :3001)
+npm run build        # Build all apps for production
+npm run lint         # Run ESLint across all workspaces
 npm run lint:check   # Check Prettier formatting
+npm run test         # Run all tests
+npm run test:coverage # Run tests with coverage
 npm run commit       # Create commit using Conventional Commits (use this instead of git commit)
 ```
 
 **Node version:** 24.13.0 (see `.nvmrc`)
 
-## Architecture
+## Monorepo Structure
 
-Cronoz is a PWA multi-project stopwatch application built with Next.js 16 App Router and React 19. Users can create named projects, each with its own independent stopwatch and lap tracking.
+Cronoz is a Turborepo monorepo with npm workspaces:
+
+```
+cronoz/
+  apps/
+    web/     — Vite + React Router SPA (PWA, offline-first)
+    api/     — Hono API (minimal skeleton, for future sync)
+  packages/  — Shared packages (created when needed)
+```
+
+## apps/web
+
+PWA multi-project stopwatch built with Vite, React 19, and React Router. Users can create named projects, each with its own independent stopwatch and lap tracking.
 
 ### Routes
 
-- `/` (`src/app/page.js`) — Lists all projects (active and completed). Handles project creation, completion, and reopening.
-- `/project/[id]` (`src/app/project/[id]/page.js`) — Individual project view with stopwatch controls, lap tracking, and rename/delete.
+- `/` (`src/pages/Home.jsx`) — Lists all projects (active and completed). Handles project creation, completion, and reopening.
+- `/project/:id` (`src/pages/ProjectPage.jsx`) — Individual project view with stopwatch controls, lap tracking, and rename/delete.
 
 ### Code Organization
 
-- `src/app/` — Next.js App Router pages and layouts
+- `src/pages/` — Route components (Home, ProjectPage)
 - `src/components/` — Presentational React components (`TimerDisplay`, `TimerControls`, `Laps`, `FormattedTime`, `InstallBanner`)
 - `src/hooks/` — Custom React hooks (`useProject`, `useAutoPause`, `useKeyboardShortcuts`, `useInstallPrompt`)
 - `src/lib/` — Pure utility functions (`stopwatch.js`: time calculation and formatting)
 - `src/services/` — Data access layer (Dexie/IndexedDB wrappers)
+- `src/main.jsx` — Entry point with React Router setup
+- `src/App.jsx` — Root layout with `<Outlet />`
 
 ### Data Layer
 
@@ -60,7 +75,15 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 
 **`useAutoPause`** auto-pauses on `pagehide` and on `visibilitychange` (mobile only), ensuring time isn't counted when the app is backgrounded.
 
+**Routing:** Uses React Router v7. Navigation via `useNavigate()`, params via `useParams()`, links via `<Link to="...">`.
+
 **Path Alias:** Use `@/` to import from `src/` (e.g., `import { useProject } from "@/hooks/useProject"`).
+
+**Font:** IBM Plex Sans loaded via `@fontsource/ibm-plex-sans` (offline-first, no Google Fonts CDN).
+
+## apps/api
+
+Minimal Hono API with a `/health` endpoint. Runs on port 3001 via `@hono/node-server`. Will be expanded when sync/pairing feature is implemented.
 
 ## Project Vision
 
