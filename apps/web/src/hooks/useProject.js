@@ -64,7 +64,7 @@ export function useProject(projectId) {
         ...project.stopwatch,
         isRunning: false,
         startTimestamp: null,
-        totalTime: project.stopwatch.totalTime + elapsed,
+        currentLapTime: project.stopwatch.currentLapTime + elapsed,
       },
     });
   }
@@ -85,13 +85,13 @@ export function useProject(projectId) {
     await projectRepository.rename({ id: project.id, newName: name });
   }
 
-  async function addLap() {
-    if (!project?.stopwatch?.isRunning) return;
+  async function addLap(name) {
+    const elapsed = project.stopwatch.startTimestamp
+      ? Date.now() - project.stopwatch.startTimestamp
+      : 0;
+    const lapTime = project.stopwatch.currentLapTime + elapsed;
 
-    const elapsed = Date.now() - project.stopwatch.startTimestamp;
-    const totalTime = project.stopwatch.totalTime + elapsed;
-
-    await projectRepository.addLap({ id: project.id, totalTime });
+    await projectRepository.addLap({ id: project.id, lapTime, name });
   }
 
   async function deleteProject() {

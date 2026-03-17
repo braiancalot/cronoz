@@ -16,6 +16,8 @@ export default function ProjectPage() {
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddingLap, setIsAddingLap] = useState(false);
+  const [lapName, setLapName] = useState("");
 
   const hourlyPrice = useLiveQuery(
     () => settingsRepository.get("hourlyPrice"),
@@ -30,7 +32,6 @@ export default function ProjectPage() {
     splitDisplayTime,
     start,
     pause,
-    reset,
     toggle,
     addLap,
     rename,
@@ -59,6 +60,27 @@ export default function ProjectPage() {
   function handleCancel() {
     setIsRenaming(false);
     setNewName("");
+  }
+
+  function handleStartAddLap() {
+    pause();
+    const lapNumber = (project.stopwatch.laps?.length ?? 0) + 1;
+    setLapName(`Etapa #${lapNumber}`);
+    setIsAddingLap(true);
+  }
+
+  async function handleConfirmAddLap(event) {
+    event.preventDefault();
+    if (!lapName) return;
+
+    await addLap(lapName);
+    setIsAddingLap(false);
+    setLapName("");
+  }
+
+  function handleCancelAddLap() {
+    setIsAddingLap(false);
+    setLapName("");
   }
 
   async function handleDeleteProject() {
@@ -144,13 +166,44 @@ export default function ProjectPage() {
         />
       )}
 
+      {isAddingLap && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-8">
+          <form
+            onSubmit={handleConfirmAddLap}
+            className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 w-full max-w-sm flex flex-col gap-4"
+          >
+            <h2 className="text-white font-medium">Nova etapa</h2>
+            <input
+              value={lapName}
+              onChange={(e) => setLapName(e.target.value)}
+              className="border border-teal-500 rounded text-white py-2 px-3 outline-none w-full bg-transparent"
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm cursor-pointer text-neutral-400 hover:text-white transition-colors"
+                onClick={handleCancelAddLap}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm cursor-pointer bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
+              >
+                Salvar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <TimerControls
         isRunning={project.stopwatch.isRunning}
-        hasTime={displayTime > 0}
+        hasLapTime={splitDisplayTime > 0}
         onStart={start}
         onPause={pause}
-        onReset={reset}
-        onAddLap={addLap}
+        onAddLap={handleStartAddLap}
       />
     </main>
   );
