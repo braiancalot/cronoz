@@ -49,7 +49,7 @@ export default function Home() {
   const isEmpty = activeProjects.length === 0 && completedProjects.length === 0;
 
   return (
-    <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">
+    <main className="w-full max-w-[1200px] mx-auto h-dvh flex flex-col">
       <header className="flex py-4 justify-center">
         <h1 className="text-lg font-bold tracking-tight">Cronoz</h1>
       </header>
