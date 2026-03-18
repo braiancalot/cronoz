@@ -64,6 +64,7 @@ O que precisa estar pronto antes de considerar "versão 1.0":
 
 Coisas que podem ser úteis mas não são prioridade agora:
 
+- Tempo do cronômetro no título da aba do browser
 - Foto por etapa para registrar progresso visual
 - Estimativa de tempo por projeto (ex: "12h de 20h")
 - Exportar resumo do projeto para compartilhar com clientes
