@@ -1,7 +1,5 @@
-"use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate, Link } from "react-router";
 
 import projectRepository from "@/services/projectRepository.js";
 import { calculateTotalTime } from "@/lib/stopwatch.js";
@@ -20,7 +18,7 @@ function NewProjectButton({ onCreate }) {
 }
 
 export default function Home() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [creatingProjectId, setCreatingProjectId] = useState(null);
 
@@ -29,7 +27,7 @@ export default function Home() {
   async function handleCreate() {
     const newProject = await projectRepository.create();
     setCreatingProjectId(newProject.id);
-    router.push(`/project/${newProject.id}`);
+    navigate(`/project/${newProject.id}`);
   }
 
   async function handleComplete(e, id) {
@@ -51,7 +49,7 @@ export default function Home() {
   const isEmpty = activeProjects.length === 0 && completedProjects.length === 0;
 
   return (
-    <main className="w-full max-w-[1200] mx-auto h-dvh flex flex-col">
+    <main className="w-full max-w-[1200px] mx-auto h-dvh flex flex-col">
       <header className="flex py-4 justify-center">
         <h1 className="text-lg font-bold tracking-tight">Cronoz</h1>
       </header>
@@ -65,7 +63,7 @@ export default function Home() {
 
         <div className="flex flex-col gap-2 mt-6 w-full">
           {activeProjects.map((project) => (
-            <Link key={project.id} href={`/project/${project.id}`}>
+            <Link key={project.id} to={`/project/${project.id}`}>
               <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors">
                 <span>{project.name}</span>
                 <div className="flex items-center gap-4">
@@ -88,7 +86,7 @@ export default function Home() {
               Concluídos
             </span>
             {completedProjects.map((project) => (
-              <Link key={project.id} href={`/project/${project.id}`}>
+              <Link key={project.id} to={`/project/${project.id}`}>
                 <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors opacity-50">
                   <span>{project.name}</span>
                   <div className="flex items-center gap-4">

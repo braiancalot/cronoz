@@ -25,17 +25,24 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 - Serwist — PWA / Service Worker
 - Node 24
 
-**Planejado:**
+**Planejado (migração):**
 
-- shadcn/ui — componentes de UI (após funcionalidades base prontas)
+- Monorepo com Turborepo
+  - `apps/web` — Vite + React Router (SPA, PWA offline-first)
+  - `apps/api` — Hono (API serverless)
+  - `packages/shared` — tipos, schemas Zod, constantes compartilhadas
+- Drizzle ORM (adapter `drizzle-orm/neon-http`) — acesso type-safe ao banco
 - Neon (Postgres serverless) — banco remoto para sincronização
-- Vercel — deploy
+- shadcn/ui — componentes de UI (após funcionalidades base prontas)
+- Vercel — deploy (web e api)
 
-A arquitetura de sync: Dexie continua como banco local offline-first, Neon como banco remoto, Next.js API Routes fazem a ponte. Estratégia de conflito: last-write-wins. Deploy na Vercel. Objetivo é manter tudo no free tier.
+A arquitetura de sync: Dexie continua como banco local offline-first, Neon como banco remoto, Hono API faz a ponte. Drizzle ORM para acesso type-safe ao Postgres. Estratégia de conflito: last-write-wins. Deploy na Vercel. Objetivo é manter tudo no free tier.
+
+**Nota arquitetural:** O Next.js App Router causa latência na navegação (server roundtrips) incompatível com offline-first. A migração para Vite SPA resolve isso — navegação 100% client-side. A API Hono fica em projeto separado no monorepo, servindo apenas a sincronização.
 
 ## Pareamento entre Dispositivos
 
-A ideia é sincronizar dados entre dispositivos através de um código simples, sem login. A estratégia exata de pareamento ainda precisa ser pesquisada — como gerar o código, como associar dispositivos, como lidar com reconexão.
+A ideia é sincronizar dados entre dispositivos através de um código simples, sem login. Estratégia provável: token único por dispositivo, associação via código de pareamento temporário, autenticação via JWT/Bearer no Hono. Detalhes de implementação ainda precisam ser definidos.
 
 ## Escopo 1.0
 

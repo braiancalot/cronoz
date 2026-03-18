@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 

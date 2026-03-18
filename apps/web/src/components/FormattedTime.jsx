@@ -1,5 +1,3 @@
-"use client";
-
 import { formatTime, hasHours } from "@/lib/stopwatch.js";
 
 export function FormattedTime({

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 
 const DISMISSED_KEY = "cronoz-install-dismissed";

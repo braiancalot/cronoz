@@ -1,8 +1,5 @@
-"use client";
-
-import { use, useState } from "react";
-import Link from "next/link.js";
-import { useRouter } from "next/navigation.js";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { useProject } from "@/hooks/useProject.js";
@@ -13,9 +10,9 @@ import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
 
-export default function ProjectPage({ params }) {
-  const { id } = use(params);
-  const router = useRouter();
+export default function ProjectPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -89,7 +86,7 @@ export default function ProjectPage({ params }) {
   async function handleDeleteProject() {
     setIsDeleting(true);
     await deleteProject();
-    router.push("/");
+    navigate("/");
   }
 
   if (!project) {
@@ -106,7 +103,7 @@ export default function ProjectPage({ params }) {
     <main className="w-full h-dvh flex flex-col items-center justify-center px-8">
       <header className="w-full h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 justify-start">
-          <Link href="/" className="text-lg">
+          <Link to="/" className="text-lg">
             ←
           </Link>
 
