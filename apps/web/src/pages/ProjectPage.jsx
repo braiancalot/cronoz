@@ -11,6 +11,7 @@ import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { LapModal } from "@/components/LapModal.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
+import { PageContainer } from "@/components/PageContainer.jsx";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -72,16 +73,16 @@ export default function ProjectPage() {
 
   if (!project) {
     return (
-      <main className="w-full h-dvh flex items-center justify-center">
-        <span className="text-white">Projeto não encontrado.</span>
-      </main>
+      <PageContainer className="items-center justify-center">
+        <span>Projeto não encontrado.</span>
+      </PageContainer>
     );
   }
 
   const hasLaps = project.stopwatch.laps?.length > 0;
 
   return (
-    <main className="w-full h-dvh flex flex-col items-center justify-center px-8">
+    <PageContainer className="items-center justify-center">
       <ProjectHeader
         name={project.name}
         onRename={rename}
@@ -120,6 +121,6 @@ export default function ProjectPage() {
         onPause={pause}
         onAddLap={handleStartAddLap}
       />
-    </main>
+    </PageContainer>
   );
 }

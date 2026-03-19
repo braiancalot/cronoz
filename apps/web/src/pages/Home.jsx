@@ -5,6 +5,7 @@ import projectRepository from "@/services/projectRepository.js";
 import { ProjectCard } from "@/components/ProjectCard.jsx";
 import { AppHeader } from "@/components/AppHeader.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
+import { PageContainer } from "@/components/PageContainer.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -48,10 +49,10 @@ export default function Home() {
   const isEmpty = activeProjects.length === 0 && completedProjects.length === 0;
 
   return (
-    <main className="w-full max-w-300 mx-auto h-dvh flex flex-col">
+    <PageContainer className="max-w-300 mx-auto">
       <AppHeader />
 
-      <div className="px-8 flex flex-col">
+      <div className="flex flex-col">
         {!isEmpty && (
           <div className="md:self-end">
             <NewProjectButton onCreate={handleCreate} />
@@ -92,6 +93,6 @@ export default function Home() {
           </EmptyState>
         )}
       </div>
-    </main>
+    </PageContainer>
   );
 }
