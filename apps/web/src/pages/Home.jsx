@@ -4,16 +4,14 @@ import { useNavigate, Link } from "react-router";
 import projectRepository from "@/services/projectRepository.js";
 import { calculateTotalTime } from "@/lib/stopwatch.js";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { useLiveQuery } from "dexie-react-hooks";
 
 function NewProjectButton({ onCreate }) {
   return (
-    <button
-      onClick={onCreate}
-      className="mt-8 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 px-5 py-2 rounded-lg transition-colors text-sm font-medium w-full"
-    >
+    <Button onClick={onCreate} className="mt-8 w-full">
       + Novo projeto
-    </button>
+    </Button>
   );
 }
 
@@ -68,12 +66,13 @@ export default function Home() {
                 <span>{project.name}</span>
                 <div className="flex items-center gap-4">
                   <FormattedTime time={calculateTotalTime(project.stopwatch)} />
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     onClick={(e) => handleComplete(e, project.id)}
-                    className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
                   >
                     Concluir
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Link>
@@ -93,12 +92,13 @@ export default function Home() {
                     <FormattedTime
                       time={calculateTotalTime(project.stopwatch)}
                     />
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={(e) => handleReopen(e, project.id)}
-                      className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
                     >
                       Reabrir
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </Link>

@@ -9,6 +9,7 @@ import settingsRepository from "@/services/settingsRepository.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
+import { Button } from "@/components/ui/button.jsx";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -122,29 +123,26 @@ export default function ProjectPage() {
         </div>
 
         {isRenaming ? (
-          <div className="flex gap-4">
-            <button className="cursor-pointer text-sm" onClick={handleCancel}>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={handleCancel}>
               Cancelar
-            </button>
-            <button className="cursor-pointer text-sm" onClick={handleRename}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleRename}>
               Salvar
-            </button>
+            </Button>
           </div>
         ) : (
-          <div className="flex gap-4">
-            <button
-              className="cursor-pointer text-sm"
-              onClick={handleStartRename}
-            >
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={handleStartRename}>
               Renomear
-            </button>
-
-            <button
-              className="cursor-pointer text-sm text-red-400 hover:text-red-300"
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleDeleteProject}
             >
               Deletar
-            </button>
+            </Button>
           </div>
         )}
       </header>
@@ -180,19 +178,17 @@ export default function ProjectPage() {
               autoFocus
             />
             <div className="flex gap-3 justify-end">
-              <button
+              <Button
                 type="button"
-                className="px-4 py-2 text-sm cursor-pointer text-neutral-400 hover:text-white transition-colors"
+                variant="ghost"
+                size="sm"
                 onClick={handleCancelAddLap}
               >
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm cursor-pointer bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
-              >
+              </Button>
+              <Button type="submit" size="sm">
                 Salvar
-              </button>
+              </Button>
             </div>
           </form>
         </div>

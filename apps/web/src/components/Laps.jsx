@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { Button } from "@/components/ui/button.jsx";
 
 function LapItem({ lap, onRename, onDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
@@ -49,20 +50,23 @@ function LapItem({ lap, onRename, onDelete }) {
           <span>{lap.name}</span>
           <div className="flex items-center gap-3">
             <FormattedTime time={lap.lapTime} />
-            <button
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={handleStartRename}
-              className="text-sm text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors"
               title="Renomear"
             >
               ✎
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => onDelete(lap.id)}
-              className="text-neutral-500 hover:text-red-400 cursor-pointer transition-colors"
               title="Deletar"
+              className="hover:text-destructive"
             >
               ✕
-            </button>
+            </Button>
           </div>
         </>
       )}
