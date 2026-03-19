@@ -9,6 +9,7 @@ import settingsRepository from "@/services/settingsRepository.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
+import { LapModal } from "@/components/LapModal.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 
@@ -71,8 +72,7 @@ export default function ProjectPage() {
     setIsAddingLap(true);
   }
 
-  async function handleConfirmAddLap(event) {
-    event.preventDefault();
+  async function handleConfirmAddLap() {
     if (!lapName) return;
 
     await addLap(lapName);
@@ -164,34 +164,13 @@ export default function ProjectPage() {
         />
       )}
 
-      {isAddingLap && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-8">
-          <form
-            onSubmit={handleConfirmAddLap}
-            className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 w-full max-w-sm flex flex-col gap-4"
-          >
-            <h2 className="font-medium">Nova etapa</h2>
-            <Input
-              value={lapName}
-              onChange={(e) => setLapName(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleCancelAddLap}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" size="sm">
-                Salvar
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
+      <LapModal
+        open={isAddingLap}
+        lapName={lapName}
+        onLapNameChange={setLapName}
+        onConfirm={handleConfirmAddLap}
+        onCancel={handleCancelAddLap}
+      />
 
       <TimerControls
         isRunning={project.stopwatch.isRunning}
