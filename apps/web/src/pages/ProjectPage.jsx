@@ -10,6 +10,7 @@ import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -110,10 +111,9 @@ export default function ProjectPage() {
 
           {isRenaming ? (
             <form onSubmit={handleRename} className="w-auto">
-              <input
+              <Input
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
-                className="border border-teal-500 rounded text-white py-2 px-3 outline-none w-full"
                 autoFocus
               />
             </form>
@@ -170,11 +170,10 @@ export default function ProjectPage() {
             onSubmit={handleConfirmAddLap}
             className="bg-neutral-900 border border-neutral-700 rounded-lg p-6 w-full max-w-sm flex flex-col gap-4"
           >
-            <h2 className="text-white font-medium">Nova etapa</h2>
-            <input
+            <h2 className="font-medium">Nova etapa</h2>
+            <Input
               value={lapName}
               onChange={(e) => setLapName(e.target.value)}
-              className="border border-teal-500 rounded text-white py-2 px-3 outline-none w-full bg-transparent"
               autoFocus
             />
             <div className="flex gap-3 justify-end">

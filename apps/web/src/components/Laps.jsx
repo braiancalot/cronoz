@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
 
 function LapItem({ lap, onRename, onDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
@@ -36,12 +37,12 @@ function LapItem({ lap, onRename, onDelete }) {
           onSubmit={handleRename}
           className="flex-1 flex items-center gap-2"
         >
-          <input
+          <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={handleCancel}
-            className="border border-teal-500 rounded text-white py-0.5 px-2 outline-none flex-1 text-sm h-7"
+            className="flex-1 h-7 text-sm"
             autoFocus
           />
         </form>
