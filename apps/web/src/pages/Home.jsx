@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate } from "react-router";
 
 import projectRepository from "@/services/projectRepository.js";
-import { calculateTotalTime } from "@/lib/stopwatch.js";
-import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { ProjectCard } from "@/components/ProjectCard.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -61,47 +60,28 @@ export default function Home() {
 
         <div className="flex flex-col gap-2 mt-6 w-full">
           {activeProjects.map((project) => (
-            <Link key={project.id} to={`/project/${project.id}`}>
-              <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors">
-                <span>{project.name}</span>
-                <div className="flex items-center gap-4">
-                  <FormattedTime time={calculateTotalTime(project.stopwatch)} />
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={(e) => handleComplete(e, project.id)}
-                  >
-                    Concluir
-                  </Button>
-                </div>
-              </div>
-            </Link>
+            <ProjectCard
+              key={project.id}
+              project={project}
+              actionLabel="Concluir"
+              onAction={handleComplete}
+            />
           ))}
         </div>
 
         {completedProjects.length > 0 && (
           <div className="flex flex-col gap-2 mt-8 w-full">
-            <span className="text-xs text-neutral-500 uppercase tracking-wider">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">
               Concluídos
             </span>
             {completedProjects.map((project) => (
-              <Link key={project.id} to={`/project/${project.id}`}>
-                <div className="flex justify-between items-center bg-neutral-900 p-4 rounded-lg hover:bg-neutral-800 active:bg-neutral-700 transition-colors opacity-50">
-                  <span>{project.name}</span>
-                  <div className="flex items-center gap-4">
-                    <FormattedTime
-                      time={calculateTotalTime(project.stopwatch)}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={(e) => handleReopen(e, project.id)}
-                    >
-                      Reabrir
-                    </Button>
-                  </div>
-                </div>
-              </Link>
+              <ProjectCard
+                key={project.id}
+                project={project}
+                actionLabel="Reabrir"
+                onAction={handleReopen}
+                className="opacity-50"
+              />
             ))}
           </div>
         )}
