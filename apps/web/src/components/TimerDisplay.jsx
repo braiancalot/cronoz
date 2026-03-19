@@ -1,5 +1,6 @@
 import { formatTime, hasHours } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { toast } from "sonner";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 
@@ -26,7 +27,7 @@ export function TimerDisplay({
     formatted += `${m}m`;
 
     await navigator.clipboard.writeText(formatted);
-    alert("Tempo copiado.");
+    toast("Tempo copiado");
   }
 
   return (
