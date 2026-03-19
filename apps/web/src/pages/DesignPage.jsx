@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button.jsx";
@@ -49,7 +50,7 @@ export default function DesignPage() {
     <PageContainer className="max-w-300 mx-auto pb-12 overflow-auto">
       <header className="flex items-center gap-4 py-4">
         <Link to="/" className="text-lg">
-          ←
+          <ArrowLeftIcon />
         </Link>
         <h1 className="text-lg font-bold tracking-tight">Design System</h1>
       </header>

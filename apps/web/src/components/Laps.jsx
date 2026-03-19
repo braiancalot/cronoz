@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PencilIcon, XIcon } from "lucide-react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -57,7 +58,7 @@ function LapItem({ lap, onRename, onDelete }) {
               onClick={handleStartRename}
               title="Renomear"
             >
-              ✎
+              <PencilIcon />
             </Button>
             <Button
               variant="ghost"
@@ -66,7 +67,7 @@ function LapItem({ lap, onRename, onDelete }) {
               title="Deletar"
               className="hover:text-destructive"
             >
-              ✕
+              <XIcon />
             </Button>
           </div>
         </>

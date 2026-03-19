@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -30,7 +31,7 @@ export function ProjectHeader({ name, onRename, onDelete }) {
     <header className="w-full h-16 flex items-center justify-between gap-4">
       <div className="flex items-center gap-4 justify-start">
         <Link to="/" className="text-lg">
-          ←
+          <ArrowLeftIcon />
         </Link>
 
         {isRenaming ? (

@@ -1,3 +1,4 @@
+import { XIcon } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { Button } from "@/components/ui/button.jsx";
 
@@ -19,7 +20,7 @@ export function InstallBanner() {
           onClick={dismiss}
           aria-label="Fechar"
         >
-          x
+          <XIcon />
         </Button>
       </div>
     </div>
