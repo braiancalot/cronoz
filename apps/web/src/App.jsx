@@ -3,7 +3,7 @@ import { InstallBanner } from "@/components/InstallBanner.jsx";
 
 export default function App() {
   return (
-    <div className="font-[IBM_Plex_Sans] antialiased bg-black text-white">
+    <div className="antialiased">
       <Outlet />
       <InstallBanner />
     </div>
