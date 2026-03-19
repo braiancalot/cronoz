@@ -46,15 +46,15 @@ export function TimerDisplay({
           <>
             <FormattedTime
               time={totalTime}
-              className="text-lg text-neutral-400"
+              className="text-lg text-muted-foreground"
             />
 
-            <span className="text-lg text-neutral-400">•</span>
+            <span className="text-lg text-muted-foreground">•</span>
           </>
         )}
 
         <span
-          className={`font-medium text-md md:text-lg text-teal-700 ${isRunning && "invisible"}`}
+          className={`font-medium text-md md:text-lg text-primary ${isRunning && "invisible"}`}
         >
           {new Intl.NumberFormat("pt-BR", {
             style: "currency",

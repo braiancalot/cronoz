@@ -1,4 +1,5 @@
 import { formatTime, hasHours } from "@/lib/stopwatch.js";
+import { cn } from "@/lib/utils.js";
 
 export function FormattedTime({
   time,
@@ -10,7 +11,10 @@ export function FormattedTime({
 
   return (
     <div
-      className={`flex font-medium items-center justify-center tabular-nums ${className}`}
+      className={cn(
+        "flex font-medium items-center justify-center tabular-nums",
+        className,
+      )}
     >
       {hasHours(hours) && (
         <>
