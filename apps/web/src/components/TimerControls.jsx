@@ -12,7 +12,7 @@ export function TimerControls({
         onClick={hasLapTime ? onAddLap : undefined}
         disabled={!hasLapTime}
       >
-        Lap
+        Etapa
       </button>
 
       <button
