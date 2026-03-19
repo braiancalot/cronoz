@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import projectRepository, {
@@ -7,9 +7,12 @@ import projectRepository, {
 import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
 
+const CHECKPOINT_INTERVAL = 10_000;
+
 export function useProject(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
   const [splitDisplayTime, setSplitDisplayTime] = useState(0);
+  const recoveredRef = useRef(false);
 
   const project = useLiveQuery(
     () => projectRepository.getById(projectId),
@@ -18,20 +21,56 @@ export function useProject(projectId) {
 
   const isLoading = project === undefined;
 
+  // Recovery: auto-pause abandoned timers on mount
+  useEffect(() => {
+    if (recoveredRef.current) return;
+    if (!project) return;
+
+    recoveredRef.current = true;
+
+    if (!project.stopwatch?.isRunning) return;
+    if (!project.stopwatch.lastActiveAt) return;
+
+    const elapsed =
+      project.stopwatch.lastActiveAt - project.stopwatch.startTimestamp;
+
+    projectRepository.save({
+      ...project,
+      stopwatch: {
+        ...project.stopwatch,
+        isRunning: false,
+        startTimestamp: null,
+        lastActiveAt: null,
+        currentLapTime: project.stopwatch.currentLapTime + elapsed,
+      },
+    });
+  }, [project]);
+
   useEffect(() => {
     if (!project?.stopwatch?.isRunning) {
       if (project) {
-        setDisplayTime(calculateTotalTime(project.stopwatch)); // eslint-disable-line
+        setDisplayTime(calculateTotalTime(project.stopwatch));
         setSplitDisplayTime(calculateSplitTime(project.stopwatch));
       }
       return;
     }
 
     let frameId;
+    let lastCheckpoint = project.stopwatch.lastActiveAt ?? Date.now();
 
     const tick = () => {
       setDisplayTime(calculateTotalTime(project.stopwatch));
       setSplitDisplayTime(calculateSplitTime(project.stopwatch));
+
+      const now = Date.now();
+      if (now - lastCheckpoint >= CHECKPOINT_INTERVAL) {
+        lastCheckpoint = now;
+        projectRepository.save({
+          ...project,
+          stopwatch: { ...project.stopwatch, lastActiveAt: now },
+        });
+      }
+
       frameId = requestAnimationFrame(tick);
     };
 
@@ -43,12 +82,14 @@ export function useProject(projectId) {
   useAutoPause(pause);
 
   function start() {
+    const now = Date.now();
     projectRepository.save({
       ...project,
       stopwatch: {
         ...project.stopwatch,
         isRunning: true,
-        startTimestamp: Date.now(),
+        startTimestamp: now,
+        lastActiveAt: now,
       },
     });
   }
@@ -64,6 +105,7 @@ export function useProject(projectId) {
         ...project.stopwatch,
         isRunning: false,
         startTimestamp: null,
+        lastActiveAt: null,
         currentLapTime: project.stopwatch.currentLapTime + elapsed,
       },
     });

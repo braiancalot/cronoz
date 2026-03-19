@@ -74,7 +74,7 @@ describe("useProject", () => {
     expect(result.current.project).toEqual(project);
   });
 
-  it("start saves project with isRunning true", () => {
+  it("start saves project with isRunning true and lastActiveAt set", () => {
     const project = createProject();
     mockUseLiveQuery.mockReturnValue(project);
 
@@ -89,6 +89,7 @@ describe("useProject", () => {
         stopwatch: expect.objectContaining({
           isRunning: true,
           startTimestamp: expect.any(Number),
+          lastActiveAt: expect.any(Number),
         }),
       }),
     );
@@ -314,6 +315,166 @@ describe("useProject", () => {
     expect(mockRepository.removeLap).toHaveBeenCalledWith({
       id: "test-id",
       lapId: "lap-1",
+    });
+  });
+
+  describe("recovery (abandoned timer)", () => {
+    it("auto-pauses a running timer with lastActiveAt on mount", () => {
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: 5000,
+        currentLapTime: 2000,
+        lastActiveAt: 15000,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stopwatch: expect.objectContaining({
+            isRunning: false,
+            startTimestamp: null,
+            lastActiveAt: null,
+            currentLapTime: 12000, // 2000 + (15000 - 5000)
+          }),
+        }),
+      );
+    });
+
+    it("does not recover a running timer without lastActiveAt", () => {
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: Date.now(),
+        currentLapTime: 0,
+        lastActiveAt: null,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("does not recover a paused timer", () => {
+      const project = createProject({
+        isRunning: false,
+        lastActiveAt: 15000,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+
+    it("does not recover twice after user starts the timer", () => {
+      // First render: paused project (no recovery needed)
+      const pausedProject = createProject({ isRunning: false });
+      mockUseLiveQuery.mockReturnValue(pausedProject);
+
+      const { rerender } = renderHook(() => useProject("test-id"));
+
+      // User starts timer, checkpoint runs → lastActiveAt gets set
+      const runningProject = createProject({
+        isRunning: true,
+        startTimestamp: 5000,
+        currentLapTime: 0,
+        lastActiveAt: 15000,
+      });
+      mockUseLiveQuery.mockReturnValue(runningProject);
+
+      rerender();
+
+      // Should NOT trigger recovery — timer was started in this session
+      expect(mockRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("checkpoint (lastActiveAt)", () => {
+    it("saves lastActiveAt periodically while timer is running", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(100000));
+
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: 90000,
+        currentLapTime: 0,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      // Trigger first rAF tick — no checkpoint yet (interval not elapsed)
+      await act(() => vi.advanceTimersByTime(1));
+      expect(mockRepository.save).not.toHaveBeenCalled();
+
+      // Advance system time past checkpoint interval and trigger rAF
+      vi.setSystemTime(new Date(110001));
+      await act(() => vi.runOnlyPendingTimers());
+
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stopwatch: expect.objectContaining({
+            lastActiveAt: expect.any(Number),
+            isRunning: true,
+          }),
+        }),
+      );
+
+      vi.useRealTimers();
+    });
+
+    it("does not save checkpoint before interval elapses", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(100000));
+
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: 95000,
+        currentLapTime: 0,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      // Advance only 5 seconds (less than 10s interval)
+      vi.setSystemTime(new Date(105000));
+      vi.advanceTimersByTime(0);
+
+      expect(mockRepository.save).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it("pause clears lastActiveAt", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(10000));
+
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: 7000,
+        currentLapTime: 2000,
+        lastActiveAt: 9000,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      const { result } = renderHook(() => useProject("test-id"));
+
+      act(() => {
+        result.current.pause();
+      });
+
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stopwatch: expect.objectContaining({
+            isRunning: false,
+            lastActiveAt: null,
+          }),
+        }),
+      );
+
+      vi.useRealTimers();
     });
   });
 });

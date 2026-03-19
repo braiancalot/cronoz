@@ -4,6 +4,7 @@ export const DEFAULT_STOPWATCH = {
   startTimestamp: null,
   currentLapTime: 0,
   isRunning: false,
+  lastActiveAt: null,
   laps: [],
 };
 
