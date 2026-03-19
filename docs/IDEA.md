@@ -19,26 +19,23 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 
 **Em uso:**
 
-- Next.js 16 (App Router) + React 19
+- Monorepo com Turborepo + npm workspaces
+  - `apps/web` — Vite + React 19 + React Router (SPA, PWA offline-first)
+  - `apps/api` — Hono (API serverless)
 - Tailwind CSS 4
 - Dexie (IndexedDB) — persistência local
-- Serwist — PWA / Service Worker
+- vite-plugin-pwa (Workbox) — PWA / Service Worker
+- Vercel — deploy (web e api)
 - Node 24
 
-**Planejado (migração):**
+**Planejado:**
 
-- Monorepo com Turborepo
-  - `apps/web` — Vite + React Router (SPA, PWA offline-first)
-  - `apps/api` — Hono (API serverless)
-  - `packages/shared` — tipos, schemas Zod, constantes compartilhadas
+- `packages/shared` — tipos, schemas Zod, constantes compartilhadas (quando iniciar sync)
+- shadcn/ui — design system e componentes de UI
 - Drizzle ORM (adapter `drizzle-orm/neon-http`) — acesso type-safe ao banco
 - Neon (Postgres serverless) — banco remoto para sincronização
-- shadcn/ui — componentes de UI (após funcionalidades base prontas)
-- Vercel — deploy (web e api)
 
 A arquitetura de sync: Dexie continua como banco local offline-first, Neon como banco remoto, Hono API faz a ponte. Drizzle ORM para acesso type-safe ao Postgres. Estratégia de conflito: last-write-wins. Deploy na Vercel. Objetivo é manter tudo no free tier.
-
-**Nota arquitetural:** O Next.js App Router causa latência na navegação (server roundtrips) incompatível com offline-first. A migração para Vite SPA resolve isso — navegação 100% client-side. A API Hono fica em projeto separado no monorepo, servindo apenas a sincronização.
 
 ## Pareamento entre Dispositivos
 
@@ -49,13 +46,17 @@ A ideia é sincronizar dados entre dispositivos através de um código simples, 
 O que precisa estar pronto antes de considerar "versão 1.0":
 
 - Criar, renomear, excluir, concluir e reabrir projetos
-- Cronômetro com start/pause/reset
+- Cronômetro com start/pause
 - Etapas com modal + pausa automática ao marcar
 - Renomear e excluir etapas
 - Nomenclatura "Etapa" (não "Lap")
+- Design system com shadcn/ui + página demo (`/design`)
+  - Configurar shadcn/ui (tema, tokens de cor, tipografia)
+  - Migrar componentes existentes para shadcn
+  - Página `/design` com catálogo dos componentes usados no app
+- Sincronização entre dispositivos (prioridade alta — bloqueio principal para uso real)
 - Cálculo de valor por hora
 - PWA offline instalável
-- Sincronização entre dispositivos
 - Notas por projeto (tipo de linha, agulha, link de tutorial)
 - Tags/categorias para organizar projetos
 - Templates de etapas reutilizáveis
