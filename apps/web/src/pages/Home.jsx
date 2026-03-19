@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 
 import projectRepository from "@/services/projectRepository.js";
 import { ProjectCard } from "@/components/ProjectCard.jsx";
+import { AppHeader } from "@/components/AppHeader.jsx";
+import { EmptyState } from "@/components/EmptyState.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -47,9 +49,7 @@ export default function Home() {
 
   return (
     <main className="w-full max-w-300 mx-auto h-dvh flex flex-col">
-      <header className="flex py-4 justify-center">
-        <h1 className="text-lg font-bold tracking-tight">Cronoz</h1>
-      </header>
+      <AppHeader />
 
       <div className="px-8 flex flex-col">
         {!isEmpty && (
@@ -87,14 +87,9 @@ export default function Home() {
         )}
 
         {isEmpty && (
-          <div className="flex flex-col items-center">
-            <p className="text-center text-neutral-500">
-              Nenhum projeto criado.
-            </p>
-            <div>
-              <NewProjectButton onCreate={handleCreate} />
-            </div>
-          </div>
+          <EmptyState message="Nenhum projeto criado.">
+            <NewProjectButton onCreate={handleCreate} />
+          </EmptyState>
         )}
       </div>
     </main>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { useProject } from "@/hooks/useProject.js";
@@ -10,14 +10,11 @@ import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { LapModal } from "@/components/LapModal.jsx";
-import { Button } from "@/components/ui/button.jsx";
-import { Input } from "@/components/ui/input.jsx";
+import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 
 export default function ProjectPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [newName, setNewName] = useState("");
-  const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [lapName, setLapName] = useState("");
@@ -46,24 +43,6 @@ export default function ProjectPage() {
   useKeyboardShortcuts({ onToggle: toggle });
 
   if (isLoading || isDeleting) return null;
-
-  function handleStartRename() {
-    setIsRenaming(true);
-  }
-
-  async function handleRename(event) {
-    event.preventDefault();
-    if (!newName) return;
-
-    await rename(newName);
-    setIsRenaming(false);
-    setNewName("");
-  }
-
-  function handleCancel() {
-    setIsRenaming(false);
-    setNewName("");
-  }
 
   function handleStartAddLap() {
     pause();
@@ -103,49 +82,11 @@ export default function ProjectPage() {
 
   return (
     <main className="w-full h-dvh flex flex-col items-center justify-center px-8">
-      <header className="w-full h-16 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 justify-start">
-          <Link to="/" className="text-lg">
-            ←
-          </Link>
-
-          {isRenaming ? (
-            <form onSubmit={handleRename} className="w-auto">
-              <Input
-                value={newName}
-                onChange={(event) => setNewName(event.target.value)}
-                autoFocus
-              />
-            </form>
-          ) : (
-            <h1 className="text-lg font-medium">{project.name}</h1>
-          )}
-        </div>
-
-        {isRenaming ? (
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={handleCancel}>
-              Cancelar
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleRename}>
-              Salvar
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={handleStartRename}>
-              Renomear
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteProject}
-            >
-              Deletar
-            </Button>
-          </div>
-        )}
-      </header>
+      <ProjectHeader
+        name={project.name}
+        onRename={rename}
+        onDelete={handleDeleteProject}
+      />
 
       <section className="flex flex-1 items-center justify-center">
         <TimerDisplay
