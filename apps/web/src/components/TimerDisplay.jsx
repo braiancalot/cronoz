@@ -27,7 +27,7 @@ export function TimerDisplay({
     formatted += `${m}m`;
 
     await navigator.clipboard.writeText(formatted);
-    toast("Tempo copiado");
+    toast("Tempo copiado", { position: "top-center" });
   }
 
   return (
