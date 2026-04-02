@@ -8,6 +8,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@cronoz/shared": "*",
     "@hono/node-server": "^1.14.4",
     "hono": "^4.7.11"
   },
