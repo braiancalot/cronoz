@@ -34,4 +34,20 @@ db.version(2)
       });
   });
 
+db.version(3)
+  .stores({
+    projects: "id, completedAt, createdAt, updatedAt, deletedAt",
+    settings: "key",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("projects")
+      .toCollection()
+      .modify((project) => {
+        if (!project.updatedAt) {
+          project.updatedAt = project.createdAt ?? Date.now();
+        }
+      });
+  });
+
 export default db;

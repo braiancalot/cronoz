@@ -31,4 +31,10 @@ describe("set", () => {
     const value = await settingsRepository.get("hourlyPrice");
     expect(value).toBe(100);
   });
+
+  it("stores updatedAt timestamp", async () => {
+    await settingsRepository.set("hourlyPrice", 50);
+    const entry = await db.settings.get("hourlyPrice");
+    expect(entry.updatedAt).toBeTypeOf("number");
+  });
 });

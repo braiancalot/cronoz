@@ -10,7 +10,7 @@ async function get(key) {
 }
 
 async function set(key, value) {
-  await db.settings.put({ key, value });
+  await db.settings.put({ key, value, updatedAt: Date.now() });
 }
 
 const settingsRepository = { get, set };

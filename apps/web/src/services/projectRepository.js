@@ -9,21 +9,41 @@ export const DEFAULT_STOPWATCH = {
 };
 
 function getDefaultProject(id) {
+  const now = Date.now();
   return {
     id,
     name: `Projeto #${id.substr(0, 4)}`,
     completedAt: null,
-    createdAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
     stopwatch: { ...DEFAULT_STOPWATCH },
   };
 }
 
+function filterDeletedLaps(project) {
+  if (!project?.stopwatch?.laps) return project;
+  return {
+    ...project,
+    stopwatch: {
+      ...project.stopwatch,
+      laps: project.stopwatch.laps.filter((lap) => !lap.deletedAt),
+    },
+  };
+}
+
 async function getAll() {
-  return db.projects.toArray();
+  const projects = await db.projects.filter((p) => !p.deletedAt).toArray();
+  return projects.map(filterDeletedLaps);
 }
 
 async function getById(id) {
-  return (await db.projects.get(id)) ?? null;
+  const project = (await db.projects.get(id)) ?? null;
+  if (!project || project.deletedAt) return null;
+  return filterDeletedLaps(project);
+}
+
+async function getAllForSync() {
+  return db.projects.toArray();
 }
 
 async function save(project) {
@@ -38,23 +58,29 @@ async function create() {
 }
 
 async function rename({ id, newName }) {
-  await db.projects.update(id, { name: newName });
+  await db.projects.update(id, { name: newName, updatedAt: Date.now() });
 }
 
 async function remove(id) {
-  await db.projects.delete(id);
+  const now = Date.now();
+  await db.projects.update(id, { deletedAt: now, updatedAt: now });
 }
 
 async function complete(id) {
-  await db.projects.update(id, { completedAt: Date.now() });
+  const now = Date.now();
+  await db.projects.update(id, { completedAt: now, updatedAt: now });
 }
 
 async function reopen(id) {
-  await db.projects.update(id, { completedAt: null });
+  await db.projects.update(id, { completedAt: null, updatedAt: Date.now() });
+}
+
+async function getRawById(id) {
+  return (await db.projects.get(id)) ?? null;
 }
 
 async function addLap({ id, lapTime, name }) {
-  const project = await getById(id);
+  const project = await getRawById(id);
   if (!project) return;
 
   const laps = project.stopwatch.laps;
@@ -67,6 +93,7 @@ async function addLap({ id, lapTime, name }) {
   };
 
   await db.projects.update(id, {
+    updatedAt: Date.now(),
     stopwatch: {
       ...project.stopwatch,
       currentLapTime: 0,
@@ -76,7 +103,7 @@ async function addLap({ id, lapTime, name }) {
 }
 
 async function renameLap({ id, lapId, name }) {
-  const project = await getById(id);
+  const project = await getRawById(id);
   if (!project) return;
 
   const laps = project.stopwatch.laps.map((lap) =>
@@ -84,17 +111,22 @@ async function renameLap({ id, lapId, name }) {
   );
 
   await db.projects.update(id, {
+    updatedAt: Date.now(),
     stopwatch: { ...project.stopwatch, laps },
   });
 }
 
 async function removeLap({ id, lapId }) {
-  const project = await getById(id);
+  const project = await getRawById(id);
   if (!project) return;
 
-  const laps = project.stopwatch.laps.filter((lap) => lap.id !== lapId);
+  const now = Date.now();
+  const laps = project.stopwatch.laps.map((lap) =>
+    lap.id === lapId ? { ...lap, deletedAt: now } : lap,
+  );
 
   await db.projects.update(id, {
+    updatedAt: now,
     stopwatch: { ...project.stopwatch, laps },
   });
 }
@@ -102,6 +134,7 @@ async function removeLap({ id, lapId }) {
 const projectRepository = {
   getAll,
   getById,
+  getAllForSync,
   save,
   create,
   rename,
