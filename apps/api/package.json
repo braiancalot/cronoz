@@ -5,14 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/dev.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@cronoz/shared": "*",
     "@hono/node-server": "^1.14.4",
-    "hono": "^4.7.11"
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.7.11",
+    "jose": "^6.2.2",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8"
   }
