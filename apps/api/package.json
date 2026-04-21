@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node --watch src/dev.js",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -24,6 +26,7 @@
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-prettier": "^10.1.8"
+    "eslint-config-prettier": "^10.1.8",
+    "vitest": "^4.1.0"
   }
 }
