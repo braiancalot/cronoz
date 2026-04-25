@@ -50,4 +50,10 @@ db.version(3)
       });
   });
 
+db.version(4).stores({
+  projects: "id, completedAt, createdAt, updatedAt, deletedAt",
+  settings: "key",
+  internal: "key",
+});
+
 export default db;

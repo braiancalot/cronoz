@@ -1,12 +1,12 @@
 import { DEVICE_ID_KEY } from "@cronoz/shared";
-import settingsRepository from "./settingsRepository.js";
+import internalRepository from "./internalRepository.js";
 
 async function getOrCreateDeviceId() {
-  const existing = await settingsRepository.get(DEVICE_ID_KEY);
+  const existing = await internalRepository.get(DEVICE_ID_KEY);
   if (existing) return existing;
 
   const deviceId = crypto.randomUUID();
-  await settingsRepository.set(DEVICE_ID_KEY, deviceId);
+  await internalRepository.set(DEVICE_ID_KEY, deviceId);
   return deviceId;
 }
 

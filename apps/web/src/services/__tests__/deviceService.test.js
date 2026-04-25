@@ -3,7 +3,7 @@ import db from "@/services/db.js";
 import deviceService from "@/services/deviceService.js";
 
 beforeEach(async () => {
-  await db.settings.clear();
+  await db.internal.clear();
 });
 
 describe("getOrCreateDeviceId", () => {
@@ -21,9 +21,9 @@ describe("getOrCreateDeviceId", () => {
     expect(second).toBe(first);
   });
 
-  it("persists the deviceId to the settings store", async () => {
+  it("persists the deviceId to the internal store", async () => {
     const id = await deviceService.getOrCreateDeviceId();
-    const entry = await db.settings.get("deviceId");
+    const entry = await db.internal.get("deviceId");
     expect(entry.value).toBe(id);
   });
 });
