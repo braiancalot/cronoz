@@ -13,6 +13,14 @@ async function set(key, value) {
   await db.settings.put({ key, value, updatedAt: Date.now() });
 }
 
-const settingsRepository = { get, set };
+async function getAll() {
+  return db.settings.toArray();
+}
+
+async function upsertFromSync({ key, value, updatedAt }) {
+  await db.settings.put({ key, value, updatedAt });
+}
+
+const settingsRepository = { get, set, getAll, upsertFromSync };
 
 export default settingsRepository;
