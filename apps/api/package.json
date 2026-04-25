@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/dev.js",
     "lint": "eslint .",
+    "pretest": "npm run services:up --workspaces=false --prefix ../..",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",

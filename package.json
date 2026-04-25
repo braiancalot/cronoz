@@ -29,6 +29,9 @@
     "lint:check": "prettier --check .",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
+    "services:up": "docker compose up -d --wait",
+    "services:stop": "docker compose stop",
+    "services:down": "docker compose down",
     "commit": "cz",
     "prepare": "husky"
   },

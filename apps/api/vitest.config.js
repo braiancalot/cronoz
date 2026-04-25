@@ -8,5 +8,6 @@ export default defineConfig({
     },
     globalSetup: ["./test/globalSetup.js"],
     setupFiles: ["./test/setup.js"],
+    fileParallelism: false,
   },
 });
