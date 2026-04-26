@@ -1,4 +1,5 @@
 import db from "./db.js";
+import { emitMutation } from "./repoEvents.js";
 
 export const DEFAULT_STOPWATCH = {
   startTimestamp: null,
@@ -54,25 +55,30 @@ async function create() {
   const id = crypto.randomUUID();
   const project = getDefaultProject(id);
   await save(project);
+  emitMutation("project");
   return project;
 }
 
 async function rename({ id, newName }) {
   await db.projects.update(id, { name: newName, updatedAt: Date.now() });
+  emitMutation("project");
 }
 
 async function remove(id) {
   const now = Date.now();
   await db.projects.update(id, { deletedAt: now, updatedAt: now });
+  emitMutation("project");
 }
 
 async function complete(id) {
   const now = Date.now();
   await db.projects.update(id, { completedAt: now, updatedAt: now });
+  emitMutation("project");
 }
 
 async function reopen(id) {
   await db.projects.update(id, { completedAt: null, updatedAt: Date.now() });
+  emitMutation("project");
 }
 
 async function getRawById(id) {
@@ -100,6 +106,7 @@ async function addLap({ id, lapTime, name }) {
       laps: [newLap, ...laps],
     },
   });
+  emitMutation("project");
 }
 
 async function renameLap({ id, lapId, name }) {
@@ -114,6 +121,7 @@ async function renameLap({ id, lapId, name }) {
     updatedAt: Date.now(),
     stopwatch: { ...project.stopwatch, laps },
   });
+  emitMutation("project");
 }
 
 async function removeLap({ id, lapId }) {
@@ -129,6 +137,7 @@ async function removeLap({ id, lapId }) {
     updatedAt: now,
     stopwatch: { ...project.stopwatch, laps },
   });
+  emitMutation("project");
 }
 
 const projectRepository = {

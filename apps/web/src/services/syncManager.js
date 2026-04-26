@@ -6,6 +6,7 @@ import {
 import db from "./db.js";
 import internalRepository from "./internalRepository.js";
 import projectRepository from "./projectRepository.js";
+import { onMutation } from "./repoEvents.js";
 import settingsRepository from "./settingsRepository.js";
 import syncService, { SyncError } from "./syncService.js";
 import { pickLatestProject, pickLatestSetting } from "./syncMerge.js";
@@ -98,5 +99,9 @@ function scheduleSync(_reason) {
   }, DEBOUNCE_MS);
 }
 
-const syncManager = { isPaired, sync, scheduleSync };
+function start() {
+  return onMutation(({ source }) => scheduleSync(source));
+}
+
+const syncManager = { isPaired, sync, scheduleSync, start };
 export default syncManager;

@@ -1,4 +1,5 @@
 import db from "./db.js";
+import { emitMutation } from "./repoEvents.js";
 
 const DEFAULTS = {
   hourlyPrice: 10,
@@ -11,6 +12,7 @@ async function get(key) {
 
 async function set(key, value) {
   await db.settings.put({ key, value, updatedAt: Date.now() });
+  emitMutation("settings");
 }
 
 async function getAll() {
