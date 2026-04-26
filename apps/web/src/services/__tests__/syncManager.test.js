@@ -199,6 +199,50 @@ describe("syncManager.sync — paired", () => {
   });
 });
 
+describe("syncManager.subscribe / getStatus", () => {
+  beforeEach(async () => {
+    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    syncService.pull.mockResolvedValue({
+      projects: [],
+      settings: [],
+      cursor: 0,
+    });
+  });
+
+  it("toggles syncing during sync()", async () => {
+    const snapshots = [];
+    const unsub = syncManager.subscribe(() =>
+      snapshots.push({ ...syncManager.getStatus() }),
+    );
+
+    await syncManager.sync();
+    unsub();
+
+    expect(snapshots[0]).toEqual({ syncing: true, error: null });
+    expect(snapshots.at(-1)).toEqual({ syncing: false, error: null });
+  });
+
+  it("sets error on SyncError and clears on next successful sync", async () => {
+    syncService.pull
+      .mockRejectedValueOnce(
+        new SyncError("network_error", { body: "Failed to fetch" }),
+      )
+      .mockResolvedValueOnce({ projects: [], settings: [], cursor: 0 });
+
+    await syncManager.sync();
+    expect(syncManager.getStatus()).toEqual({
+      syncing: false,
+      error: "network_error",
+    });
+
+    await syncManager.sync();
+    expect(syncManager.getStatus()).toEqual({
+      syncing: false,
+      error: null,
+    });
+  });
+});
+
 describe("syncManager.scheduleSync", () => {
   beforeEach(async () => {
     await internalRepository.set(SYNC_TOKEN_KEY, "tok");

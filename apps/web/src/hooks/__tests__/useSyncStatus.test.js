@@ -63,6 +63,18 @@ describe("useSyncStatus", () => {
     await waitFor(() => expect(result.current.lastSyncedAt).toBe(12345));
   });
 
+  it("exposes syncing, error and isOnline from the manager store", async () => {
+    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    syncService.getDeviceCount.mockResolvedValue({ count: 1 });
+
+    const { result } = renderHook(() => useSyncStatus());
+    await waitFor(() => expect(result.current.isPaired).toBe(true));
+
+    expect(result.current.syncing).toBe(false);
+    expect(result.current.error).toBeNull();
+    expect(result.current.isOnline).toBe(true);
+  });
+
   it("unpair clears all sync-related internal keys", async () => {
     await internalRepository.set(SYNC_TOKEN_KEY, "tok");
     await internalRepository.set(SYNC_CURSOR_KEY, 1000);

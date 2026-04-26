@@ -18,6 +18,27 @@ const DEBOUNCE_MS = 2000;
 let inFlight = null;
 let debounceTimer = null;
 
+let status = { syncing: false, error: null };
+const statusListeners = new Set();
+
+function notifyStatus() {
+  for (const listener of statusListeners) listener();
+}
+
+function setStatus(updates) {
+  status = { ...status, ...updates };
+  notifyStatus();
+}
+
+function getStatus() {
+  return status;
+}
+
+function subscribe(listener) {
+  statusListeners.add(listener);
+  return () => statusListeners.delete(listener);
+}
+
 async function isPaired() {
   const token = await internalRepository.get(SYNC_TOKEN_KEY);
   return !!token;
@@ -47,6 +68,8 @@ async function callAuthed(makeRequest) {
 async function runSync() {
   const token = await internalRepository.get(SYNC_TOKEN_KEY);
   if (!token) return;
+
+  setStatus({ syncing: true, error: null });
 
   try {
     const lastPushedAt =
@@ -96,15 +119,19 @@ async function runSync() {
 
     await internalRepository.set(SYNC_CURSOR_KEY, newCursor);
     await internalRepository.set(LAST_SYNCED_AT_KEY, Date.now());
+    setStatus({ syncing: false, error: null });
   } catch (err) {
     if (err instanceof SyncError && err.status === 401) {
       await internalRepository.remove(SYNC_TOKEN_KEY);
+      setStatus({ syncing: false, error: null });
       return;
     }
     if (err instanceof SyncError) {
       console.warn("[syncManager] sync failed:", err.message, err.body);
+      setStatus({ syncing: false, error: err.message });
       return;
     }
+    setStatus({ syncing: false, error: "unknown_error" });
     throw err;
   }
 }
@@ -136,5 +163,13 @@ async function unpair() {
   await internalRepository.remove(LAST_SYNCED_AT_KEY);
 }
 
-const syncManager = { isPaired, sync, scheduleSync, start, unpair };
+const syncManager = {
+  isPaired,
+  sync,
+  scheduleSync,
+  start,
+  unpair,
+  subscribe,
+  getStatus,
+};
 export default syncManager;
