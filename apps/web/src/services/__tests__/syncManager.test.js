@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   LAST_PUSHED_AT_KEY,
+  LAST_SYNCED_AT_KEY,
   SYNC_CURSOR_KEY,
   SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
@@ -130,13 +131,44 @@ describe("syncManager.sync — paired", () => {
     expect(setting.value).toBe(7);
   });
 
-  it("clears token on 401 and aborts silently", async () => {
+  it("clears token when 401 and refreshToken returns 404", async () => {
     syncService.pull.mockRejectedValue(
       new SyncError("http_401", { status: 401, body: { error: "x" } }),
+    );
+    syncService.refreshToken.mockRejectedValue(
+      new SyncError("http_404", {
+        status: 404,
+        body: { error: "device_not_found" },
+      }),
     );
 
     await expect(syncManager.sync()).resolves.toBeUndefined();
     expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+  });
+
+  it("silently refreshes token on 401 and retries", async () => {
+    syncService.pull
+      .mockRejectedValueOnce(
+        new SyncError("http_401", { status: 401, body: {} }),
+      )
+      .mockResolvedValueOnce({ projects: [], settings: [], cursor: 0 });
+    syncService.refreshToken.mockResolvedValue({
+      token: "new-tok",
+      syncGroupId: "g1",
+    });
+
+    await syncManager.sync();
+
+    expect(syncService.refreshToken).toHaveBeenCalledTimes(1);
+    expect(syncService.pull).toHaveBeenCalledTimes(2);
+    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("new-tok");
+  });
+
+  it("writes LAST_SYNCED_AT_KEY at the end of a successful run", async () => {
+    const before = Date.now();
+    await syncManager.sync();
+    const last = await internalRepository.get(LAST_SYNCED_AT_KEY);
+    expect(last).toBeGreaterThanOrEqual(before);
   });
 
   it("does not throw on network error", async () => {

@@ -1,9 +1,11 @@
 import {
   LAST_PUSHED_AT_KEY,
+  LAST_SYNCED_AT_KEY,
   SYNC_CURSOR_KEY,
   SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
 import db from "./db.js";
+import deviceService from "./deviceService.js";
 import internalRepository from "./internalRepository.js";
 import projectRepository from "./projectRepository.js";
 import { onMutation } from "./repoEvents.js";
@@ -19,6 +21,27 @@ let debounceTimer = null;
 async function isPaired() {
   const token = await internalRepository.get(SYNC_TOKEN_KEY);
   return !!token;
+}
+
+async function callAuthed(makeRequest) {
+  const token = await internalRepository.get(SYNC_TOKEN_KEY);
+  try {
+    return await makeRequest(token);
+  } catch (err) {
+    if (!(err instanceof SyncError) || err.status !== 401) throw err;
+
+    const deviceId = await deviceService.getOrCreateDeviceId();
+    try {
+      const { token: newToken } = await syncService.refreshToken({ deviceId });
+      await internalRepository.set(SYNC_TOKEN_KEY, newToken);
+      return await makeRequest(newToken);
+    } catch (refreshErr) {
+      if (refreshErr instanceof SyncError && refreshErr.status === 404) {
+        await internalRepository.remove(SYNC_TOKEN_KEY);
+      }
+      throw refreshErr;
+    }
+  }
 }
 
 async function runSync() {
@@ -40,11 +63,13 @@ async function runSync() {
     );
 
     if (projectsToPush.length > 0 || settingsToPush.length > 0) {
-      const { serverTimestamp } = await syncService.push({
-        token,
-        projects: projectsToPush,
-        settings: settingsToPush,
-      });
+      const { serverTimestamp } = await callAuthed((t) =>
+        syncService.push({
+          token: t,
+          projects: projectsToPush,
+          settings: settingsToPush,
+        }),
+      );
       await internalRepository.set(LAST_PUSHED_AT_KEY, serverTimestamp);
     }
 
@@ -53,7 +78,7 @@ async function runSync() {
       projects: incomingProjects,
       settings: incomingSettings,
       cursor: newCursor,
-    } = await syncService.pull({ token, cursor });
+    } = await callAuthed((t) => syncService.pull({ token: t, cursor }));
 
     for (const incoming of incomingProjects) {
       const existing = (await db.projects.get(incoming.id)) ?? null;
@@ -70,6 +95,7 @@ async function runSync() {
     }
 
     await internalRepository.set(SYNC_CURSOR_KEY, newCursor);
+    await internalRepository.set(LAST_SYNCED_AT_KEY, Date.now());
   } catch (err) {
     if (err instanceof SyncError && err.status === 401) {
       await internalRepository.remove(SYNC_TOKEN_KEY);
