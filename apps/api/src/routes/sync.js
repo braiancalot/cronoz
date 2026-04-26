@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
 import { pullRequestSchema, pushRequestSchema } from "@cronoz/shared";
 import { db } from "../db/index.js";
 import { devices, projects, settings, syncCursors } from "../db/schema.js";
@@ -150,6 +150,15 @@ syncRouter.post("/pull", zValidator("json", pullRequestSchema), async (c) => {
     })),
     cursor: newCursor,
   });
+});
+
+syncRouter.get("/devices", async (c) => {
+  const syncGroupId = c.get("syncGroupId");
+  const [row] = await db
+    .select({ count: count() })
+    .from(devices)
+    .where(eq(devices.syncGroupId, syncGroupId));
+  return c.json({ count: row?.count ?? 0 });
 });
 
 export default syncRouter;

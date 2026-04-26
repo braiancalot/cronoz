@@ -375,3 +375,44 @@ describe("end-to-end: device A pushes, device B pulls", () => {
     expect(syncGroupId).toBeTruthy();
   });
 });
+
+describe("GET /api/sync/devices", () => {
+  it("returns 401 without Authorization", async () => {
+    const res = await app.request("/api/sync/devices");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns the device count for the sync group", async () => {
+    const { token } = await pair(DEVICE_A, DEVICE_B);
+
+    const res = await app.request("/api/sync/devices", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.count).toBe(2);
+  });
+
+  it("isolates count per sync group", async () => {
+    const { token: tokenAB } = await pair(DEVICE_A, DEVICE_B);
+    await pair(DEVICE_C, DEVICE_D);
+
+    const res = await app.request("/api/sync/devices", {
+      headers: { Authorization: `Bearer ${tokenAB}` },
+    });
+    const body = await res.json();
+    expect(body.count).toBe(2);
+  });
+
+  it("returns 1 right after initiate (before any join)", async () => {
+    await post("/api/pair/initiate", { deviceId: DEVICE_A });
+    const token = await tokenFor(DEVICE_A);
+
+    const res = await app.request("/api/sync/devices", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await res.json();
+    expect(body.count).toBe(1);
+  });
+});
