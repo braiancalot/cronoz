@@ -129,5 +129,12 @@ function start() {
   return onMutation(({ source }) => scheduleSync(source));
 }
 
-const syncManager = { isPaired, sync, scheduleSync, start };
+async function unpair() {
+  await internalRepository.remove(SYNC_TOKEN_KEY);
+  await internalRepository.remove(SYNC_CURSOR_KEY);
+  await internalRepository.remove(LAST_PUSHED_AT_KEY);
+  await internalRepository.remove(LAST_SYNCED_AT_KEY);
+}
+
+const syncManager = { isPaired, sync, scheduleSync, start, unpair };
 export default syncManager;

@@ -66,5 +66,16 @@ async function pull({ token, cursor }) {
   return request("/api/sync/pull", { token, body: { cursor } });
 }
 
-const syncService = { pairInitiate, pairJoin, refreshToken, push, pull };
+async function getDeviceCount({ token }) {
+  return request("/api/sync/devices", { method: "GET", token });
+}
+
+const syncService = {
+  pairInitiate,
+  pairJoin,
+  refreshToken,
+  push,
+  pull,
+  getDeviceCount,
+};
 export default syncService;
