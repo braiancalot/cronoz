@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckIcon, RefreshCwIcon, UnlinkIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
+import syncManager from "@/services/syncManager.js";
 import {
   Card,
   CardContent,
@@ -52,6 +53,21 @@ export function SyncCard() {
   const [joining, setJoining] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [confirmUnpair, setConfirmUnpair] = useState(false);
+  const [deviceCount, setDeviceCount] = useState(null);
+
+  useEffect(() => {
+    if (!status.isPaired) {
+      setDeviceCount(null);
+      return;
+    }
+    let cancelled = false;
+    syncManager.getDeviceCount().then((c) => {
+      if (!cancelled) setDeviceCount(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [status.isPaired]);
 
   async function handleGenerate() {
     await pairing.generateCode();
@@ -183,9 +199,9 @@ export function SyncCard() {
                 </span>
               </p>
               <p className="text-muted-foreground">
-                {status.deviceCount === null
+                {deviceCount === null
                   ? "Carregando dispositivos..."
-                  : `${status.deviceCount} dispositivo${status.deviceCount === 1 ? "" : "s"} no grupo`}
+                  : `${deviceCount} dispositivo${deviceCount === 1 ? "" : "s"} no grupo`}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

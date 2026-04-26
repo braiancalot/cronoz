@@ -40,24 +40,28 @@ describe("useSyncStatus", () => {
   it("reports not paired when no token", async () => {
     const { result } = renderHook(() => useSyncStatus());
     await waitFor(() => expect(result.current.isPaired).toBe(false));
-    expect(result.current.deviceCount).toBeNull();
     expect(result.current.lastSyncedAt).toBeNull();
   });
 
-  it("reports paired and fetches deviceCount when token is set", async () => {
+  it("reports paired when token is set", async () => {
     await internalRepository.set(SYNC_TOKEN_KEY, "tok");
-    syncService.getDeviceCount.mockResolvedValue({ count: 2 });
 
     const { result } = renderHook(() => useSyncStatus());
     await waitFor(() => expect(result.current.isPaired).toBe(true));
-    await waitFor(() => expect(result.current.deviceCount).toBe(2));
-    expect(syncService.getDeviceCount).toHaveBeenCalledWith({ token: "tok" });
+  });
+
+  it("does not fetch device count from network", async () => {
+    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+
+    renderHook(() => useSyncStatus());
+    await waitFor(() => expect(true).toBe(true));
+
+    expect(syncService.getDeviceCount).not.toHaveBeenCalled();
   });
 
   it("exposes lastSyncedAt from internal", async () => {
     await internalRepository.set(SYNC_TOKEN_KEY, "tok");
     await internalRepository.set(LAST_SYNCED_AT_KEY, 12345);
-    syncService.getDeviceCount.mockResolvedValue({ count: 1 });
 
     const { result } = renderHook(() => useSyncStatus());
     await waitFor(() => expect(result.current.lastSyncedAt).toBe(12345));
@@ -65,7 +69,6 @@ describe("useSyncStatus", () => {
 
   it("exposes syncing, error and isOnline from the manager store", async () => {
     await internalRepository.set(SYNC_TOKEN_KEY, "tok");
-    syncService.getDeviceCount.mockResolvedValue({ count: 1 });
 
     const { result } = renderHook(() => useSyncStatus());
     await waitFor(() => expect(result.current.isPaired).toBe(true));
@@ -80,7 +83,6 @@ describe("useSyncStatus", () => {
     await internalRepository.set(SYNC_CURSOR_KEY, 1000);
     await internalRepository.set(LAST_PUSHED_AT_KEY, 2000);
     await internalRepository.set(LAST_SYNCED_AT_KEY, 3000);
-    syncService.getDeviceCount.mockResolvedValue({ count: 1 });
 
     const { result } = renderHook(() => useSyncStatus());
     await waitFor(() => expect(result.current.isPaired).toBe(true));

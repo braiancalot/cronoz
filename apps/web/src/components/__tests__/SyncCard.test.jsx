@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 
 vi.mock("@/hooks/usePairing.js", () => ({
   usePairing: vi.fn(),
@@ -7,18 +7,28 @@ vi.mock("@/hooks/usePairing.js", () => ({
 vi.mock("@/hooks/useSyncStatus.js", () => ({
   useSyncStatus: vi.fn(),
 }));
+vi.mock("@/services/syncManager.js", () => ({
+  default: {
+    sync: vi.fn(),
+    unpair: vi.fn(),
+    getDeviceCount: vi.fn(),
+  },
+}));
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
 }));
 
 import { usePairing } from "@/hooks/usePairing.js";
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
+import syncManager from "@/services/syncManager.js";
 import { SyncCard } from "@/components/SyncCard.jsx";
 
 const baseStatus = {
   isPaired: false,
   lastSyncedAt: null,
-  deviceCount: null,
+  syncing: false,
+  error: null,
+  isOnline: true,
   unpair: vi.fn(),
   syncNow: vi.fn(),
 };
@@ -37,6 +47,7 @@ const basePairing = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  syncManager.getDeviceCount.mockResolvedValue(null);
 });
 
 describe("SyncCard", () => {
@@ -70,22 +81,25 @@ describe("SyncCard", () => {
     ).toBeTruthy();
   });
 
-  it("renders paired state with last sync, device count, sync/unpair buttons", () => {
+  it("renders paired state with last sync, device count, sync/unpair buttons", async () => {
+    syncManager.getDeviceCount.mockResolvedValue(2);
     usePairing.mockReturnValue(basePairing);
     useSyncStatus.mockReturnValue({
       ...baseStatus,
       isPaired: true,
       lastSyncedAt: Date.now() - 5_000,
-      deviceCount: 2,
     });
 
     render(<SyncCard />);
 
-    expect(screen.getByText(/2 dispositivos no grupo/)).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByText(/2 dispositivos no grupo/)).toBeTruthy(),
+    );
     expect(screen.getByText(/Última sincronização/)).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /Sincronizar agora/i }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: /Desparear/i })).toBeTruthy();
+    expect(syncManager.getDeviceCount).toHaveBeenCalledOnce();
   });
 });

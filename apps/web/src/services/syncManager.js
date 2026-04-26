@@ -163,6 +163,17 @@ async function unpair() {
   await internalRepository.remove(LAST_SYNCED_AT_KEY);
 }
 
+async function getDeviceCount() {
+  const token = await internalRepository.get(SYNC_TOKEN_KEY);
+  if (!token) return null;
+  try {
+    const { count } = await syncService.getDeviceCount({ token });
+    return count;
+  } catch {
+    return null;
+  }
+}
+
 const syncManager = {
   isPaired,
   sync,
@@ -171,5 +182,6 @@ const syncManager = {
   unpair,
   subscribe,
   getStatus,
+  getDeviceCount,
 };
 export default syncManager;
