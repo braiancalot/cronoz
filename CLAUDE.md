@@ -85,6 +85,31 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 
 Minimal Hono API with a `/health` endpoint. Runs on port 3001 via `@hono/node-server`. Will be expanded when sync/pairing feature is implemented.
 
+### Database (Postgres + Drizzle)
+
+Schema fica em `src/db/schema.js`. Conexão em `src/db/index.js` usa **uma única env var `DATABASE_URL`** com a connection string completa (não quebrar em peças separadas tipo `PGHOST/PGUSER/...`). Motivo: é o padrão do ecossistema Postgres (drivers, drizzle-kit, hosting), evita duplicação na hora de montar URL em vários lugares e mantém SSL/channel-binding embutidos na própria string.
+
+Em produção (Vercel), o `DATABASE_URL` é o connection string do Neon (use a variante com `-pooler` no host — pooled connection, recomendada para serverless).
+
+### Migrations (Drizzle)
+
+**Estado atual:** o projeto usa `drizzle-kit push` (sincroniza `schema.js` → banco direto, sem arquivos versionados). A pasta `apps/api/drizzle/` não existe.
+
+- **Pra dev local:** `npm run db:push --workspace=apps/api` aplica o schema no Postgres local.
+- **Pra primeiro deploy (banco vazio):** rodar `db:push` apontando o `DATABASE_URL` pra branch de produção do Neon. Funciona porque não há dados nem histórico de schema.
+
+**Quando mudar schema novamente, migrar pra migrations versionadas antes de aplicar:**
+
+1. Adicionar script `db:migrate` em `apps/api/package.json` que invoca `drizzle-orm/migrator` apontando pra `./drizzle`.
+2. Criar `src/db/migrate.js` (script standalone que lê `DATABASE_URL` e roda o migrator).
+3. Rodar `npm run db:generate --workspace=apps/api` (gera SQL files em `apps/api/drizzle/`).
+4. Versionar a pasta `drizzle/` no git.
+5. Em prod, rodar `db:migrate` manualmente do local apontado pro Neon (uso pessoal, projeto pequeno — não justifica CI de migrations).
+
+**Regra:** depois que houver migrations versionadas, **nunca mais usar `db:push` em produção** — só `db:migrate`. Push é OK em dev local, mas em prod ele pode propor `DROP` em colunas renomeadas e perder dados.
+
+**Branches do Neon:** uma branch só (`main`) para produção. Vercel Production aponta pra ela. Sem branch separada de preview/staging por enquanto — projeto pessoal não justifica.
+
 ## Project Vision
 
 Consulte `docs/IDEA.md` para entender as ideias, requisitos e direção do projeto. Esse documento deve ser consultado sempre que necessário para alinhar decisões com a visão do produto. Sempre que uma decisão na conversa alterar algo relacionado à visão do produto (escopo, funcionalidades, stack, prioridades), pergunte ao usuário se deve atualizar o `docs/IDEA.md`.
