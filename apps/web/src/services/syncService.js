@@ -70,6 +70,10 @@ async function getDeviceCount({ token }) {
   return request("/api/sync/devices", { method: "GET", token });
 }
 
+async function leaveGroup({ token }) {
+  return request("/api/sync/device", { method: "DELETE", token });
+}
+
 const syncService = {
   pairInitiate,
   pairJoin,
@@ -77,5 +81,6 @@ const syncService = {
   push,
   pull,
   getDeviceCount,
+  leaveGroup,
 };
 export default syncService;

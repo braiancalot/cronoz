@@ -69,6 +69,26 @@ describe("POST /api/pair/initiate", () => {
     const res = await post("/api/pair/initiate", { deviceId: "not-a-uuid" });
     expect(res.status).toBe(400);
   });
+
+  it("allows a paired device to invite a third one without creating a new sync_group", async () => {
+    const code1 = await initiate(DEVICE_A);
+    await post("/api/pair/join", { deviceId: DEVICE_B, code: code1 });
+
+    const code2 = await initiate(DEVICE_A);
+    const res = await post("/api/pair/join", {
+      deviceId: DEVICE_C,
+      code: code2,
+    });
+    expect(res.status).toBe(200);
+
+    const groups = await db.select().from(syncGroups);
+    expect(groups).toHaveLength(1);
+
+    const rows = await db.select().from(devices);
+    expect(rows).toHaveLength(3);
+    const groupIds = new Set(rows.map((d) => d.syncGroupId));
+    expect(groupIds.size).toBe(1);
+  });
 });
 
 describe("POST /api/pair/join", () => {

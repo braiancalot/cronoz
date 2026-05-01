@@ -3,7 +3,13 @@ import { zValidator } from "@hono/zod-validator";
 import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
 import { pullRequestSchema, pushRequestSchema } from "@cronoz/shared";
 import { db } from "../db/index.js";
-import { devices, projects, settings, syncCursors } from "../db/schema.js";
+import {
+  devices,
+  projects,
+  settings,
+  syncCursors,
+  syncGroups as syncGroupsTable,
+} from "../db/schema.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 class SyncError extends Error {
@@ -159,6 +165,26 @@ syncRouter.get("/devices", async (c) => {
     .from(devices)
     .where(eq(devices.syncGroupId, syncGroupId));
   return c.json({ count: row?.count ?? 0 });
+});
+
+syncRouter.delete("/device", async (c) => {
+  const deviceId = c.get("deviceId");
+  const syncGroupId = c.get("syncGroupId");
+
+  await db.transaction(async (tx) => {
+    await tx.delete(devices).where(eq(devices.id, deviceId));
+    const [row] = await tx
+      .select({ count: count() })
+      .from(devices)
+      .where(eq(devices.syncGroupId, syncGroupId));
+    if ((row?.count ?? 0) === 0) {
+      await tx
+        .delete(syncGroupsTable)
+        .where(eq(syncGroupsTable.id, syncGroupId));
+    }
+  });
+
+  return c.json({ ok: true });
 });
 
 export default syncRouter;

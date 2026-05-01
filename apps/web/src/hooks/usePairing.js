@@ -56,8 +56,11 @@ export function usePairing() {
       setCode(null);
       setExpiresAt(null);
       syncManager.sync();
+      return { ok: true };
     } catch (err) {
-      setError(err instanceof SyncError ? err.message : "unknown_error");
+      const code = err instanceof SyncError ? err.message : "unknown_error";
+      setError(code);
+      return { ok: false, error: code };
     } finally {
       setLoading(false);
     }
@@ -77,14 +80,18 @@ export function usePairing() {
       setCode(null);
       setExpiresAt(null);
       syncManager.sync();
+      return { ok: true };
     } catch (err) {
+      let code;
       if (err instanceof SyncError && err.status === 400) {
-        setError("invalid_or_expired_code");
+        code = "invalid_or_expired_code";
       } else if (err instanceof SyncError && err.status === 409) {
-        setError("device_already_paired");
+        code = "device_already_paired";
       } else {
-        setError(err instanceof SyncError ? err.message : "unknown_error");
+        code = err instanceof SyncError ? err.message : "unknown_error";
       }
+      setError(code);
+      return { ok: false, error: code };
     } finally {
       setLoading(false);
     }

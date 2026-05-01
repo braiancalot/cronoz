@@ -70,41 +70,59 @@ describe("usePairing.generateCode", () => {
 });
 
 describe("usePairing.confirmPaired", () => {
-  it("plants token, returns to idle, triggers sync", async () => {
+  it("plants token, returns to idle, triggers sync, returns ok", async () => {
     syncService.refreshToken.mockResolvedValue({
       token: "tok",
       syncGroupId: "g",
     });
 
     const { result } = renderHook(() => usePairing());
+    let outcome;
     await act(async () => {
-      await result.current.confirmPaired();
+      outcome = await result.current.confirmPaired();
     });
 
+    expect(outcome).toEqual({ ok: true });
     expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
     expect(result.current.mode).toBe("idle");
     expect(syncManager.sync).toHaveBeenCalled();
   });
+
+  it("returns { ok: false, error } when refreshToken fails", async () => {
+    syncService.refreshToken.mockRejectedValue(
+      new SyncError("network_error", { body: "x" }),
+    );
+
+    const { result } = renderHook(() => usePairing());
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.confirmPaired();
+    });
+
+    expect(outcome).toEqual({ ok: false, error: "network_error" });
+  });
 });
 
 describe("usePairing.joinWithCode", () => {
-  it("plants token and triggers sync on success", async () => {
+  it("plants token, triggers sync, returns ok on success", async () => {
     syncService.pairJoin.mockResolvedValue({
       token: "tok",
       syncGroupId: "g",
     });
 
     const { result } = renderHook(() => usePairing());
+    let outcome;
     await act(async () => {
-      await result.current.joinWithCode("123456");
+      outcome = await result.current.joinWithCode("123456");
     });
 
+    expect(outcome).toEqual({ ok: true });
     expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
     expect(syncManager.sync).toHaveBeenCalled();
     expect(result.current.error).toBeNull();
   });
 
-  it("maps 400 to 'invalid_or_expired_code'", async () => {
+  it("maps 400 to 'invalid_or_expired_code' and returns it", async () => {
     syncService.pairJoin.mockRejectedValue(
       new SyncError("http_400", {
         status: 400,
@@ -113,15 +131,20 @@ describe("usePairing.joinWithCode", () => {
     );
 
     const { result } = renderHook(() => usePairing());
+    let outcome;
     await act(async () => {
-      await result.current.joinWithCode("000000");
+      outcome = await result.current.joinWithCode("000000");
     });
 
+    expect(outcome).toEqual({
+      ok: false,
+      error: "invalid_or_expired_code",
+    });
     expect(result.current.error).toBe("invalid_or_expired_code");
     expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
   });
 
-  it("maps 409 to 'device_already_paired'", async () => {
+  it("maps 409 to 'device_already_paired' and returns it", async () => {
     syncService.pairJoin.mockRejectedValue(
       new SyncError("http_409", {
         status: 409,
@@ -130,10 +153,15 @@ describe("usePairing.joinWithCode", () => {
     );
 
     const { result } = renderHook(() => usePairing());
+    let outcome;
     await act(async () => {
-      await result.current.joinWithCode("123456");
+      outcome = await result.current.joinWithCode("123456");
     });
 
+    expect(outcome).toEqual({
+      ok: false,
+      error: "device_already_paired",
+    });
     expect(result.current.error).toBe("device_already_paired");
   });
 });

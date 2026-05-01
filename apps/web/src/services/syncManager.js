@@ -178,6 +178,14 @@ function start() {
 }
 
 async function unpair() {
+  const token = await internalRepository.get(SYNC_TOKEN_KEY);
+  if (token) {
+    try {
+      await syncService.leaveGroup({ token });
+    } catch (err) {
+      console.warn("[syncManager] leaveGroup failed:", err?.message);
+    }
+  }
   await internalRepository.remove(SYNC_TOKEN_KEY);
   await internalRepository.remove(SYNC_CURSOR_KEY);
   await internalRepository.remove(LAST_PUSHED_AT_KEY);

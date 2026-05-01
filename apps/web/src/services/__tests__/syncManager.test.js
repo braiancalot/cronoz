@@ -16,6 +16,7 @@ vi.mock("@/services/syncService.js", async () => {
       refreshToken: vi.fn(),
       push: vi.fn(),
       pull: vi.fn(),
+      leaveGroup: vi.fn(),
     },
   };
 });
@@ -240,6 +241,41 @@ describe("syncManager.subscribe / getStatus", () => {
       syncing: false,
       error: null,
     });
+  });
+});
+
+describe("syncManager.unpair", () => {
+  it("calls leaveGroup with the stored token before clearing local state", async () => {
+    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_CURSOR_KEY, 123);
+    await internalRepository.set(LAST_PUSHED_AT_KEY, 456);
+    await internalRepository.set(LAST_SYNCED_AT_KEY, 789);
+    syncService.leaveGroup.mockResolvedValue({ ok: true });
+
+    await syncManager.unpair();
+
+    expect(syncService.leaveGroup).toHaveBeenCalledWith({ token: "tok" });
+    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+    expect(await internalRepository.get(SYNC_CURSOR_KEY)).toBeUndefined();
+    expect(await internalRepository.get(LAST_PUSHED_AT_KEY)).toBeUndefined();
+    expect(await internalRepository.get(LAST_SYNCED_AT_KEY)).toBeUndefined();
+  });
+
+  it("still clears local state when leaveGroup fails (offline)", async () => {
+    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    syncService.leaveGroup.mockRejectedValue(
+      new SyncError("network_error", { body: "Failed to fetch" }),
+    );
+
+    await syncManager.unpair();
+
+    expect(syncService.leaveGroup).toHaveBeenCalled();
+    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+  });
+
+  it("does not call leaveGroup when there is no stored token", async () => {
+    await syncManager.unpair();
+    expect(syncService.leaveGroup).not.toHaveBeenCalled();
   });
 });
 

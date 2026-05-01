@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { CheckIcon, RefreshCwIcon, UnlinkIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  UnlinkIcon,
+  XIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import syncManager from "@/services/syncManager.js";
 import {
@@ -47,6 +53,18 @@ const ERROR_MESSAGES = {
   device_already_paired: "Este dispositivo já está pareado em outro grupo.",
 };
 
+const SYNC_ERROR_MESSAGES = {
+  network_error: "Sem conexão com o servidor.",
+  http_500: "Servidor indisponível. Tente novamente.",
+  http_502: "Servidor indisponível. Tente novamente.",
+  http_503: "Servidor indisponível. Tente novamente.",
+  unknown_error: "Falha ao sincronizar.",
+};
+
+function syncErrorMessage(code) {
+  return SYNC_ERROR_MESSAGES[code] ?? "Falha ao sincronizar.";
+}
+
 export function SyncCard() {
   const pairing = usePairing();
   const status = useSyncStatus();
@@ -74,24 +92,33 @@ export function SyncCard() {
   }
 
   async function handleConfirmPaired() {
-    await pairing.confirmPaired();
-    if (!pairing.error) toast.success("Pareado com sucesso!");
+    const result = await pairing.confirmPaired();
+    if (result.ok) {
+      toast.success("Pareado com sucesso!");
+    } else {
+      toast.error(ERROR_MESSAGES[result.error] ?? "Não foi possível parear.");
+    }
   }
 
   async function handleJoin() {
-    await pairing.joinWithCode(codeInput);
-    if (!pairing.error) {
+    const result = await pairing.joinWithCode(codeInput);
+    if (result.ok) {
       toast.success("Pareado com sucesso!");
       setJoining(false);
       setCodeInput("");
     } else {
-      toast.error(ERROR_MESSAGES[pairing.error] ?? "Não foi possível parear.");
+      toast.error(ERROR_MESSAGES[result.error] ?? "Não foi possível parear.");
     }
   }
 
   async function handleSyncNow() {
     await status.syncNow();
-    toast("Sincronizado");
+    const latest = syncManager.getStatus();
+    if (latest.error) {
+      toast.error(syncErrorMessage(latest.error));
+    } else {
+      toast.success("Sincronizado");
+    }
   }
 
   async function handleUnpair() {
@@ -141,8 +168,7 @@ export function SyncCard() {
         {pairing.mode === "idle" && !status.isPaired && !joining && (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              Sincronize seus projetos com outro dispositivo (PC + celular,
-              etc).
+              Sincronize seus projetos entre seus dispositivos.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleGenerate} disabled={pairing.loading}>
@@ -203,10 +229,19 @@ export function SyncCard() {
                   ? "Carregando dispositivos..."
                   : `${deviceCount} dispositivo${deviceCount === 1 ? "" : "s"} no grupo`}
               </p>
+              {status.error && (
+                <p className="text-destructive">
+                  Falha na última sincronização:{" "}
+                  {syncErrorMessage(status.error)}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleSyncNow}>
                 <RefreshCwIcon /> Sincronizar agora
+              </Button>
+              <Button variant="outline" onClick={handleGenerate}>
+                <PlusIcon /> Adicionar dispositivo
               </Button>
               <Button
                 variant="destructive"
