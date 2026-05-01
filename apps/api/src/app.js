@@ -11,6 +11,7 @@ app.use(
     origin: (origin) => origin,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST"],
+    maxAge: 86400,
   }),
 );
 
