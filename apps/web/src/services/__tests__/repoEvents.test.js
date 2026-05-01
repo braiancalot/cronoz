@@ -2,14 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { emitMutation, onMutation } from "@/services/repoEvents.js";
 
 describe("repoEvents", () => {
-  it("invokes the handler with the source on emit", () => {
+  it("invokes the handler on emit", () => {
     const handler = vi.fn();
     const unsubscribe = onMutation(handler);
 
-    emitMutation("project");
+    emitMutation();
 
     expect(handler).toHaveBeenCalledOnce();
-    expect(handler).toHaveBeenCalledWith({ source: "project" });
 
     unsubscribe();
   });
@@ -20,10 +19,10 @@ describe("repoEvents", () => {
     const unsubA = onMutation(a);
     const unsubB = onMutation(b);
 
-    emitMutation("settings");
+    emitMutation();
 
-    expect(a).toHaveBeenCalledWith({ source: "settings" });
-    expect(b).toHaveBeenCalledWith({ source: "settings" });
+    expect(a).toHaveBeenCalledOnce();
+    expect(b).toHaveBeenCalledOnce();
 
     unsubA();
     unsubB();
@@ -33,9 +32,9 @@ describe("repoEvents", () => {
     const handler = vi.fn();
     const unsubscribe = onMutation(handler);
 
-    emitMutation("project");
+    emitMutation();
     unsubscribe();
-    emitMutation("project");
+    emitMutation();
 
     expect(handler).toHaveBeenCalledOnce();
   });
@@ -47,7 +46,7 @@ describe("repoEvents", () => {
     const unsubB = onMutation(b);
 
     unsubA();
-    emitMutation("project");
+    emitMutation();
 
     expect(a).not.toHaveBeenCalled();
     expect(b).toHaveBeenCalledOnce();

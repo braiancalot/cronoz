@@ -12,17 +12,19 @@ async function get(key) {
 
 async function set(key, value) {
   await db.settings.put({ key, value, updatedAt: Date.now() });
-  emitMutation("settings");
+  emitMutation();
 }
 
 async function getAll() {
   return db.settings.toArray();
 }
 
-async function upsertFromSync({ key, value, updatedAt }) {
+// Apply an incoming record from the sync pull. No event — the incoming
+// updatedAt is the source of truth for LWW.
+async function applyFromSync({ key, value, updatedAt }) {
   await db.settings.put({ key, value, updatedAt });
 }
 
-const settingsRepository = { get, set, getAll, upsertFromSync };
+const settingsRepository = { get, set, getAll, applyFromSync };
 
 export default settingsRepository;

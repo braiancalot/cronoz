@@ -17,6 +17,7 @@ const DEBOUNCE_MS = 2000;
 
 let inFlight = null;
 let debounceTimer = null;
+let unsubscribeMutations = null;
 
 let status = { syncing: false, error: null };
 const statusListeners = new Set();
@@ -65,6 +66,61 @@ async function callAuthed(makeRequest) {
   }
 }
 
+// NOTE: lastPushedAt is a server timestamp, while a record's updatedAt is a
+// client timestamp. Significant clock skew between client and server can let
+// recent local edits slip past the (updatedAt > lastPushedAt) filter, or
+// cause already-pushed records to be re-pushed. Acceptable for personal use
+// (1–2 devices); revisit if it becomes a real problem.
+async function pushLocalChanges() {
+  const lastPushedAt = (await internalRepository.get(LAST_PUSHED_AT_KEY)) ?? 0;
+
+  const allProjects = await projectRepository.getAllForSync();
+  const projectsToPush = allProjects.filter(
+    (p) => (p.updatedAt ?? 0) > lastPushedAt,
+  );
+
+  const allSettings = await settingsRepository.getAll();
+  const settingsToPush = allSettings.filter(
+    (s) => (s.updatedAt ?? 0) > lastPushedAt,
+  );
+
+  if (projectsToPush.length === 0 && settingsToPush.length === 0) return;
+
+  const { serverTimestamp } = await callAuthed((t) =>
+    syncService.push({
+      token: t,
+      projects: projectsToPush,
+      settings: settingsToPush,
+    }),
+  );
+  await internalRepository.set(LAST_PUSHED_AT_KEY, serverTimestamp);
+}
+
+async function pullRemoteChanges() {
+  const cursor = (await internalRepository.get(SYNC_CURSOR_KEY)) ?? 0;
+  const {
+    projects: incomingProjects,
+    settings: incomingSettings,
+    cursor: newCursor,
+  } = await callAuthed((t) => syncService.pull({ token: t, cursor }));
+
+  for (const incoming of incomingProjects) {
+    const existing = (await db.projects.get(incoming.id)) ?? null;
+    if (pickLatestProject(incoming, existing) === incoming) {
+      await projectRepository.applyFromSync(incoming);
+    }
+  }
+
+  for (const incoming of incomingSettings) {
+    const existing = (await db.settings.get(incoming.key)) ?? null;
+    if (pickLatestSetting(incoming, existing) === incoming) {
+      await settingsRepository.applyFromSync(incoming);
+    }
+  }
+
+  await internalRepository.set(SYNC_CURSOR_KEY, newCursor);
+}
+
 async function runSync() {
   const token = await internalRepository.get(SYNC_TOKEN_KEY);
   if (!token) return;
@@ -72,52 +128,8 @@ async function runSync() {
   setStatus({ syncing: true, error: null });
 
   try {
-    const lastPushedAt =
-      (await internalRepository.get(LAST_PUSHED_AT_KEY)) ?? 0;
-
-    const allProjects = await projectRepository.getAllForSync();
-    const projectsToPush = allProjects.filter(
-      (p) => (p.updatedAt ?? 0) > lastPushedAt,
-    );
-
-    const allSettings = await settingsRepository.getAll();
-    const settingsToPush = allSettings.filter(
-      (s) => (s.updatedAt ?? 0) > lastPushedAt,
-    );
-
-    if (projectsToPush.length > 0 || settingsToPush.length > 0) {
-      const { serverTimestamp } = await callAuthed((t) =>
-        syncService.push({
-          token: t,
-          projects: projectsToPush,
-          settings: settingsToPush,
-        }),
-      );
-      await internalRepository.set(LAST_PUSHED_AT_KEY, serverTimestamp);
-    }
-
-    const cursor = (await internalRepository.get(SYNC_CURSOR_KEY)) ?? 0;
-    const {
-      projects: incomingProjects,
-      settings: incomingSettings,
-      cursor: newCursor,
-    } = await callAuthed((t) => syncService.pull({ token: t, cursor }));
-
-    for (const incoming of incomingProjects) {
-      const existing = (await db.projects.get(incoming.id)) ?? null;
-      if (pickLatestProject(incoming, existing) === incoming) {
-        await projectRepository.save(incoming);
-      }
-    }
-
-    for (const incoming of incomingSettings) {
-      const existing = (await db.settings.get(incoming.key)) ?? null;
-      if (pickLatestSetting(incoming, existing) === incoming) {
-        await settingsRepository.upsertFromSync(incoming);
-      }
-    }
-
-    await internalRepository.set(SYNC_CURSOR_KEY, newCursor);
+    await pushLocalChanges();
+    await pullRemoteChanges();
     await internalRepository.set(LAST_SYNCED_AT_KEY, Date.now());
     setStatus({ syncing: false, error: null });
   } catch (err) {
@@ -144,7 +156,7 @@ function sync() {
   return inFlight;
 }
 
-function scheduleSync(_reason) {
+function scheduleSync() {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
@@ -152,8 +164,17 @@ function scheduleSync(_reason) {
   }, DEBOUNCE_MS);
 }
 
+// Idempotent: extra start() calls without a prior stop are no-ops, so a
+// double-mounted hook can't leak listeners. The returned function tears
+// down the subscription and resets state.
 function start() {
-  return onMutation(({ source }) => scheduleSync(source));
+  if (unsubscribeMutations) return unsubscribeMutations;
+  const off = onMutation(scheduleSync);
+  unsubscribeMutations = () => {
+    off();
+    unsubscribeMutations = null;
+  };
+  return unsubscribeMutations;
 }
 
 async function unpair() {

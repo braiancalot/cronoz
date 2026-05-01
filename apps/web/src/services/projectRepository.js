@@ -32,13 +32,23 @@ function filterDeletedLaps(project) {
   };
 }
 
+async function getRawById(id) {
+  return (await db.projects.get(id)) ?? null;
+}
+
+// Helper for local mutations: bumps updatedAt and emits a mutation event.
+async function mutateLocal(id, changes) {
+  await db.projects.update(id, { ...changes, updatedAt: Date.now() });
+  emitMutation();
+}
+
 async function getAll() {
   const projects = await db.projects.filter((p) => !p.deletedAt).toArray();
   return projects.map(filterDeletedLaps);
 }
 
 async function getById(id) {
-  const project = (await db.projects.get(id)) ?? null;
+  const project = await getRawById(id);
   if (!project || project.deletedAt) return null;
   return filterDeletedLaps(project);
 }
@@ -47,49 +57,46 @@ async function getAllForSync() {
   return db.projects.toArray();
 }
 
+// Raw write: no updatedAt bump, no mutation event. Used by hot/transient
+// flows like the running-stopwatch checkpoint, where syncing every 10s
+// would be wasteful.
 async function save(project) {
+  await db.projects.put(project);
+}
+
+// Apply an incoming record from the sync pull. No event, no updatedAt
+// rewrite — the incoming updatedAt is the source of truth for LWW.
+async function applyFromSync(project) {
   await db.projects.put(project);
 }
 
 async function create() {
   const id = crypto.randomUUID();
   const project = getDefaultProject(id);
-  await save(project);
-  emitMutation("project");
+  await db.projects.put(project);
+  emitMutation();
   return project;
 }
 
 async function rename({ id, newName }) {
-  await db.projects.update(id, { name: newName, updatedAt: Date.now() });
-  emitMutation("project");
+  await mutateLocal(id, { name: newName });
 }
 
 async function remove(id) {
-  const now = Date.now();
-  await db.projects.update(id, { deletedAt: now, updatedAt: now });
-  emitMutation("project");
+  await mutateLocal(id, { deletedAt: Date.now() });
 }
 
 async function complete(id) {
-  const now = Date.now();
-  await db.projects.update(id, { completedAt: now, updatedAt: now });
-  emitMutation("project");
+  await mutateLocal(id, { completedAt: Date.now() });
 }
 
 async function reopen(id) {
-  await db.projects.update(id, { completedAt: null, updatedAt: Date.now() });
-  emitMutation("project");
-}
-
-async function getRawById(id) {
-  return (await db.projects.get(id)) ?? null;
+  await mutateLocal(id, { completedAt: null });
 }
 
 async function addLap({ id, lapTime, name }) {
   const project = await getRawById(id);
   if (!project) return;
-
-  const laps = project.stopwatch.laps;
 
   const newLap = {
     id: crypto.randomUUID(),
@@ -98,15 +105,13 @@ async function addLap({ id, lapTime, name }) {
     createdAt: Date.now(),
   };
 
-  await db.projects.update(id, {
-    updatedAt: Date.now(),
+  await mutateLocal(id, {
     stopwatch: {
       ...project.stopwatch,
       currentLapTime: 0,
-      laps: [newLap, ...laps],
+      laps: [newLap, ...project.stopwatch.laps],
     },
   });
-  emitMutation("project");
 }
 
 async function renameLap({ id, lapId, name }) {
@@ -117,11 +122,9 @@ async function renameLap({ id, lapId, name }) {
     lap.id === lapId ? { ...lap, name } : lap,
   );
 
-  await db.projects.update(id, {
-    updatedAt: Date.now(),
+  await mutateLocal(id, {
     stopwatch: { ...project.stopwatch, laps },
   });
-  emitMutation("project");
 }
 
 async function removeLap({ id, lapId }) {
@@ -133,11 +136,9 @@ async function removeLap({ id, lapId }) {
     lap.id === lapId ? { ...lap, deletedAt: now } : lap,
   );
 
-  await db.projects.update(id, {
-    updatedAt: now,
+  await mutateLocal(id, {
     stopwatch: { ...project.stopwatch, laps },
   });
-  emitMutation("project");
 }
 
 const projectRepository = {
@@ -145,6 +146,7 @@ const projectRepository = {
   getById,
   getAllForSync,
   save,
+  applyFromSync,
   create,
   rename,
   remove,
