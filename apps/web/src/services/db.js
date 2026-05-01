@@ -56,4 +56,21 @@ db.version(4).stores({
   internal: "key",
 });
 
+db.version(5)
+  .stores({
+    projects: "id, completedAt, createdAt, updatedAt, deletedAt",
+    settings: "key",
+    internal: "key",
+  })
+  .upgrade((tx) => {
+    return tx
+      .table("projects")
+      .toCollection()
+      .modify((project) => {
+        if (project.stopwatch && project.stopwatch.lastActiveAt === undefined) {
+          project.stopwatch.lastActiveAt = null;
+        }
+      });
+  });
+
 export default db;
