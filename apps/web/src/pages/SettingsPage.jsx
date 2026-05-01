@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { SyncCard } from "@/components/SyncCard.jsx";
+import { BackupCard } from "@/components/BackupCard.jsx";
 import { FEATURES } from "@/lib/featureFlags.js";
 
 export default function SettingsPage() {
@@ -40,6 +41,7 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-6">
         {FEATURES.sync && <SyncCard />}
+        <BackupCard />
         <Card>
           <CardHeader>
             <CardTitle>Valor por hora</CardTitle>
