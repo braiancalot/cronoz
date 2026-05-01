@@ -93,12 +93,17 @@ describe("rename", () => {
 });
 
 describe("remove", () => {
-  it("deletes the project", async () => {
+  it("soft deletes the project (sets deletedAt)", async () => {
     const project = await projectRepository.create();
     await projectRepository.remove(project.id);
 
     const found = await projectRepository.getById(project.id);
     expect(found).toBeNull();
+
+    // still exists in DB with deletedAt
+    const raw = await db.projects.get(project.id);
+    expect(raw).not.toBeNull();
+    expect(raw.deletedAt).toBeTypeOf("number");
   });
 });
 
@@ -213,7 +218,7 @@ describe("renameLap", () => {
 });
 
 describe("removeLap", () => {
-  it("removes a lap without recalculating (just filters)", async () => {
+  it("soft deletes a lap (sets deletedAt instead of removing)", async () => {
     const project = await projectRepository.create();
     await projectRepository.addLap({
       id: project.id,
@@ -237,11 +242,135 @@ describe("removeLap", () => {
 
     await projectRepository.removeLap({ id: project.id, lapId: middleLapId });
 
+    // getById filters deleted laps
     const found = await projectRepository.getById(project.id);
     expect(found.stopwatch.laps).toHaveLength(2);
 
     const [newest, oldest] = found.stopwatch.laps;
-    expect(oldest.lapTime).toBe(2000); // unchanged
-    expect(newest.lapTime).toBe(4000); // unchanged — no recalculation
+    expect(oldest.lapTime).toBe(2000);
+    expect(newest.lapTime).toBe(4000);
+
+    // raw DB still has 3 laps, one with deletedAt
+    const raw = await db.projects.get(project.id);
+    expect(raw.stopwatch.laps).toHaveLength(3);
+    const deletedLap = raw.stopwatch.laps.find((l) => l.id === middleLapId);
+    expect(deletedLap.deletedAt).toBeTypeOf("number");
+  });
+});
+
+describe("updatedAt", () => {
+  it("create sets updatedAt", async () => {
+    const project = await projectRepository.create();
+    expect(project.updatedAt).toBeTypeOf("number");
+  });
+
+  it("rename updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    const before = project.updatedAt;
+
+    await projectRepository.rename({ id: project.id, newName: "New" });
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("complete updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    const before = project.updatedAt;
+
+    await projectRepository.complete(project.id);
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("reopen updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.complete(project.id);
+    const afterComplete = (await projectRepository.getById(project.id))
+      .updatedAt;
+
+    await projectRepository.reopen(project.id);
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(afterComplete);
+  });
+
+  it("remove updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.remove(project.id);
+
+    const raw = await db.projects.get(project.id);
+    expect(raw.updatedAt).toBeGreaterThanOrEqual(project.updatedAt);
+  });
+
+  it("addLap updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    const before = project.updatedAt;
+
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("renameLap updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
+    const withLap = await projectRepository.getById(project.id);
+    const before = withLap.updatedAt;
+
+    await projectRepository.renameLap({
+      id: project.id,
+      lapId: withLap.stopwatch.laps[0].id,
+      name: "Renamed",
+    });
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("removeLap updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 5000,
+      name: "Etapa #1",
+    });
+    const withLap = await projectRepository.getById(project.id);
+    const before = withLap.updatedAt;
+
+    await projectRepository.removeLap({
+      id: project.id,
+      lapId: withLap.stopwatch.laps[0].id,
+    });
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+});
+
+describe("getAll with soft delete", () => {
+  it("excludes soft-deleted projects", async () => {
+    const p1 = await projectRepository.create();
+    await projectRepository.create();
+    await projectRepository.remove(p1.id);
+
+    const projects = await projectRepository.getAll();
+    expect(projects).toHaveLength(1);
+  });
+});
+
+describe("getAllForSync", () => {
+  it("returns all projects including soft-deleted", async () => {
+    const p1 = await projectRepository.create();
+    await projectRepository.create();
+    await projectRepository.remove(p1.id);
+
+    const all = await projectRepository.getAllForSync();
+    expect(all).toHaveLength(2);
+    expect(all.find((p) => p.id === p1.id).deletedAt).toBeTypeOf("number");
   });
 });

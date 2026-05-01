@@ -77,9 +77,11 @@ function LapItem({ lap, onRename, onDelete }) {
 }
 
 export function Laps({ laps, onRenameLap, onDeleteLap }) {
+  const activeLaps = laps?.filter((lap) => !lap.deletedAt);
+
   return (
     <div className="flex flex-col h-54 mb-8 overflow-auto gap-2 px-8 w-full max-w-125">
-      {laps?.map((lap) => (
+      {activeLaps?.map((lap) => (
         <LapItem
           key={lap.id}
           lap={lap}
