@@ -8,6 +8,10 @@ vi.mock("@/services/syncManager.js", () => ({
   },
 }));
 
+vi.mock("@/lib/featureFlags.js", () => ({
+  FEATURES: { sync: true },
+}));
+
 import syncManager from "@/services/syncManager.js";
 import { useSyncManager } from "@/hooks/useSyncManager.js";
 

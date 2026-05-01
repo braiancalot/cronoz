@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { SyncCard } from "@/components/SyncCard.jsx";
+import { FEATURES } from "@/lib/featureFlags.js";
 
 export default function SettingsPage() {
   const hourlyPrice = useLiveQuery(
@@ -38,7 +39,7 @@ export default function SettingsPage() {
       </header>
 
       <div className="flex flex-col gap-6">
-        <SyncCard />
+        {FEATURES.sync && <SyncCard />}
         <Card>
           <CardHeader>
             <CardTitle>Valor por hora</CardTitle>
