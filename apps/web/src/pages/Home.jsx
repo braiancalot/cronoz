@@ -20,6 +20,8 @@ function NewProjectButton({ onCreate }) {
 export default function Home() {
   const navigate = useNavigate();
 
+  // Hides the just-created project from the list until navigate unmounts Home,
+  // preventing a flash of the card before the transition to /project/:id.
   const [creatingProjectId, setCreatingProjectId] = useState(null);
 
   const projects = useLiveQuery(() => projectRepository.getAll(), []);
@@ -42,10 +44,15 @@ export default function Home() {
 
   if (projects === undefined) return null;
 
-  const activeProjects = projects.filter(
+  const sortedByUpdatedAt = [...projects].sort(
+    (a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0),
+  );
+  const activeProjects = sortedByUpdatedAt.filter(
     (p) => p.completedAt === null && p.id !== creatingProjectId,
   );
-  const completedProjects = projects.filter((p) => p.completedAt !== null);
+  const completedProjects = sortedByUpdatedAt.filter(
+    (p) => p.completedAt !== null,
+  );
   const isEmpty = activeProjects.length === 0 && completedProjects.length === 0;
 
   return (
