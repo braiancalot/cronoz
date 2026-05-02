@@ -10,7 +10,7 @@ app.use(
   cors({
     origin: (origin) => origin,
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST"],
+    allowMethods: ["GET", "POST", "DELETE"],
     maxAge: 86400,
   }),
 );
