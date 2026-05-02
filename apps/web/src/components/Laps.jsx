@@ -3,10 +3,11 @@ import { PencilIcon, XIcon } from "lucide-react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
+import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { truncateToSecond } from "@/lib/stopwatch.js";
 
-function LapItem({ lap, lapTime, onRename, onDelete }) {
+function LapItem({ lap, lapTime, onRename, onRequestDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -65,7 +66,7 @@ function LapItem({ lap, lapTime, onRename, onDelete }) {
             <Button
               variant="ghost"
               size="icon-xs"
-              onClick={() => onDelete(lap.id)}
+              onClick={() => onRequestDelete(lap)}
               title="Deletar"
               className="hover:text-destructive"
             >
@@ -81,6 +82,14 @@ function LapItem({ lap, lapTime, onRename, onDelete }) {
 export function Laps({ laps, onRenameLap, onDeleteLap }) {
   const ignoreMs = useIgnoreMilliseconds();
   const activeLaps = laps?.filter((lap) => !lap.deletedAt);
+  const [pendingDelete, setPendingDelete] = useState(null);
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    await onDeleteLap(id);
+  }
 
   return (
     <div className="flex flex-col h-54 mb-8 overflow-auto gap-2 px-8 w-full max-w-125">
@@ -90,9 +99,23 @@ export function Laps({ laps, onRenameLap, onDeleteLap }) {
           lap={lap}
           lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
           onRename={onRenameLap}
-          onDelete={onDeleteLap}
+          onRequestDelete={setPendingDelete}
         />
       ))}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Apagar etapa?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.name}" será removida e seu tempo será perdido. Essa ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Apagar"
+        cancelLabel="Cancelar"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

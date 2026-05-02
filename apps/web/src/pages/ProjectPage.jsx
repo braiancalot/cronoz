@@ -12,11 +12,13 @@ import { Laps } from "@/components/Laps.jsx";
 import { LapModal } from "@/components/LapModal.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
+import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 
 export default function ProjectPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [lapName, setLapName] = useState("");
 
@@ -65,7 +67,12 @@ export default function ProjectPage() {
     setLapName("");
   }
 
-  async function handleDeleteProject() {
+  function handleRequestDeleteProject() {
+    setIsConfirmingDelete(true);
+  }
+
+  async function handleConfirmDeleteProject() {
+    setIsConfirmingDelete(false);
     setIsDeleting(true);
     await deleteProject();
     navigate("/");
@@ -86,7 +93,7 @@ export default function ProjectPage() {
       <ProjectHeader
         name={project.name}
         onRename={rename}
-        onDelete={handleDeleteProject}
+        onDelete={handleRequestDeleteProject}
       />
 
       <section className="flex flex-1 items-center justify-center">
@@ -120,6 +127,16 @@ export default function ProjectPage() {
         onStart={start}
         onPause={pause}
         onAddLap={handleStartAddLap}
+      />
+
+      <ConfirmDialog
+        open={isConfirmingDelete}
+        title="Apagar projeto?"
+        description={`"${project.name}" e todas as suas etapas serão removidos. Essa ação não pode ser desfeita.`}
+        confirmLabel="Apagar"
+        cancelLabel="Cancelar"
+        onConfirm={handleConfirmDeleteProject}
+        onCancel={() => setIsConfirmingDelete(false)}
       />
     </PageContainer>
   );
