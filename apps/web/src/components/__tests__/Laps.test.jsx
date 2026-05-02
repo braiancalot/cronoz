@@ -68,7 +68,7 @@ describe("Laps", () => {
     expect(screen.getByText("Lap #1")).toBeInTheDocument();
   });
 
-  it("calls onDeleteLap when delete button is clicked", async () => {
+  it("calls onDeleteLap after confirming deletion", async () => {
     const onDeleteLap = vi.fn();
     render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={onDeleteLap} />,
@@ -77,6 +77,26 @@ describe("Laps", () => {
     const deleteButtons = screen.getAllByTitle("Deletar");
     await userEvent.click(deleteButtons[0]);
 
+    expect(onDeleteLap).not.toHaveBeenCalled();
+
+    const confirmButton = screen.getByRole("button", { name: "Apagar" });
+    await userEvent.click(confirmButton);
+
     expect(onDeleteLap).toHaveBeenCalledWith("lap-1");
+  });
+
+  it("does not call onDeleteLap when deletion is cancelled", async () => {
+    const onDeleteLap = vi.fn();
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={onDeleteLap} />,
+    );
+
+    const deleteButtons = screen.getAllByTitle("Deletar");
+    await userEvent.click(deleteButtons[0]);
+
+    const cancelButton = screen.getByRole("button", { name: "Cancelar" });
+    await userEvent.click(cancelButton);
+
+    expect(onDeleteLap).not.toHaveBeenCalled();
   });
 });
