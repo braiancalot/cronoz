@@ -1,5 +1,7 @@
+import { CopyIcon } from "lucide-react";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { toast } from "sonner";
 
@@ -73,6 +75,22 @@ export function TimerDisplay({
         >
           {priceFormatted}
         </span>
+
+        {displayTotalTime !== null && !isRunning && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() =>
+              copyToClipboard(
+                `${formatTimeCompact(displayTotalTime)} (${priceFormatted})`,
+                "Tempo e valor",
+              )
+            }
+            title="Copiar tempo e valor"
+          >
+            <CopyIcon />
+          </Button>
+        )}
       </div>
     </div>
   );
