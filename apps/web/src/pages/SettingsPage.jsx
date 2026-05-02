@@ -52,7 +52,29 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-6">
         {FEATURES.sync && <SyncCard />}
-        <BackupCard />
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Valor por hora</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2 max-w-xs">
+              <Label htmlFor="hourly-price">Preço/hora (R$)</Label>
+              <Input
+                id="hourly-price"
+                type="number"
+                min="0"
+                step="0.5"
+                value={hourlyPrice}
+                onChange={handlePriceChange}
+              />
+              <p className="text-xs text-muted-foreground">
+                Usado para calcular o valor de cada projeto com base no tempo.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Exibição</CardTitle>
@@ -76,27 +98,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Valor por hora</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2 max-w-xs">
-              <Label htmlFor="hourly-price">Preço/hora (R$)</Label>
-              <Input
-                id="hourly-price"
-                type="number"
-                min="0"
-                step="0.5"
-                value={hourlyPrice}
-                onChange={handlePriceChange}
-              />
-              <p className="text-xs text-muted-foreground">
-                Usado para calcular o valor de cada projeto com base no tempo.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+
+        <BackupCard />
       </div>
     </PageContainer>
   );
