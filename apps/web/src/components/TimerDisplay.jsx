@@ -1,4 +1,4 @@
-import { formatTime, hasHours, truncateToSecond } from "@/lib/stopwatch";
+import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { toast } from "sonner";
@@ -21,23 +21,22 @@ export function TimerDisplay({
     totalTime !== null && ignoreMs ? truncateToSecond(totalTime) : totalTime;
   const priceBase = displayTotalTime !== null ? displayTotalTime : displayTime;
   const price = calculateTotalPrice(priceBase, hourlyPrice);
+  const priceFormatted = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(price);
 
-  async function handleCopyToClipboard() {
-    const { hours: h, minutes: m } = formatTime(
-      displayTotalTime !== null ? displayTotalTime : displayTime,
-    );
-    let formatted = "";
-
-    if (hasHours(h)) formatted += `${h}h`;
-    formatted += `${m}m`;
-
-    await navigator.clipboard.writeText(formatted);
-    toast("Tempo copiado", { position: "top-center" });
+  async function copyToClipboard(text, label) {
+    await navigator.clipboard.writeText(text);
+    toast(`${label} copiado`, { position: "top-center" });
   }
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div onClick={handleCopyToClipboard} className="cursor-pointer">
+      <div
+        onClick={() => copyToClipboard(formatTimeCompact(displayTime), "Tempo")}
+        className="cursor-pointer"
+      >
         <FormattedTime
           time={displayTime}
           showMilliseconds={!ignoreMs}
@@ -49,22 +48,30 @@ export function TimerDisplay({
       <div className="flex gap-2 items-center">
         {displayTotalTime !== null && !isRunning && (
           <>
-            <FormattedTime
-              time={displayTotalTime}
-              className="text-lg text-muted-foreground"
-            />
+            <div
+              onClick={() =>
+                copyToClipboard(
+                  formatTimeCompact(displayTotalTime),
+                  "Tempo total",
+                )
+              }
+              className="cursor-pointer"
+            >
+              <FormattedTime
+                time={displayTotalTime}
+                className="text-lg text-muted-foreground"
+              />
+            </div>
 
             <span className="text-lg text-muted-foreground">•</span>
           </>
         )}
 
         <span
-          className={`font-medium text-md md:text-lg text-primary ${isRunning && "invisible"}`}
+          onClick={() => !isRunning && copyToClipboard(priceFormatted, "Valor")}
+          className={`font-medium text-md md:text-lg text-primary ${isRunning ? "invisible" : "cursor-pointer"}`}
         >
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(price)}
+          {priceFormatted}
         </span>
       </div>
     </div>

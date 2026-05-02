@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   formatTime,
+  formatTimeCompact,
   calculateTotalTime,
   calculateSplitTime,
   sumLapTimes,
@@ -216,6 +217,27 @@ describe("hasHours", () => {
 
   it('returns true for "10"', () => {
     expect(hasHours("10")).toBe(true);
+  });
+});
+
+describe("formatTimeCompact", () => {
+  it("uses minutes and seconds when no hours", () => {
+    // 5m 20s
+    expect(formatTimeCompact(320000)).toBe("05m20s");
+  });
+
+  it("uses hours and minutes when hours present", () => {
+    // 1h 5m 20s
+    expect(formatTimeCompact(3920000)).toBe("01h05m");
+  });
+
+  it("formats single-digit minutes when no hours", () => {
+    // 5m 7s
+    expect(formatTimeCompact(307000)).toBe("05m07s");
+  });
+
+  it("returns 00m00s for 0", () => {
+    expect(formatTimeCompact(0)).toBe("00m00s");
   });
 });
 

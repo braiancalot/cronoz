@@ -45,6 +45,11 @@ export function hasHours(hours) {
   return hours !== "00";
 }
 
+export function formatTimeCompact(ms) {
+  const { hours, minutes, seconds } = formatTime(ms);
+  return hasHours(hours) ? `${hours}h${minutes}m` : `${minutes}m${seconds}s`;
+}
+
 export function truncateToSecond(ms) {
   return Math.floor(ms / 1000) * 1000;
 }
