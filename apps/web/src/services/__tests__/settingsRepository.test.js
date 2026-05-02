@@ -16,6 +16,11 @@ describe("get", () => {
     const value = await settingsRepository.get("unknownKey");
     expect(value).toBeNull();
   });
+
+  it("returns false as default for ignoreMilliseconds", async () => {
+    const value = await settingsRepository.get("ignoreMilliseconds");
+    expect(value).toBe(false);
+  });
 });
 
 describe("set", () => {

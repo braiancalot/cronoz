@@ -1,5 +1,6 @@
-import { formatTime, hasHours } from "@/lib/stopwatch";
+import { formatTime, hasHours, truncateToSecond } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { toast } from "sonner";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -14,12 +15,16 @@ export function TimerDisplay({
   isRunning = false,
   hourlyPrice = 10,
 }) {
-  const priceBase = totalTime !== null ? totalTime : time;
+  const ignoreMs = useIgnoreMilliseconds();
+  const displayTime = ignoreMs ? truncateToSecond(time) : time;
+  const displayTotalTime =
+    totalTime !== null && ignoreMs ? truncateToSecond(totalTime) : totalTime;
+  const priceBase = displayTotalTime !== null ? displayTotalTime : displayTime;
   const price = calculateTotalPrice(priceBase, hourlyPrice);
 
   async function handleCopyToClipboard() {
     const { hours: h, minutes: m } = formatTime(
-      totalTime !== null ? totalTime : time,
+      displayTotalTime !== null ? displayTotalTime : displayTime,
     );
     let formatted = "";
 
@@ -34,18 +39,18 @@ export function TimerDisplay({
     <div className="flex flex-col items-center gap-4">
       <div onClick={handleCopyToClipboard} className="cursor-pointer">
         <FormattedTime
-          time={time}
-          showMilliseconds
+          time={displayTime}
+          showMilliseconds={!ignoreMs}
           className="text-6xl md:text-8xl"
           millisecondsClassName="text-4xl md:text-6xl opacity-60"
         />
       </div>
 
       <div className="flex gap-2 items-center">
-        {totalTime !== null && !isRunning && (
+        {displayTotalTime !== null && !isRunning && (
           <>
             <FormattedTime
-              time={totalTime}
+              time={displayTotalTime}
               className="text-lg text-muted-foreground"
             />
 

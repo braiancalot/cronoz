@@ -44,3 +44,7 @@ export function calculateSplitTime(stopwatch) {
 export function hasHours(hours) {
   return hours !== "00";
 }
+
+export function truncateToSecond(ms) {
+  return Math.floor(ms / 1000) * 1000;
+}

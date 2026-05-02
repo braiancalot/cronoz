@@ -3,8 +3,10 @@ import { PencilIcon, XIcon } from "lucide-react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
+import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { truncateToSecond } from "@/lib/stopwatch.js";
 
-function LapItem({ lap, onRename, onDelete }) {
+function LapItem({ lap, lapTime, onRename, onDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -51,7 +53,7 @@ function LapItem({ lap, onRename, onDelete }) {
         <>
           <span>{lap.name}</span>
           <div className="flex items-center gap-3">
-            <FormattedTime time={lap.lapTime} />
+            <FormattedTime time={lapTime} />
             <Button
               variant="ghost"
               size="icon-xs"
@@ -77,6 +79,7 @@ function LapItem({ lap, onRename, onDelete }) {
 }
 
 export function Laps({ laps, onRenameLap, onDeleteLap }) {
+  const ignoreMs = useIgnoreMilliseconds();
   const activeLaps = laps?.filter((lap) => !lap.deletedAt);
 
   return (
@@ -85,6 +88,7 @@ export function Laps({ laps, onRenameLap, onDeleteLap }) {
         <LapItem
           key={lap.id}
           lap={lap}
+          lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
           onRename={onRenameLap}
           onDelete={onDeleteLap}
         />

@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import settingsRepository from "@/services/settingsRepository.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
+import { Switch } from "@/components/ui/switch.jsx";
 import {
   Card,
   CardHeader,
@@ -23,11 +24,21 @@ export default function SettingsPage() {
     10,
   );
 
+  const ignoreMilliseconds = useLiveQuery(
+    () => settingsRepository.get("ignoreMilliseconds"),
+    [],
+    false,
+  );
+
   async function handlePriceChange(e) {
     const value = parseFloat(e.target.value);
     if (!isNaN(value) && value >= 0) {
       await settingsRepository.set("hourlyPrice", value);
     }
+  }
+
+  async function handleIgnoreMillisecondsChange(checked) {
+    await settingsRepository.set("ignoreMilliseconds", checked);
   }
 
   return (
@@ -42,6 +53,29 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-6">
         {FEATURES.sync && <SyncCard />}
         <BackupCard />
+        <Card>
+          <CardHeader>
+            <CardTitle>Exibição</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="ignore-milliseconds">
+                  Ignorar milissegundos
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Esconde os centissegundos no cronômetro e calcula o preço
+                  sobre segundos cheios.
+                </p>
+              </div>
+              <Switch
+                id="ignore-milliseconds"
+                checked={ignoreMilliseconds}
+                onCheckedChange={handleIgnoreMillisecondsChange}
+              />
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>Valor por hora</CardTitle>

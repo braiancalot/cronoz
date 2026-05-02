@@ -5,6 +5,7 @@ import {
   calculateSplitTime,
   sumLapTimes,
   hasHours,
+  truncateToSecond,
 } from "@/lib/stopwatch.js";
 
 describe("formatTime", () => {
@@ -215,5 +216,27 @@ describe("hasHours", () => {
 
   it('returns true for "10"', () => {
     expect(hasHours("10")).toBe(true);
+  });
+});
+
+describe("truncateToSecond", () => {
+  it("returns 0 for 0", () => {
+    expect(truncateToSecond(0)).toBe(0);
+  });
+
+  it("floors values below one second to 0", () => {
+    expect(truncateToSecond(750)).toBe(0);
+  });
+
+  it("floors to whole second", () => {
+    expect(truncateToSecond(1999)).toBe(1000);
+  });
+
+  it("keeps exact-second value unchanged", () => {
+    expect(truncateToSecond(2000)).toBe(2000);
+  });
+
+  it("floors a multi-minute value", () => {
+    expect(truncateToSecond(154567)).toBe(154000);
   });
 });
