@@ -258,6 +258,38 @@ describe("removeLap", () => {
   });
 });
 
+describe("setStopwatch", () => {
+  it("replaces the stopwatch fully", async () => {
+    const project = await projectRepository.create();
+
+    await projectRepository.setStopwatch(project.id, {
+      ...DEFAULT_STOPWATCH,
+      isRunning: true,
+      startTimestamp: 1234,
+      lastActiveAt: 1234,
+      currentLapTime: 5000,
+    });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.stopwatch).toEqual({
+      ...DEFAULT_STOPWATCH,
+      isRunning: true,
+      startTimestamp: 1234,
+      lastActiveAt: 1234,
+      currentLapTime: 5000,
+    });
+  });
+
+  it("does nothing for a non-existent project", async () => {
+    await expect(
+      projectRepository.setStopwatch("missing-id", DEFAULT_STOPWATCH),
+    ).resolves.toBeUndefined();
+
+    const found = await db.projects.get("missing-id");
+    expect(found).toBeUndefined();
+  });
+});
+
 describe("updatedAt", () => {
   it("create sets updatedAt", async () => {
     const project = await projectRepository.create();
@@ -346,6 +378,18 @@ describe("updatedAt", () => {
     await projectRepository.removeLap({
       id: project.id,
       lapId: withLap.stopwatch.laps[0].id,
+    });
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("setStopwatch updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    const before = project.updatedAt;
+
+    await projectRepository.setStopwatch(project.id, {
+      ...DEFAULT_STOPWATCH,
+      currentLapTime: 5000,
     });
     const found = await projectRepository.getById(project.id);
     expect(found.updatedAt).toBeGreaterThanOrEqual(before);

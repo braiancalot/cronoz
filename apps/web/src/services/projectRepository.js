@@ -141,6 +141,13 @@ async function removeLap({ id, lapId }) {
   });
 }
 
+// User-final stopwatch transitions (start/pause/reset/recovery). Unlike
+// save(), this bumps updatedAt and emits a mutation event so the change
+// reaches other devices via push.
+async function setStopwatch(id, stopwatch) {
+  await mutateLocal(id, { stopwatch });
+}
+
 const projectRepository = {
   getAll,
   getById,
@@ -155,6 +162,7 @@ const projectRepository = {
   addLap,
   renameLap,
   removeLap,
+  setStopwatch,
 };
 
 export default projectRepository;

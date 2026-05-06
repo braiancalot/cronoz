@@ -26,6 +26,7 @@ import internalRepository from "@/services/internalRepository.js";
 import projectRepository from "@/services/projectRepository.js";
 import syncService, { SyncError } from "@/services/syncService.js";
 import syncManager from "@/services/syncManager.js";
+import { calculateTotalTime } from "@/lib/stopwatch.js";
 
 beforeEach(async () => {
   await db.internal.clear();
@@ -197,6 +198,52 @@ describe("syncManager.sync — paired", () => {
     await a;
     await b;
     expect(syncService.pull).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: a project that was started and paused (no laps added) was
+  // staying at currentLapTime=0 on other devices because pause() in
+  // useProject called projectRepository.save() (raw write — no updatedAt
+  // bump, no mutation event), so the elapsed time never made it past the
+  // (updatedAt > lastPushedAt) filter in pushLocalChanges. The fix routes
+  // start/pause/reset through projectRepository.setStopwatch.
+  it("propagates elapsed currentLapTime to other devices even when no lap was added", async () => {
+    await internalRepository.set(LAST_PUSHED_AT_KEY, 1000);
+
+    const projectId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const initialProject = {
+      id: projectId,
+      name: "Cliente X",
+      completedAt: null,
+      createdAt: 500,
+      updatedAt: 500,
+      deletedAt: null,
+      stopwatch: {
+        startTimestamp: null,
+        currentLapTime: 0,
+        isRunning: false,
+        lastActiveAt: null,
+        laps: [],
+      },
+    };
+    await db.projects.put(initialProject);
+
+    // Mimic the exact write useProject.pause() performs after the user runs
+    // the timer for 60s and pauses (without adding a lap).
+    await projectRepository.setStopwatch(projectId, {
+      ...initialProject.stopwatch,
+      currentLapTime: 60_000,
+    });
+
+    syncService.push.mockResolvedValue({ ok: true, serverTimestamp: 9999 });
+
+    await syncManager.sync();
+
+    expect(syncService.push).toHaveBeenCalledTimes(1);
+    const pushedProjects = syncService.push.mock.calls[0][0].projects;
+    const pushed = pushedProjects.find((p) => p.id === projectId);
+    expect(pushed).toBeDefined();
+    expect(pushed.stopwatch.currentLapTime).toBe(60_000);
+    expect(calculateTotalTime(pushed.stopwatch)).toBe(60_000);
   });
 });
 

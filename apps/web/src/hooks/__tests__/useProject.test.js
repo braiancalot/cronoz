@@ -8,6 +8,7 @@ const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
   mockRepository: {
     getById: vi.fn(),
     save: vi.fn(),
+    setStopwatch: vi.fn(),
     rename: vi.fn(),
     remove: vi.fn(),
     addLap: vi.fn(),
@@ -84,13 +85,12 @@ describe("useProject", () => {
       result.current.start();
     });
 
-    expect(mockRepository.save).toHaveBeenCalledWith(
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+      "test-id",
       expect.objectContaining({
-        stopwatch: expect.objectContaining({
-          isRunning: true,
-          startTimestamp: expect.any(Number),
-          lastActiveAt: expect.any(Number),
-        }),
+        isRunning: true,
+        startTimestamp: expect.any(Number),
+        lastActiveAt: expect.any(Number),
       }),
     );
   });
@@ -112,13 +112,12 @@ describe("useProject", () => {
       result.current.pause();
     });
 
-    expect(mockRepository.save).toHaveBeenCalledWith(
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+      "test-id",
       expect.objectContaining({
-        stopwatch: expect.objectContaining({
-          isRunning: false,
-          startTimestamp: null,
-          currentLapTime: 5000, // 2000 + (10000 - 7000)
-        }),
+        isRunning: false,
+        startTimestamp: null,
+        currentLapTime: 5000, // 2000 + (10000 - 7000)
       }),
     );
 
@@ -135,7 +134,7 @@ describe("useProject", () => {
       result.current.pause();
     });
 
-    expect(mockRepository.save).not.toHaveBeenCalled();
+    expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
   });
 
   it("reset saves project with DEFAULT_STOPWATCH", () => {
@@ -148,10 +147,9 @@ describe("useProject", () => {
       result.current.reset();
     });
 
-    expect(mockRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        stopwatch: DEFAULT_STOPWATCH,
-      }),
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+      "test-id",
+      DEFAULT_STOPWATCH,
     );
   });
 
@@ -165,10 +163,9 @@ describe("useProject", () => {
       result.current.toggle();
     });
 
-    expect(mockRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        stopwatch: expect.objectContaining({ isRunning: true }),
-      }),
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+      "test-id",
+      expect.objectContaining({ isRunning: true }),
     );
   });
 
@@ -186,10 +183,9 @@ describe("useProject", () => {
       result.current.toggle();
     });
 
-    expect(mockRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        stopwatch: expect.objectContaining({ isRunning: false }),
-      }),
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+      "test-id",
+      expect.objectContaining({ isRunning: false }),
     );
   });
 
@@ -298,8 +294,10 @@ describe("useProject", () => {
       name: "Etapa #1",
     });
 
-    // Must NOT call save — that was the bug (start() called save with stale state)
+    // Must NOT touch either stopwatch write path — start() was the original
+    // culprit of the stale-state overwrite bug.
     expect(mockRepository.save).not.toHaveBeenCalled();
+    expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
   });
 
   it("deleteLap calls repository", async () => {
@@ -330,14 +328,13 @@ describe("useProject", () => {
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.save).toHaveBeenCalledWith(
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
         expect.objectContaining({
-          stopwatch: expect.objectContaining({
-            isRunning: false,
-            startTimestamp: null,
-            lastActiveAt: null,
-            currentLapTime: 12000, // 2000 + (15000 - 5000)
-          }),
+          isRunning: false,
+          startTimestamp: null,
+          lastActiveAt: null,
+          currentLapTime: 12000, // 2000 + (15000 - 5000)
         }),
       );
     });
@@ -353,7 +350,7 @@ describe("useProject", () => {
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.save).not.toHaveBeenCalled();
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
     });
 
     it("does not recover a paused timer", () => {
@@ -365,7 +362,7 @@ describe("useProject", () => {
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.save).not.toHaveBeenCalled();
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
     });
 
     it("does not recover twice after user starts the timer", () => {
@@ -387,7 +384,7 @@ describe("useProject", () => {
       rerender();
 
       // Should NOT trigger recovery — timer was started in this session
-      expect(mockRepository.save).not.toHaveBeenCalled();
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
     });
   });
 
@@ -465,12 +462,11 @@ describe("useProject", () => {
         result.current.pause();
       });
 
-      expect(mockRepository.save).toHaveBeenCalledWith(
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
         expect.objectContaining({
-          stopwatch: expect.objectContaining({
-            isRunning: false,
-            lastActiveAt: null,
-          }),
+          isRunning: false,
+          lastActiveAt: null,
         }),
       );
 

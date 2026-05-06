@@ -37,15 +37,12 @@ export function useProject(projectId) {
     const elapsed =
       project.stopwatch.lastActiveAt - project.stopwatch.startTimestamp;
 
-    projectRepository.save({
-      ...project,
-      stopwatch: {
-        ...project.stopwatch,
-        isRunning: false,
-        startTimestamp: null,
-        lastActiveAt: null,
-        currentLapTime: project.stopwatch.currentLapTime + elapsed,
-      },
+    projectRepository.setStopwatch(project.id, {
+      ...project.stopwatch,
+      isRunning: false,
+      startTimestamp: null,
+      lastActiveAt: null,
+      currentLapTime: project.stopwatch.currentLapTime + elapsed,
     });
   }, [project]);
 
@@ -88,14 +85,11 @@ export function useProject(projectId) {
 
   function start() {
     const now = Date.now();
-    projectRepository.save({
-      ...project,
-      stopwatch: {
-        ...project.stopwatch,
-        isRunning: true,
-        startTimestamp: now,
-        lastActiveAt: now,
-      },
+    projectRepository.setStopwatch(project.id, {
+      ...project.stopwatch,
+      isRunning: true,
+      startTimestamp: now,
+      lastActiveAt: now,
     });
   }
 
@@ -104,23 +98,17 @@ export function useProject(projectId) {
 
     const elapsed = Date.now() - project.stopwatch.startTimestamp;
 
-    projectRepository.save({
-      ...project,
-      stopwatch: {
-        ...project.stopwatch,
-        isRunning: false,
-        startTimestamp: null,
-        lastActiveAt: null,
-        currentLapTime: project.stopwatch.currentLapTime + elapsed,
-      },
+    projectRepository.setStopwatch(project.id, {
+      ...project.stopwatch,
+      isRunning: false,
+      startTimestamp: null,
+      lastActiveAt: null,
+      currentLapTime: project.stopwatch.currentLapTime + elapsed,
     });
   }
 
   function reset() {
-    projectRepository.save({
-      ...project,
-      stopwatch: { ...DEFAULT_STOPWATCH },
-    });
+    projectRepository.setStopwatch(project.id, { ...DEFAULT_STOPWATCH });
   }
 
   function toggle() {
