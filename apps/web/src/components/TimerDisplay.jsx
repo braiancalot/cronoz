@@ -1,5 +1,5 @@
 import { CopyIcon } from "lucide-react";
-import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch";
+import { formatTimeCompact } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
@@ -18,10 +18,7 @@ export function TimerDisplay({
   hourlyPrice = 10,
 }) {
   const ignoreMs = useIgnoreMilliseconds();
-  const displayTime = ignoreMs ? truncateToSecond(time) : time;
-  const displayTotalTime =
-    totalTime !== null && ignoreMs ? truncateToSecond(totalTime) : totalTime;
-  const priceBase = displayTotalTime !== null ? displayTotalTime : displayTime;
+  const priceBase = totalTime !== null ? totalTime : time;
   const price = calculateTotalPrice(priceBase, hourlyPrice);
   const priceFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -36,11 +33,11 @@ export function TimerDisplay({
   return (
     <div className="flex flex-col items-center gap-4">
       <div
-        onClick={() => copyToClipboard(formatTimeCompact(displayTime), "Tempo")}
+        onClick={() => copyToClipboard(formatTimeCompact(time), "Tempo")}
         className="cursor-pointer"
       >
         <FormattedTime
-          time={displayTime}
+          time={time}
           showMilliseconds={!ignoreMs}
           className="text-6xl md:text-8xl"
           millisecondsClassName="text-4xl md:text-6xl opacity-60"
@@ -48,19 +45,16 @@ export function TimerDisplay({
       </div>
 
       <div className="flex gap-2 items-center">
-        {displayTotalTime !== null && !isRunning && (
+        {totalTime !== null && !isRunning && (
           <>
             <div
               onClick={() =>
-                copyToClipboard(
-                  formatTimeCompact(displayTotalTime),
-                  "Tempo total",
-                )
+                copyToClipboard(formatTimeCompact(totalTime), "Tempo total")
               }
               className="cursor-pointer"
             >
               <FormattedTime
-                time={displayTotalTime}
+                time={totalTime}
                 className="text-lg text-muted-foreground"
               />
             </div>
@@ -76,13 +70,13 @@ export function TimerDisplay({
           {priceFormatted}
         </span>
 
-        {displayTotalTime !== null && !isRunning && (
+        {totalTime !== null && !isRunning && (
           <Button
             variant="ghost"
             size="icon-xs"
             onClick={() =>
               copyToClipboard(
-                `${formatTimeCompact(displayTotalTime)} (${priceFormatted})`,
+                `${formatTimeCompact(totalTime)} (${priceFormatted})`,
                 "Tempo e valor",
               )
             }

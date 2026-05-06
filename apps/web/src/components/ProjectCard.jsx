@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
-import { calculateTotalTime, truncateToSecond } from "@/lib/stopwatch.js";
+import { calculateTotalTime } from "@/lib/stopwatch.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { cn } from "@/lib/utils.js";
 
@@ -13,8 +13,7 @@ export function ProjectCard({
   className = "",
 }) {
   const ignoreMs = useIgnoreMilliseconds();
-  const totalTime = calculateTotalTime(project.stopwatch);
-  const displayTime = ignoreMs ? truncateToSecond(totalTime) : totalTime;
+  const displayTime = calculateTotalTime(project.stopwatch, { ignoreMs });
 
   return (
     <Link to={`/project/${project.id}`}>

@@ -6,6 +6,7 @@ import projectRepository, {
 } from "@/services/projectRepository.js";
 import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
+import { useIgnoreMilliseconds } from "./useIgnoreMilliseconds.js";
 
 const CHECKPOINT_INTERVAL = 10_000;
 
@@ -20,6 +21,8 @@ export function useProject(projectId) {
   );
 
   const isLoading = project === undefined;
+
+  const ignoreMs = useIgnoreMilliseconds();
 
   // Recovery: auto-pause abandoned timers on mount
   useEffect(() => {
@@ -49,8 +52,10 @@ export function useProject(projectId) {
   useEffect(() => {
     if (!project?.stopwatch?.isRunning) {
       if (project) {
-        setDisplayTime(calculateTotalTime(project.stopwatch));
-        setSplitDisplayTime(calculateSplitTime(project.stopwatch));
+        setDisplayTime(calculateTotalTime(project.stopwatch, { ignoreMs }));
+        setSplitDisplayTime(
+          calculateSplitTime(project.stopwatch, { ignoreMs }),
+        );
       }
       return;
     }
@@ -59,8 +64,8 @@ export function useProject(projectId) {
     let lastCheckpoint = project.stopwatch.lastActiveAt ?? Date.now();
 
     const tick = () => {
-      setDisplayTime(calculateTotalTime(project.stopwatch));
-      setSplitDisplayTime(calculateSplitTime(project.stopwatch));
+      setDisplayTime(calculateTotalTime(project.stopwatch, { ignoreMs }));
+      setSplitDisplayTime(calculateSplitTime(project.stopwatch, { ignoreMs }));
 
       const now = Date.now();
       if (now - lastCheckpoint >= CHECKPOINT_INTERVAL) {
@@ -77,7 +82,7 @@ export function useProject(projectId) {
     frameId = requestAnimationFrame(tick);
 
     return () => cancelAnimationFrame(frameId);
-  }, [project]);
+  }, [project, ignoreMs]);
 
   useAutoPause(pause);
 

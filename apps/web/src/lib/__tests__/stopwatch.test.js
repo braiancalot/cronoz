@@ -157,6 +157,41 @@ describe("calculateTotalTime", () => {
     };
     expect(calculateTotalTime(stopwatch)).toBe(3000);
   });
+
+  it("truncates each lap before summing when ignoreMs is true", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 0,
+      laps: [{ lapTime: 1999 }, { lapTime: 1999 }, { lapTime: 1999 }],
+    };
+    // sum truncados: 1000 + 1000 + 1000 = 3000 (vs. 5997 → 5000 sem per-lap)
+    expect(calculateTotalTime(stopwatch, { ignoreMs: true })).toBe(3000);
+  });
+
+  it("truncates currentLapTime alongside laps when ignoreMs is true", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 800,
+      laps: [{ lapTime: 1500 }, { lapTime: 1500 }],
+    };
+    // 1000 + 1000 + truncate(800)=0 = 2000
+    expect(calculateTotalTime(stopwatch, { ignoreMs: true })).toBe(2000);
+  });
+
+  it("truncates the in-progress portion (currentLapTime + elapsed) when ignoreMs is true and running", () => {
+    vi.setSystemTime(new Date(10000));
+
+    const stopwatch = {
+      isRunning: true,
+      startTimestamp: 7000,
+      currentLapTime: 1500,
+      laps: [{ lapTime: 1999 }],
+    };
+    // truncate(1999)=1000 + truncate(1500 + 3000)=truncate(4500)=4000 = 5000
+    expect(calculateTotalTime(stopwatch, { ignoreMs: true })).toBe(5000);
+  });
 });
 
 describe("calculateSplitTime", () => {
@@ -203,6 +238,39 @@ describe("calculateSplitTime", () => {
     };
     // currentLapTime (2000) + elapsed (5000) = 7000
     expect(calculateSplitTime(stopwatch)).toBe(7000);
+  });
+
+  it("truncates split when ignoreMs is true and stopped", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 1999,
+      laps: [],
+    };
+    expect(calculateSplitTime(stopwatch, { ignoreMs: true })).toBe(1000);
+  });
+
+  it("truncates split when ignoreMs is true and running", () => {
+    vi.setSystemTime(new Date(10000));
+
+    const stopwatch = {
+      isRunning: true,
+      startTimestamp: 7000,
+      currentLapTime: 0,
+      laps: [],
+    };
+    // currentLapTime (0) + elapsed (3000) = 3000 → truncado segue 3000
+    expect(calculateSplitTime(stopwatch, { ignoreMs: true })).toBe(3000);
+  });
+
+  it("truncates split below one second to 0 when ignoreMs is true", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 750,
+      laps: [],
+    };
+    expect(calculateSplitTime(stopwatch, { ignoreMs: true })).toBe(0);
   });
 });
 

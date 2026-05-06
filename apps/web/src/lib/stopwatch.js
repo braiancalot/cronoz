@@ -22,23 +22,32 @@ export function sumLapTimes(laps) {
   return laps.reduce((sum, lap) => sum + lap.lapTime, 0);
 }
 
-export function calculateTotalTime(stopwatch) {
+export function calculateTotalTime(stopwatch, { ignoreMs = false } = {}) {
   if (!stopwatch) return 0;
 
   const { isRunning, startTimestamp, currentLapTime, laps } = stopwatch;
-  const lapsTotal = sumLapTimes(laps);
   const elapsed = isRunning && startTimestamp ? Date.now() - startTimestamp : 0;
+  const inProgress = currentLapTime + elapsed;
 
-  return lapsTotal + currentLapTime + elapsed;
+  if (!ignoreMs) {
+    return sumLapTimes(laps) + inProgress;
+  }
+
+  const lapsTotal = laps.reduce(
+    (sum, lap) => sum + truncateToSecond(lap.lapTime),
+    0,
+  );
+  return lapsTotal + truncateToSecond(inProgress);
 }
 
-export function calculateSplitTime(stopwatch) {
+export function calculateSplitTime(stopwatch, { ignoreMs = false } = {}) {
   if (!stopwatch) return 0;
 
   const { isRunning, startTimestamp, currentLapTime } = stopwatch;
   const elapsed = isRunning && startTimestamp ? Date.now() - startTimestamp : 0;
+  const split = currentLapTime + elapsed;
 
-  return currentLapTime + elapsed;
+  return ignoreMs ? truncateToSecond(split) : split;
 }
 
 export function hasHours(hours) {
