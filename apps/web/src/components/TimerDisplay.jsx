@@ -32,16 +32,24 @@ export function TimerDisplay({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div
-        onClick={() => copyToClipboard(formatTimeCompact(time), "Tempo")}
-        className="cursor-pointer"
-      >
-        <FormattedTime
-          time={time}
-          showMilliseconds={!ignoreMs}
-          className="text-6xl md:text-8xl"
-          millisecondsClassName="text-4xl md:text-6xl opacity-60"
-        />
+      <div className="relative">
+        {isRunning && (
+          <span
+            aria-label="Cronômetro em andamento"
+            className="absolute -left-6 top-1/2 -translate-y-1/2 size-3 rounded-full bg-primary animate-pulse"
+          />
+        )}
+        <div
+          onClick={() => copyToClipboard(formatTimeCompact(time), "Tempo")}
+          className="cursor-pointer"
+        >
+          <FormattedTime
+            time={time}
+            showMilliseconds={!ignoreMs}
+            className="text-6xl md:text-8xl"
+            millisecondsClassName="text-4xl md:text-6xl opacity-60"
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 items-center">

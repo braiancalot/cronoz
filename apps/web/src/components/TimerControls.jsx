@@ -18,7 +18,11 @@ export function TimerControls({
         Etapa
       </Button>
 
-      <Button className="min-w-24" onClick={isRunning ? onPause : onStart}>
+      <Button
+        variant={isRunning ? "secondary" : "default"}
+        className="min-w-24"
+        onClick={isRunning ? onPause : onStart}
+      >
         {isRunning ? "Pause" : "Start"}
       </Button>
     </div>
