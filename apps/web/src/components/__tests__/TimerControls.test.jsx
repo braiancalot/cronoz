@@ -33,26 +33,26 @@ describe("TimerControls", () => {
   it("shows Lap button always", () => {
     renderControls();
 
-    expect(screen.getByText("Etapa")).toBeInTheDocument();
+    expect(screen.getByText("Volta")).toBeInTheDocument();
   });
 
   it("disables Lap button when hasLapTime is false", () => {
     renderControls({ hasLapTime: false });
 
-    expect(screen.getByText("Etapa")).toBeDisabled();
+    expect(screen.getByText("Volta")).toBeDisabled();
   });
 
   it("enables Lap button when hasLapTime is true", () => {
     renderControls({ hasLapTime: true });
 
-    expect(screen.getByText("Etapa")).toBeEnabled();
+    expect(screen.getByText("Volta")).toBeEnabled();
   });
 
   it("does not call onAddLap when Lap is disabled", async () => {
     const onAddLap = vi.fn();
     renderControls({ hasLapTime: false, onAddLap });
 
-    await userEvent.click(screen.getByText("Etapa"));
+    await userEvent.click(screen.getByText("Volta"));
     expect(onAddLap).not.toHaveBeenCalled();
   });
 
@@ -76,7 +76,7 @@ describe("TimerControls", () => {
     const onAddLap = vi.fn();
     renderControls({ hasLapTime: true, onAddLap });
 
-    await userEvent.click(screen.getByText("Etapa"));
+    await userEvent.click(screen.getByText("Volta"));
     expect(onAddLap).toHaveBeenCalledOnce();
   });
 });

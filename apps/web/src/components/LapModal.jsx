@@ -25,7 +25,7 @@ export function LapModal({
       <DialogContent showCloseButton={false}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Nova etapa</DialogTitle>
+            <DialogTitle>Nova volta</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <Input

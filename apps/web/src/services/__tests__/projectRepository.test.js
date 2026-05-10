@@ -144,14 +144,14 @@ describe("addLap", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 5000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
 
     const found = await projectRepository.getById(project.id);
     const lap = found.stopwatch.laps[0];
 
     expect(lap.lapTime).toBe(5000);
-    expect(lap.name).toBe("Etapa #1");
+    expect(lap.name).toBe("Volta 1");
     expect(lap.id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
@@ -166,21 +166,21 @@ describe("addLap", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 3000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
     await projectRepository.addLap({
       id: project.id,
       lapTime: 5000,
-      name: "Etapa #2",
+      name: "Volta 2",
     });
 
     const found = await projectRepository.getById(project.id);
     const [secondLap, firstLap] = found.stopwatch.laps;
 
     expect(firstLap.lapTime).toBe(3000);
-    expect(firstLap.name).toBe("Etapa #1");
+    expect(firstLap.name).toBe("Volta 1");
     expect(secondLap.lapTime).toBe(5000);
-    expect(secondLap.name).toBe("Etapa #2");
+    expect(secondLap.name).toBe("Volta 2");
   });
 
   it("does nothing for non-existent project", async () => {
@@ -188,7 +188,7 @@ describe("addLap", () => {
       projectRepository.addLap({
         id: "non-existent",
         lapTime: 1000,
-        name: "Etapa #1",
+        name: "Volta 1",
       }),
     ).resolves.toBeUndefined();
   });
@@ -200,7 +200,7 @@ describe("renameLap", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 5000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
 
     const withLap = await projectRepository.getById(project.id);
@@ -223,17 +223,17 @@ describe("removeLap", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 2000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
     await projectRepository.addLap({
       id: project.id,
       lapTime: 3000,
-      name: "Etapa #2",
+      name: "Volta 2",
     });
     await projectRepository.addLap({
       id: project.id,
       lapTime: 4000,
-      name: "Etapa #3",
+      name: "Volta 3",
     });
 
     // laps order (newest first): [4000, 3000, 2000]
@@ -340,7 +340,7 @@ describe("updatedAt", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 5000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
     const found = await projectRepository.getById(project.id);
     expect(found.updatedAt).toBeGreaterThanOrEqual(before);
@@ -351,7 +351,7 @@ describe("updatedAt", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 5000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
     const withLap = await projectRepository.getById(project.id);
     const before = withLap.updatedAt;
@@ -370,7 +370,7 @@ describe("updatedAt", () => {
     await projectRepository.addLap({
       id: project.id,
       lapTime: 5000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
     const withLap = await projectRepository.getById(project.id);
     const before = withLap.updatedAt;

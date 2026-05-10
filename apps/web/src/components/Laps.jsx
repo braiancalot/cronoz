@@ -105,7 +105,7 @@ export function Laps({ laps, onRenameLap, onDeleteLap }) {
 
       <ConfirmDialog
         open={!!pendingDelete}
-        title="Apagar etapa?"
+        title="Apagar volta?"
         description={
           pendingDelete
             ? `"${pendingDelete.name}" será removida e seu tempo será perdido. Essa ação não pode ser desfeita.`

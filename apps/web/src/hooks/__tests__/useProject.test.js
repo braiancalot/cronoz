@@ -203,13 +203,13 @@ describe("useProject", () => {
     const { result } = renderHook(() => useProject("test-id"));
 
     act(() => {
-      result.current.addLap("Etapa #1");
+      result.current.addLap("Volta 1");
     });
 
     expect(mockRepository.addLap).toHaveBeenCalledWith({
       id: "test-id",
       lapTime: 5000, // currentLapTime (2000) + elapsed (10000 - 7000)
-      name: "Etapa #1",
+      name: "Volta 1",
     });
 
     vi.useRealTimers();
@@ -285,13 +285,13 @@ describe("useProject", () => {
     const { result } = renderHook(() => useProject("test-id"));
 
     act(() => {
-      result.current.addLap("Etapa #1");
+      result.current.addLap("Volta 1");
     });
 
     expect(mockRepository.addLap).toHaveBeenCalledWith({
       id: "test-id",
       lapTime: 5000,
-      name: "Etapa #1",
+      name: "Volta 1",
     });
 
     // Must NOT touch either stopwatch write path — start() was the original

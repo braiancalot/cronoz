@@ -15,7 +15,7 @@ export function TimerControls({
         onClick={hasLapTime ? onAddLap : undefined}
         disabled={!hasLapTime}
       >
-        Etapa
+        Volta
       </Button>
 
       <Button

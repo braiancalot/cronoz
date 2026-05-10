@@ -50,7 +50,7 @@ export default function ProjectPage() {
   function handleStartAddLap() {
     pause();
     const lapNumber = (project.stopwatch.laps?.length ?? 0) + 1;
-    setLapName(`Etapa #${lapNumber}`);
+    setLapName(`Volta ${lapNumber}`);
     setIsAddingLap(true);
   }
 
@@ -132,7 +132,7 @@ export default function ProjectPage() {
       <ConfirmDialog
         open={isConfirmingDelete}
         title="Apagar projeto?"
-        description={`"${project.name}" e todas as suas etapas serão removidos. Essa ação não pode ser desfeita.`}
+        description={`"${project.name}" e todas as suas voltas serão removidas. Essa ação não pode ser desfeita.`}
         confirmLabel="Apagar"
         cancelLabel="Cancelar"
         onConfirm={handleConfirmDeleteProject}

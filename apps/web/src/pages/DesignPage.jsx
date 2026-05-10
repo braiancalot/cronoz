@@ -141,9 +141,9 @@ export default function DesignPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nova etapa</DialogTitle>
+                <DialogTitle>Nova volta</DialogTitle>
                 <DialogDescription>
-                  Dê um nome para esta etapa do projeto.
+                  Dê um nome para esta volta do projeto.
                 </DialogDescription>
               </DialogHeader>
               <Input placeholder="Ex: Base" />
@@ -158,14 +158,14 @@ export default function DesignPage() {
         </Section>
 
         <Section title="Tabs">
-          <Tabs defaultValue="etapas" className="max-w-sm">
+          <Tabs defaultValue="voltas" className="max-w-sm">
             <TabsList>
-              <TabsTrigger value="etapas">Etapas</TabsTrigger>
+              <TabsTrigger value="voltas">Voltas</TabsTrigger>
               <TabsTrigger value="notas">Notas</TabsTrigger>
             </TabsList>
-            <TabsContent value="etapas">
+            <TabsContent value="voltas">
               <p className="text-sm text-muted-foreground pt-2">
-                Lista de etapas do projeto apareceria aqui.
+                Lista de voltas do projeto apareceria aqui.
               </p>
             </TabsContent>
             <TabsContent value="notas">
