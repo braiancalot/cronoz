@@ -15,11 +15,11 @@
   },
   "dependencies": {
     "@cronoz/shared": "*",
-    "@hono/node-server": "^1.14.4",
+    "@hono/node-server": "^1.19.13",
     "@hono/zod-validator": "^0.7.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.7.11",
+    "hono": "^4.12.18",
     "jose": "^6.2.2",
     "postgres": "^3.4.9",
     "zod": "^3.25.76"
