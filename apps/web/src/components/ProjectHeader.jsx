@@ -39,6 +39,7 @@ export function ProjectHeader({ name, onRename, onDelete }) {
             <Input
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
+              onFocus={(event) => event.target.select()}
               autoFocus
             />
           </form>
