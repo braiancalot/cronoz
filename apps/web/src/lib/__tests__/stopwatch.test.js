@@ -291,21 +291,36 @@ describe("hasHours", () => {
 describe("formatTimeCompact", () => {
   it("uses minutes and seconds when no hours", () => {
     // 5m 20s
-    expect(formatTimeCompact(320000)).toBe("05m20s");
+    expect(formatTimeCompact(320000)).toBe("5m20s");
   });
 
   it("uses hours and minutes when hours present", () => {
     // 1h 5m 20s
-    expect(formatTimeCompact(3920000)).toBe("01h05m");
+    expect(formatTimeCompact(3920000)).toBe("1h5m");
   });
 
-  it("formats single-digit minutes when no hours", () => {
+  it("does not pad single-digit values", () => {
     // 5m 7s
-    expect(formatTimeCompact(307000)).toBe("05m07s");
+    expect(formatTimeCompact(307000)).toBe("5m7s");
   });
 
-  it("returns 00m00s for 0", () => {
-    expect(formatTimeCompact(0)).toBe("00m00s");
+  it("omits seconds when zero", () => {
+    // 5m exactly
+    expect(formatTimeCompact(300000)).toBe("5m");
+  });
+
+  it("omits minutes when zero in mm:ss format", () => {
+    // 30s
+    expect(formatTimeCompact(30000)).toBe("30s");
+  });
+
+  it("omits minutes when zero in hh:mm format", () => {
+    // 2h exactly
+    expect(formatTimeCompact(7200000)).toBe("2h");
+  });
+
+  it("returns 0s for 0", () => {
+    expect(formatTimeCompact(0)).toBe("0s");
   });
 });
 

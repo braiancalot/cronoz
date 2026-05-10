@@ -55,8 +55,18 @@ export function hasHours(hours) {
 }
 
 export function formatTimeCompact(ms) {
-  const { hours, minutes, seconds } = formatTime(ms);
-  return hasHours(hours) ? `${hours}h${minutes}m` : `${minutes}m${seconds}s`;
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms / 60000) % 60);
+  const seconds = Math.floor((ms / 1000) % 60);
+
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h${minutes}m` : `${hours}h`;
+  }
+
+  const parts = [];
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0) parts.push(`${seconds}s`);
+  return parts.length > 0 ? parts.join("") : "0s";
 }
 
 export function truncateToSecond(ms) {
