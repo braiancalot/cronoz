@@ -53,7 +53,7 @@ export function ProjectHeader({ name, onRename, onDelete }) {
           <Button variant="ghost" size="sm" onClick={handleCancel}>
             Cancelar
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleRename}>
+          <Button size="sm" onClick={handleRename}>
             Salvar
           </Button>
         </div>
