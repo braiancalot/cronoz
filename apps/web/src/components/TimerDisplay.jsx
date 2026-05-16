@@ -81,7 +81,7 @@ export function TimerDisplay({
         {totalTime !== null && !isRunning && (
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             onClick={() =>
               copyToClipboard(
                 `${formatTimeCompact(totalTime)} (${priceFormatted})`,

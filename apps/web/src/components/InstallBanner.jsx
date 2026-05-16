@@ -21,7 +21,7 @@ export function InstallBanner() {
           </Button>
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             onClick={dismiss}
             aria-label="Fechar"
           >
