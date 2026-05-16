@@ -53,13 +53,14 @@ export function TimerDisplay({
       </div>
 
       <div className="flex gap-2 items-center">
-        {totalTime !== null && !isRunning && (
+        {totalTime !== null && (
           <>
             <div
               onClick={() =>
+                !isRunning &&
                 copyToClipboard(formatTimeCompact(totalTime), "Tempo total")
               }
-              className="cursor-pointer"
+              className={isRunning ? "invisible" : "cursor-pointer"}
             >
               <FormattedTime
                 time={totalTime}
@@ -67,7 +68,11 @@ export function TimerDisplay({
               />
             </div>
 
-            <span className="text-lg text-muted-foreground">•</span>
+            <span
+              className={`text-lg text-muted-foreground ${isRunning ? "invisible" : ""}`}
+            >
+              •
+            </span>
           </>
         )}
 
@@ -78,7 +83,7 @@ export function TimerDisplay({
           {priceFormatted}
         </span>
 
-        {totalTime !== null && !isRunning && (
+        {totalTime !== null && (
           <Button
             variant="ghost"
             size="icon-sm"
@@ -89,6 +94,7 @@ export function TimerDisplay({
               )
             }
             title="Copiar tempo e valor"
+            className={isRunning ? "invisible transition-none" : ""}
           >
             <CopyIcon />
           </Button>
