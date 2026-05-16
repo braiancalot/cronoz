@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
-import { truncateToSecond } from "@/lib/stopwatch.js";
+import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
+import { toast } from "sonner";
 
 function LapItem({ lap, lapTime, onRename, onRequestDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
@@ -34,6 +35,11 @@ function LapItem({ lap, lapTime, onRename, onRequestDelete }) {
     if (event.key === "Escape") handleCancel();
   }
 
+  async function copyToClipboard(text, label) {
+    await navigator.clipboard.writeText(text);
+    toast(`${label} copiado`, { position: "top-center" });
+  }
+
   return (
     <div className="flex justify-between items-center gap-2 min-h-8 shrink-0">
       {isRenaming ? (
@@ -54,7 +60,14 @@ function LapItem({ lap, lapTime, onRename, onRequestDelete }) {
         <>
           <span>{lap.name}</span>
           <div className="flex items-center gap-3">
-            <FormattedTime time={lapTime} />
+            <div
+              onClick={() =>
+                copyToClipboard(formatTimeCompact(lapTime), "Tempo da volta")
+              }
+              className="cursor-pointer"
+            >
+              <FormattedTime time={lapTime} />
+            </div>
             <Button
               variant="ghost"
               size="icon-xs"
