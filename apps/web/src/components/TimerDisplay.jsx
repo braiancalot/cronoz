@@ -37,8 +37,11 @@ export function TimerDisplay({
         {isRunning && (
           <span
             aria-label="Cronômetro em andamento"
-            className="absolute -left-6 top-1/2 -translate-y-1/2 size-3 rounded-full bg-primary animate-pulse"
-          />
+            className="absolute -left-8 top-1/2 -translate-y-1/2 flex size-4"
+          >
+            <span className="absolute inset-0 rounded-full bg-primary opacity-75 animate-ping" />
+            <span className="relative size-4 rounded-full bg-primary" />
+          </span>
         )}
         <div
           onClick={(e) => copyToClipboard(e, formatTimeCompact(time), "Tempo")}
