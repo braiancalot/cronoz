@@ -110,35 +110,40 @@ export default function ProjectPage() {
         canDiscardCurrentTime={canDiscardCurrentTime}
       />
 
-      <section className="flex flex-1 items-center justify-center">
-        <TimerDisplay
-          time={hasLaps ? splitDisplayTime : displayTime}
-          totalTime={hasLaps ? displayTime : null}
+      <div
+        onClick={project.stopwatch.isRunning ? pause : undefined}
+        className="flex flex-1 flex-col w-full items-center"
+      >
+        <section className="flex flex-1 items-center justify-center w-full">
+          <TimerDisplay
+            time={hasLaps ? splitDisplayTime : displayTime}
+            totalTime={hasLaps ? displayTime : null}
+            isRunning={project.stopwatch.isRunning}
+            hourlyPrice={hourlyPrice}
+          />
+        </section>
+
+        {(hasLaps || isAddingLap) && (
+          <Laps
+            laps={project.stopwatch.laps}
+            onRenameLap={renameLap}
+            onDeleteLap={deleteLap}
+            isAddingLap={isAddingLap}
+            addLapName={lapName}
+            onAddLapNameChange={setLapName}
+            onConfirmAddLap={handleConfirmAddLap}
+            onCancelAddLap={handleCancelAddLap}
+          />
+        )}
+
+        <TimerControls
           isRunning={project.stopwatch.isRunning}
-          hourlyPrice={hourlyPrice}
+          hasLapTime={splitDisplayTime > 0}
+          onStart={start}
+          onPause={pause}
+          onAddLap={handleStartAddLap}
         />
-      </section>
-
-      {(hasLaps || isAddingLap) && (
-        <Laps
-          laps={project.stopwatch.laps}
-          onRenameLap={renameLap}
-          onDeleteLap={deleteLap}
-          isAddingLap={isAddingLap}
-          addLapName={lapName}
-          onAddLapNameChange={setLapName}
-          onConfirmAddLap={handleConfirmAddLap}
-          onCancelAddLap={handleCancelAddLap}
-        />
-      )}
-
-      <TimerControls
-        isRunning={project.stopwatch.isRunning}
-        hasLapTime={splitDisplayTime > 0}
-        onStart={start}
-        onPause={pause}
-        onAddLap={handleStartAddLap}
-      />
+      </div>
 
       <ConfirmDialog
         open={isConfirmingDelete}

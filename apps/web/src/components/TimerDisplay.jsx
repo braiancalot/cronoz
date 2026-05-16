@@ -25,7 +25,8 @@ export function TimerDisplay({
     currency: "BRL",
   }).format(price);
 
-  async function copyToClipboard(text, label) {
+  async function copyToClipboard(event, text, label) {
+    event.stopPropagation();
     await navigator.clipboard.writeText(text);
     toast(`${label} copiado`, { position: "top-center" });
   }
@@ -40,7 +41,7 @@ export function TimerDisplay({
           />
         )}
         <div
-          onClick={() => copyToClipboard(formatTimeCompact(time), "Tempo")}
+          onClick={(e) => copyToClipboard(e, formatTimeCompact(time), "Tempo")}
           className="cursor-pointer"
         >
           <FormattedTime
@@ -56,9 +57,9 @@ export function TimerDisplay({
         {totalTime !== null && (
           <>
             <div
-              onClick={() =>
+              onClick={(e) =>
                 !isRunning &&
-                copyToClipboard(formatTimeCompact(totalTime), "Tempo total")
+                copyToClipboard(e, formatTimeCompact(totalTime), "Tempo total")
               }
               className={isRunning ? "invisible" : "cursor-pointer"}
             >
@@ -77,7 +78,9 @@ export function TimerDisplay({
         )}
 
         <span
-          onClick={() => !isRunning && copyToClipboard(priceFormatted, "Valor")}
+          onClick={(e) =>
+            !isRunning && copyToClipboard(e, priceFormatted, "Valor")
+          }
           className={`font-medium text-md md:text-lg text-primary ${isRunning ? "invisible" : "cursor-pointer"}`}
         >
           {priceFormatted}
@@ -87,8 +90,9 @@ export function TimerDisplay({
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() =>
+            onClick={(e) =>
               copyToClipboard(
+                e,
                 `${formatTimeCompact(totalTime)} (${priceFormatted})`,
                 "Tempo e valor",
               )
