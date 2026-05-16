@@ -111,6 +111,16 @@ export function useProject(projectId) {
     projectRepository.setStopwatch(project.id, { ...DEFAULT_STOPWATCH });
   }
 
+  function discardCurrentTime() {
+    projectRepository.setStopwatch(project.id, {
+      ...project.stopwatch,
+      isRunning: false,
+      startTimestamp: null,
+      lastActiveAt: null,
+      currentLapTime: 0,
+    });
+  }
+
   function toggle() {
     project?.stopwatch?.isRunning ? pause() : start();
   }
@@ -149,6 +159,7 @@ export function useProject(projectId) {
     start,
     pause,
     reset,
+    discardCurrentTime,
     toggle,
     addLap,
     rename,

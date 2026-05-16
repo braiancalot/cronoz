@@ -19,6 +19,7 @@ export default function ProjectPage() {
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isConfirmingDiscard, setIsConfirmingDiscard] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [lapName, setLapName] = useState("");
 
@@ -39,6 +40,7 @@ export default function ProjectPage() {
     addLap,
     rename,
     deleteProject,
+    discardCurrentTime,
     renameLap,
     deleteLap,
   } = useProject(id);
@@ -78,6 +80,15 @@ export default function ProjectPage() {
     navigate("/");
   }
 
+  function handleRequestDiscard() {
+    setIsConfirmingDiscard(true);
+  }
+
+  function handleConfirmDiscard() {
+    setIsConfirmingDiscard(false);
+    discardCurrentTime();
+  }
+
   if (!project) {
     return (
       <PageContainer className="items-center justify-center">
@@ -87,6 +98,8 @@ export default function ProjectPage() {
   }
 
   const hasLaps = project.stopwatch.laps?.length > 0;
+  const canDiscardCurrentTime =
+    project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
 
   return (
     <PageContainer className="items-center justify-center">
@@ -94,6 +107,8 @@ export default function ProjectPage() {
         name={project.name}
         onRename={rename}
         onDelete={handleRequestDeleteProject}
+        onDiscardCurrentTime={handleRequestDiscard}
+        canDiscardCurrentTime={canDiscardCurrentTime}
       />
 
       <section className="flex flex-1 items-center justify-center">
@@ -137,6 +152,16 @@ export default function ProjectPage() {
         cancelLabel="Cancelar"
         onConfirm={handleConfirmDeleteProject}
         onCancel={() => setIsConfirmingDelete(false)}
+      />
+
+      <ConfirmDialog
+        open={isConfirmingDiscard}
+        title="Descartar tempo atual?"
+        description="O tempo em andamento será zerado. As voltas já registradas serão mantidas. Essa ação não pode ser desfeita."
+        confirmLabel="Descartar"
+        cancelLabel="Cancelar"
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setIsConfirmingDiscard(false)}
       />
     </PageContainer>
   );

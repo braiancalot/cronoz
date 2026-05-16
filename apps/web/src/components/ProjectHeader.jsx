@@ -8,9 +8,16 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
 
-export function ProjectHeader({ name, onRename, onDelete }) {
+export function ProjectHeader({
+  name,
+  onRename,
+  onDelete,
+  onDiscardCurrentTime,
+  canDiscardCurrentTime,
+}) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -71,6 +78,13 @@ export function ProjectHeader({ name, onRename, onDelete }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={onDiscardCurrentTime}
+              disabled={!canDiscardCurrentTime}
+            >
+              Descartar tempo atual
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={handleStartRename}>
               Renomear
             </DropdownMenuItem>
