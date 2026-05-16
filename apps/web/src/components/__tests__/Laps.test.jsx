@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Laps } from "@/components/Laps.jsx";
 
@@ -7,6 +7,11 @@ const mockLaps = [
   { id: "lap-1", name: "Lap #1", lapTime: 3000 },
   { id: "lap-2", name: "Lap #2", lapTime: 5000 },
 ];
+
+async function openLapMenu(lapIndex) {
+  const menuTriggers = screen.getAllByTitle("Mais opções");
+  await userEvent.click(menuTriggers[lapIndex]);
+}
 
 describe("Laps", () => {
   it("renders all laps with their names", () => {
@@ -23,16 +28,19 @@ describe("Laps", () => {
       <Laps laps={[]} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
 
-    expect(container.querySelectorAll("[title='Renomear']")).toHaveLength(0);
+    expect(container.querySelectorAll("[title='Mais opções']")).toHaveLength(0);
   });
 
-  it("opens rename input when edit button is clicked", async () => {
+  it("opens rename input when 'Renomear' is selected in the lap menu", async () => {
     render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
 
-    const editButtons = screen.getAllByTitle("Renomear");
-    await userEvent.click(editButtons[0]);
+    await openLapMenu(0);
+    const renameItem = await screen.findByRole("menuitem", {
+      name: "Renomear",
+    });
+    await userEvent.click(renameItem);
 
     expect(screen.getByDisplayValue("Lap #1")).toBeInTheDocument();
   });
@@ -43,8 +51,11 @@ describe("Laps", () => {
       <Laps laps={mockLaps} onRenameLap={onRenameLap} onDeleteLap={vi.fn()} />,
     );
 
-    const editButtons = screen.getAllByTitle("Renomear");
-    await userEvent.click(editButtons[0]);
+    await openLapMenu(0);
+    const renameItem = await screen.findByRole("menuitem", {
+      name: "Renomear",
+    });
+    await userEvent.click(renameItem);
 
     const input = screen.getByDisplayValue("Lap #1");
     await userEvent.clear(input);
@@ -58,8 +69,11 @@ describe("Laps", () => {
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
 
-    const editButtons = screen.getAllByTitle("Renomear");
-    await userEvent.click(editButtons[0]);
+    await openLapMenu(0);
+    const renameItem = await screen.findByRole("menuitem", {
+      name: "Renomear",
+    });
+    await userEvent.click(renameItem);
 
     const input = screen.getByDisplayValue("Lap #1");
     await userEvent.keyboard("{Escape}");
@@ -74,12 +88,13 @@ describe("Laps", () => {
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={onDeleteLap} />,
     );
 
-    const deleteButtons = screen.getAllByTitle("Deletar");
-    await userEvent.click(deleteButtons[0]);
+    await openLapMenu(0);
+    const deleteItem = await screen.findByRole("menuitem", { name: "Apagar" });
+    await userEvent.click(deleteItem);
 
     expect(onDeleteLap).not.toHaveBeenCalled();
 
-    const confirmButton = screen.getByRole("button", { name: "Apagar" });
+    const confirmButton = await screen.findByRole("button", { name: "Apagar" });
     await userEvent.click(confirmButton);
 
     expect(onDeleteLap).toHaveBeenCalledWith("lap-1");
@@ -91,10 +106,13 @@ describe("Laps", () => {
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={onDeleteLap} />,
     );
 
-    const deleteButtons = screen.getAllByTitle("Deletar");
-    await userEvent.click(deleteButtons[0]);
+    await openLapMenu(0);
+    const deleteItem = await screen.findByRole("menuitem", { name: "Apagar" });
+    await userEvent.click(deleteItem);
 
-    const cancelButton = screen.getByRole("button", { name: "Cancelar" });
+    const cancelButton = await screen.findByRole("button", {
+      name: "Cancelar",
+    });
     await userEvent.click(cancelButton);
 
     expect(onDeleteLap).not.toHaveBeenCalled();

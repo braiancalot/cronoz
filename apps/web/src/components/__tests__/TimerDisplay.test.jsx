@@ -34,12 +34,11 @@ describe("TimerDisplay", () => {
     expect(container.textContent).toContain("•");
   });
 
-  it("does not show totalTime block when running", () => {
-    const { container } = render(
-      <TimerDisplay time={5000} totalTime={10000} isRunning />,
-    );
+  it("hides totalTime block (invisible) when running", () => {
+    render(<TimerDisplay time={5000} totalTime={10000} isRunning />);
 
-    expect(container.textContent).not.toContain("•");
+    const separator = screen.getByText("•");
+    expect(separator).toHaveClass("invisible");
   });
 
   it("calculates price from totalTime when provided", () => {
