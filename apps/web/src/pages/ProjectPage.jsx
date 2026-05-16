@@ -9,7 +9,6 @@ import settingsRepository from "@/services/settingsRepository.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
-import { LapModal } from "@/components/LapModal.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
@@ -120,21 +119,18 @@ export default function ProjectPage() {
         />
       </section>
 
-      {hasLaps && (
+      {(hasLaps || isAddingLap) && (
         <Laps
           laps={project.stopwatch.laps}
           onRenameLap={renameLap}
           onDeleteLap={deleteLap}
+          isAddingLap={isAddingLap}
+          addLapName={lapName}
+          onAddLapNameChange={setLapName}
+          onConfirmAddLap={handleConfirmAddLap}
+          onCancelAddLap={handleCancelAddLap}
         />
       )}
-
-      <LapModal
-        open={isAddingLap}
-        lapName={lapName}
-        onLapNameChange={setLapName}
-        onConfirm={handleConfirmAddLap}
-        onCancel={handleCancelAddLap}
-      />
 
       <TimerControls
         isRunning={project.stopwatch.isRunning}

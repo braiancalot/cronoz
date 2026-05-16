@@ -119,7 +119,16 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
   );
 }
 
-export function Laps({ laps, onRenameLap, onDeleteLap }) {
+export function Laps({
+  laps,
+  onRenameLap,
+  onDeleteLap,
+  isAddingLap = false,
+  addLapName = "",
+  onAddLapNameChange,
+  onConfirmAddLap,
+  onCancelAddLap,
+}) {
   const ignoreMs = useIgnoreMilliseconds();
   const activeLaps = laps?.filter((lap) => !lap.deletedAt);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -143,6 +152,25 @@ export function Laps({ laps, onRenameLap, onDeleteLap }) {
     <>
       <ScrollArea className="h-54 mb-8 w-full max-w-125">
         <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-2 px-8">
+          {isAddingLap && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!addLapName) return;
+                onConfirmAddLap();
+              }}
+              className="col-span-full flex items-center min-h-9"
+            >
+              <Input
+                value={addLapName}
+                onChange={(e) => onAddLapNameChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && onCancelAddLap()}
+                onBlur={onCancelAddLap}
+                className="flex-1 h-7 text-sm"
+                autoFocus
+              />
+            </form>
+          )}
           {activeLaps?.map((lap) => (
             <LapItem
               key={lap.id}
