@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
+import { Card } from "@/components/ui/card.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
@@ -150,39 +151,41 @@ export function Laps({
 
   return (
     <>
-      <ScrollArea className="h-54 mb-8 w-full max-w-125">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-2 px-8">
-          {isAddingLap && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!addLapName) return;
-                onConfirmAddLap();
-              }}
-              className="col-span-full flex items-center min-h-9"
-            >
-              <Input
-                value={addLapName}
-                onChange={(e) => onAddLapNameChange(e.target.value)}
-                onKeyDown={(e) => e.key === "Escape" && onCancelAddLap()}
-                onBlur={onCancelAddLap}
-                className="flex-1 h-7 text-sm"
-                autoFocus
+      <Card size="xs" className="mb-8 w-full max-w-125 py-0">
+        <ScrollArea className="h-54">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2">
+            {isAddingLap && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!addLapName) return;
+                  onConfirmAddLap();
+                }}
+                className="col-span-full flex items-center min-h-9"
+              >
+                <Input
+                  value={addLapName}
+                  onChange={(e) => onAddLapNameChange(e.target.value)}
+                  onKeyDown={(e) => e.key === "Escape" && onCancelAddLap()}
+                  onBlur={onCancelAddLap}
+                  className="flex-1 h-7 text-sm"
+                  autoFocus
+                />
+              </form>
+            )}
+            {activeLaps?.map((lap) => (
+              <LapItem
+                key={lap.id}
+                lap={lap}
+                lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
+                cumulativeTime={cumulativeByLapId.get(lap.id)}
+                onRename={onRenameLap}
+                onRequestDelete={setPendingDelete}
               />
-            </form>
-          )}
-          {activeLaps?.map((lap) => (
-            <LapItem
-              key={lap.id}
-              lap={lap}
-              lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
-              cumulativeTime={cumulativeByLapId.get(lap.id)}
-              onRename={onRenameLap}
-              onRequestDelete={setPendingDelete}
-            />
-          ))}
-        </div>
-      </ScrollArea>
+            ))}
+          </div>
+        </ScrollArea>
+      </Card>
 
       <ConfirmDialog
         open={!!pendingDelete}
