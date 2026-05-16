@@ -152,7 +152,7 @@ export function Laps({
   return (
     <>
       <Card size="xs" className="mb-8 w-full max-w-125 py-0">
-        <ScrollArea className="h-54">
+        <ScrollArea className="max-h-54">
           <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2">
             {isAddingLap && (
               <form
