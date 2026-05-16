@@ -50,7 +50,7 @@ export default function ProjectPage() {
   function handleStartAddLap() {
     pause();
     const lapNumber = (project.stopwatch.laps?.length ?? 0) + 1;
-    setLapName(`Volta ${lapNumber}`);
+    setLapName(`${lapNumber}º `);
     setIsAddingLap(true);
   }
 
