@@ -6,6 +6,7 @@ import { ProjectCard } from "@/components/ProjectCard.jsx";
 import { AppHeader } from "@/components/AppHeader.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
+import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -23,6 +24,7 @@ export default function Home() {
   // Hides the just-created project from the list until navigate unmounts Home,
   // preventing a flash of the card before the transition to /project/:id.
   const [creatingProjectId, setCreatingProjectId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const projects = useLiveQuery(() => projectRepository.getAll(), []);
 
@@ -32,14 +34,23 @@ export default function Home() {
     navigate(`/project/${newProject.id}`);
   }
 
-  async function handleComplete(e, id) {
-    e.preventDefault();
-    await projectRepository.complete(id);
+  async function handleToggleComplete(project) {
+    if (project.completedAt) {
+      await projectRepository.reopen(project.id);
+    } else {
+      await projectRepository.complete(project.id);
+    }
   }
 
-  async function handleReopen(e, id) {
-    e.preventDefault();
-    await projectRepository.reopen(id);
+  function handleRequestDelete(project) {
+    setPendingDelete(project);
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    await projectRepository.remove(id);
   }
 
   if (projects === undefined) return null;
@@ -71,8 +82,8 @@ export default function Home() {
             <ProjectCard
               key={project.id}
               project={project}
-              actionLabel="Concluir"
-              onAction={handleComplete}
+              onToggleComplete={handleToggleComplete}
+              onDelete={handleRequestDelete}
             />
           ))}
         </div>
@@ -86,8 +97,8 @@ export default function Home() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                actionLabel="Reabrir"
-                onAction={handleReopen}
+                onToggleComplete={handleToggleComplete}
+                onDelete={handleRequestDelete}
                 className="opacity-50"
               />
             ))}
@@ -100,6 +111,20 @@ export default function Home() {
           </EmptyState>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Apagar projeto?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.name}" e todas as suas voltas serão removidas. Essa ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Apagar"
+        cancelLabel="Cancelar"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </PageContainer>
   );
 }

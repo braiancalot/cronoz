@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, MoreVerticalIcon } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu.jsx";
 
 export function ProjectHeader({ name, onRename, onDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
@@ -58,14 +64,21 @@ export function ProjectHeader({ name, onRename, onDelete }) {
           </Button>
         </div>
       ) : (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleStartRename}>
-            Renomear
-          </Button>
-          <Button variant="destructive" size="sm" onClick={onDelete}>
-            Deletar
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" title="Mais opções">
+              <MoreVerticalIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={handleStartRename}>
+              Renomear
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+              Deletar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </header>
   );

@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { PencilIcon, XIcon } from "lucide-react";
+import { MoreVerticalIcon } from "lucide-react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
@@ -41,7 +47,7 @@ function LapItem({ lap, lapTime, onRename, onRequestDelete }) {
   }
 
   return (
-    <div className="flex justify-between items-center gap-2 min-h-8 shrink-0">
+    <div className="flex justify-between items-center gap-2 min-h-9 shrink-0">
       {isRenaming ? (
         <form
           onSubmit={handleRename}
@@ -68,23 +74,34 @@ function LapItem({ lap, lapTime, onRename, onRequestDelete }) {
             >
               <FormattedTime time={lapTime} />
             </div>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={handleStartRename}
-              title="Renomear"
-            >
-              <PencilIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => onRequestDelete(lap)}
-              title="Deletar"
-              className="hover:text-destructive"
-            >
-              <XIcon />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" title="Mais opções">
+                  <MoreVerticalIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() =>
+                    copyToClipboard(
+                      formatTimeCompact(lapTime),
+                      "Tempo da volta",
+                    )
+                  }
+                >
+                  Copiar tempo
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleStartRename}>
+                  Renomear
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => onRequestDelete(lap)}
+                >
+                  Apagar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </>
       )}
