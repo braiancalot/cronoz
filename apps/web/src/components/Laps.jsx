@@ -9,6 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu.jsx";
+import { ScrollArea } from "@/components/ui/scroll-area.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
@@ -139,19 +140,21 @@ export function Laps({ laps, onRenameLap, onDeleteLap }) {
   }
 
   return (
-    <div className="h-54 mb-8 overflow-auto px-8 w-full max-w-125">
-      <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-2">
-        {activeLaps?.map((lap) => (
-          <LapItem
-            key={lap.id}
-            lap={lap}
-            lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
-            cumulativeTime={cumulativeByLapId.get(lap.id)}
-            onRename={onRenameLap}
-            onRequestDelete={setPendingDelete}
-          />
-        ))}
-      </div>
+    <>
+      <ScrollArea className="h-54 mb-8 w-full max-w-125">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-2 px-8">
+          {activeLaps?.map((lap) => (
+            <LapItem
+              key={lap.id}
+              lap={lap}
+              lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
+              cumulativeTime={cumulativeByLapId.get(lap.id)}
+              onRename={onRenameLap}
+              onRequestDelete={setPendingDelete}
+            />
+          ))}
+        </div>
+      </ScrollArea>
 
       <ConfirmDialog
         open={!!pendingDelete}
@@ -166,6 +169,6 @@ export function Laps({ laps, onRenameLap, onDeleteLap }) {
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
-    </div>
+    </>
   );
 }
