@@ -15,7 +15,7 @@ export default function App() {
   useSyncManager();
 
   return (
-    <div className="antialiased">
+    <div className="antialiased h-full">
       <Outlet />
       <InstallBanner />
       <Toaster />

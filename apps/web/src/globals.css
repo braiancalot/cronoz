@@ -62,11 +62,16 @@
   * {
     @apply border-border;
   }
+  html,
+  body {
+    height: 100%;
+    @apply font-sans;
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  #root {
+    height: 100%;
   }
   button:not(:disabled),
   [role="button"]:not([disabled]):not([aria-disabled="true"]),
