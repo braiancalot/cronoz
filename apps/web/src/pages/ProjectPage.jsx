@@ -6,12 +6,16 @@ import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import settingsRepository from "@/services/settingsRepository.js";
 
+import { ArrowLeftIcon } from "lucide-react";
+
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
+import { EmptyState } from "@/components/EmptyState.jsx";
+import { Button } from "@/components/ui/button.jsx";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -91,7 +95,11 @@ export default function ProjectPage() {
   if (!project) {
     return (
       <PageContainer className="items-center justify-center">
-        <span>Projeto não encontrado.</span>
+        <EmptyState message="Projeto não encontrado.">
+          <Button variant="ghost" onClick={() => navigate("/")}>
+            <ArrowLeftIcon /> Voltar para a tela inicial
+          </Button>
+        </EmptyState>
       </PageContainer>
     );
   }
