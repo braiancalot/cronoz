@@ -3,6 +3,7 @@ import { formatTimeCompact } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { cn } from "@/lib/utils.js";
 import { toast } from "sonner";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -56,7 +57,7 @@ export function TimerDisplay({
         </div>
       </div>
 
-      <div className="flex gap-2 items-center">
+      <div className="relative flex gap-2 items-center group">
         {totalTime !== null && (
           <>
             <div
@@ -92,7 +93,7 @@ export function TimerDisplay({
         {totalTime !== null && (
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon-xs"
             onClick={(e) =>
               copyToClipboard(
                 e,
@@ -101,7 +102,10 @@ export function TimerDisplay({
               )
             }
             title="Copiar tempo e valor"
-            className={isRunning ? "invisible transition-none" : ""}
+            className={cn(
+              "text-muted-foreground transition-opacity md:absolute md:left-full md:top-1/2 md:-translate-y-1/2 md:ml-1 md:opacity-0 md:group-hover:opacity-100",
+              isRunning && "invisible transition-none",
+            )}
           >
             <CopyIcon />
           </Button>
