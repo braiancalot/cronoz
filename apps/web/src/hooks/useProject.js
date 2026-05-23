@@ -7,6 +7,7 @@ import projectRepository, {
 import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
 import { useIgnoreMilliseconds } from "./useIgnoreMilliseconds.js";
+import { useWakeLock } from "./useWakeLock.js";
 
 const CHECKPOINT_INTERVAL = 10_000;
 
@@ -82,6 +83,7 @@ export function useProject(projectId) {
   }, [project, ignoreMs]);
 
   useAutoPause(pause);
+  useWakeLock(project?.stopwatch?.isRunning ?? false);
 
   function start() {
     const now = Date.now();
