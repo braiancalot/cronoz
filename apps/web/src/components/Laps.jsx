@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MoreVerticalIcon } from "lucide-react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -11,14 +11,31 @@ import {
 } from "@/components/ui/dropdown-menu.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
 import { Card } from "@/components/ui/card.jsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { useLongPress } from "@/hooks/useLongPress.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
 import { toast } from "sonner";
 
 function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const nameRef = useRef(null);
+
+  const isTruncated = () => {
+    const el = nameRef.current;
+    return !!el && el.scrollWidth > el.offsetWidth;
+  };
+
+  const longPressHandlers = useLongPress(() => {
+    if (isTruncated()) toast(lap.name, { position: "top-center" });
+  });
 
   function handleStartRename() {
     setNewName(lap.name);
@@ -69,16 +86,22 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
   return (
     <>
       <div className="min-h-9 min-w-0 flex items-center overflow-hidden">
-        <span
-          className="truncate"
-          title={lap.name}
-          onClick={(e) => {
-            if (e.currentTarget.scrollWidth > e.currentTarget.offsetWidth)
-              toast(lap.name, { position: "top-center" });
-          }}
+        <Tooltip
+          open={tooltipOpen}
+          onOpenChange={(open) => setTooltipOpen(open && isTruncated())}
         >
-          {lap.name}
-        </span>
+          <TooltipTrigger asChild>
+            <span
+              ref={nameRef}
+              className="truncate select-none [-webkit-touch-callout:none]"
+              onContextMenu={(e) => e.preventDefault()}
+              {...longPressHandlers}
+            >
+              {lap.name}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{lap.name}</TooltipContent>
+        </Tooltip>
       </div>
       <div
         onClick={() =>
