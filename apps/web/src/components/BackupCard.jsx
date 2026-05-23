@@ -5,6 +5,7 @@ import backupService, { BackupError } from "@/services/backupService.js";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.jsx";
@@ -95,12 +96,12 @@ export function BackupCard() {
     <Card>
       <CardHeader>
         <CardTitle>Backup</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">
+        <CardDescription>
           Exporte um arquivo JSON com seus dados ou importe um backup anterior.
-        </p>
-        <div className="flex flex-wrap gap-2">
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button onClick={handleExport}>
             <DownloadIcon /> Exportar
           </Button>

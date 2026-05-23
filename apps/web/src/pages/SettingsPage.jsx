@@ -12,6 +12,7 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card.jsx";
+import { Button } from "@/components/ui/button.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { SyncCard } from "@/components/SyncCard.jsx";
 import { BackupCard } from "@/components/BackupCard.jsx";
@@ -43,23 +44,30 @@ export default function SettingsPage() {
 
   return (
     <PageContainer className="max-w-300 mx-auto">
-      <header className="flex items-center gap-4 py-4">
-        <Link to="/" className="text-lg">
-          <ArrowLeftIcon />
-        </Link>
+      <header className="flex items-center gap-2 py-4">
+        <Button variant="ghost" size="icon-sm" asChild>
+          <Link to="/" aria-label="Voltar">
+            <ArrowLeftIcon />
+          </Link>
+        </Button>
         <h1 className="text-lg font-bold tracking-tight">Configurações</h1>
       </header>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 flex-1 pb-6">
         {FEATURES.sync && <SyncCard />}
 
         <Card>
           <CardHeader>
-            <CardTitle>Valor por hora</CardTitle>
+            <CardTitle>Preferências</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2 max-w-xs">
-              <Label htmlFor="hourly-price">Preço/hora (R$)</Label>
+          <CardContent className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="hourly-price">Valor por hora</Label>
+                <p className="text-xs text-muted-foreground">
+                  Usado para calcular o valor de cada projeto com base no tempo.
+                </p>
+              </div>
               <Input
                 id="hourly-price"
                 type="number"
@@ -67,27 +75,19 @@ export default function SettingsPage() {
                 step="0.5"
                 value={hourlyPrice}
                 onChange={handlePriceChange}
+                className="max-w-xs"
               />
-              <p className="text-xs text-muted-foreground">
-                Usado para calcular o valor de cada projeto com base no tempo.
-              </p>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Exibição</CardTitle>
-          </CardHeader>
-          <CardContent>
+            <div className="h-px bg-border" />
+
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <Label htmlFor="ignore-milliseconds">
                   Ignorar milissegundos
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Esconde os centissegundos no cronômetro e calcula o preço
-                  sobre segundos cheios.
+                  Remove os milissegundos da exibição e do cálculo de valor.
                 </p>
               </div>
               <Switch

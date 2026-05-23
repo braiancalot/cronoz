@@ -154,7 +154,7 @@ export function SyncCard() {
             <p className="text-xs text-muted-foreground">
               Expira em {formatCountdown(pairing.remainingMs)}
             </p>
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-col gap-2 mt-2 sm:flex-row">
               <Button onClick={handleConfirmPaired} disabled={pairing.loading}>
                 <CheckIcon /> Já pareei o outro device
               </Button>
@@ -170,7 +170,7 @@ export function SyncCard() {
             <p className="text-sm text-muted-foreground">
               Sincronize seus projetos entre seus dispositivos.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button onClick={handleGenerate} disabled={pairing.loading}>
                 Gerar código
               </Button>
@@ -195,7 +195,7 @@ export function SyncCard() {
               placeholder="000000"
               className="font-mono tracking-widest"
             />
-            <div className="flex gap-2 mt-1">
+            <div className="flex flex-col gap-2 mt-1 sm:flex-row">
               <Button
                 onClick={handleJoin}
                 disabled={pairing.loading || codeInput.length !== 6}
@@ -236,7 +236,7 @@ export function SyncCard() {
                 </p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button onClick={handleSyncNow}>
                 <RefreshCwIcon /> Sincronizar agora
               </Button>
