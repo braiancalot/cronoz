@@ -68,7 +68,18 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
 
   return (
     <>
-      <span className="min-h-9 flex items-center truncate">{lap.name}</span>
+      <div className="min-h-9 min-w-0 flex items-center overflow-hidden">
+        <span
+          className="truncate"
+          title={lap.name}
+          onClick={(e) => {
+            if (e.currentTarget.scrollWidth > e.currentTarget.offsetWidth)
+              toast(lap.name, { position: "top-center" });
+          }}
+        >
+          {lap.name}
+        </span>
+      </div>
       <div
         onClick={() =>
           copyToClipboard(formatTimeCompact(cumulativeTime), "Tempo acumulado")
@@ -90,7 +101,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" title="Mais opções">
+          <Button variant="ghost" size="icon-xs" title="Mais opções">
             <MoreVerticalIcon />
           </Button>
         </DropdownMenuTrigger>
@@ -153,7 +164,7 @@ export function Laps({
     <>
       <Card size="xs" className="mb-8 w-full max-w-125 py-0">
         <ScrollArea className="max-h-54">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2 w-full">
             {isAddingLap && (
               <form
                 onSubmit={(e) => {
