@@ -77,8 +77,8 @@ describe("syncManager.sync — paired", () => {
 
   it("pushes local changes newer than lastPushedAt, then pulls", async () => {
     await internalRepository.set(LAST_PUSHED_AT_KEY, 100);
-    await projectRepository.save({ id: "p1", updatedAt: 50, data: "old" });
-    await projectRepository.save({ id: "p2", updatedAt: 200, data: "new" });
+    await db.projects.put({ id: "p1", updatedAt: 50, data: "old" });
+    await db.projects.put({ id: "p2", updatedAt: 200, data: "new" });
     await db.settings.put({ key: "hourlyPrice", value: 10, updatedAt: 300 });
     await db.settings.put({ key: "stale", value: 1, updatedAt: 50 });
 
@@ -97,7 +97,7 @@ describe("syncManager.sync — paired", () => {
   });
 
   it("applies pulled records that are newer than local", async () => {
-    await projectRepository.save({ id: "p1", updatedAt: 100, name: "local" });
+    await db.projects.put({ id: "p1", updatedAt: 100, name: "local" });
     await db.settings.put({ key: "hourlyPrice", value: 5, updatedAt: 100 });
 
     syncService.pull.mockResolvedValue({
@@ -116,7 +116,7 @@ describe("syncManager.sync — paired", () => {
   });
 
   it("ignores pulled records older than local (LWW preserves local)", async () => {
-    await projectRepository.save({ id: "p1", updatedAt: 500, name: "local" });
+    await db.projects.put({ id: "p1", updatedAt: 500, name: "local" });
     await db.settings.put({ key: "hourlyPrice", value: 7, updatedAt: 500 });
 
     syncService.pull.mockResolvedValue({

@@ -57,13 +57,6 @@ async function getAllForSync() {
   return db.projects.toArray();
 }
 
-// Raw write: no updatedAt bump, no mutation event. Used by hot/transient
-// flows like the running-stopwatch checkpoint, where syncing every 10s
-// would be wasteful.
-async function save(project) {
-  await db.projects.put(project);
-}
-
 // Apply an incoming record from the sync pull. No event, no updatedAt
 // rewrite — the incoming updatedAt is the source of truth for LWW.
 async function applyFromSync(project) {
@@ -152,7 +145,6 @@ const projectRepository = {
   getAll,
   getById,
   getAllForSync,
-  save,
   applyFromSync,
   create,
   rename,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import projectRepository, {
@@ -11,10 +11,14 @@ import { useWakeLock } from "./useWakeLock.js";
 
 const CHECKPOINT_INTERVAL = 10_000;
 
+// A fresh checkpoint within this window means another device (or a recent
+// same-device session) may still be alive — skip recovery to avoid pausing
+// a remote run. Must be > CHECKPOINT_INTERVAL + sync debounce + slack.
+const RECOVERY_GRACE_PERIOD = 30_000;
+
 export function useProject(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
   const [splitDisplayTime, setSplitDisplayTime] = useState(0);
-  const recoveredRef = useRef(false);
 
   const project = useLiveQuery(
     () => projectRepository.getById(projectId),
@@ -25,36 +29,42 @@ export function useProject(projectId) {
 
   const ignoreMs = useIgnoreMilliseconds();
 
-  // Recovery: auto-pause abandoned timers on mount
+  // Recovery + checkpoint live in a single effect to avoid a race: if recovery
+  // is in another effect, the checkpoint loop can fire a stale write before
+  // the recovery's pause commits, undoing it.
+  //
+  // Recovery uses lastActiveAt as a liveness signal — stale heartbeat means
+  // the run was abandoned. The staleness check itself is the guard: if the
+  // user just started the timer or the checkpoint just wrote, lastActiveAt
+  // is fresh and no pause fires. So this can run on every render without a
+  // one-shot ref — important so a sync pull that brings a stale running
+  // stopwatch after the initial render still triggers recovery.
   useEffect(() => {
-    if (recoveredRef.current) return;
     if (!project) return;
 
-    recoveredRef.current = true;
+    const sw = project.stopwatch;
+    const isStale =
+      sw?.isRunning &&
+      sw.lastActiveAt &&
+      Date.now() - sw.lastActiveAt >= RECOVERY_GRACE_PERIOD;
 
-    if (!project.stopwatch?.isRunning) return;
-    if (!project.stopwatch.lastActiveAt) return;
+    if (isStale) {
+      const elapsed = sw.lastActiveAt - sw.startTimestamp;
+      projectRepository.setStopwatch(project.id, {
+        ...sw,
+        isRunning: false,
+        startTimestamp: null,
+        lastActiveAt: null,
+        currentLapTime: sw.currentLapTime + elapsed,
+      });
+      // Don't start the checkpoint loop — useLiveQuery will fire again
+      // with the paused state and this effect will re-run.
+      return;
+    }
 
-    const elapsed =
-      project.stopwatch.lastActiveAt - project.stopwatch.startTimestamp;
-
-    projectRepository.setStopwatch(project.id, {
-      ...project.stopwatch,
-      isRunning: false,
-      startTimestamp: null,
-      lastActiveAt: null,
-      currentLapTime: project.stopwatch.currentLapTime + elapsed,
-    });
-  }, [project]);
-
-  useEffect(() => {
-    if (!project?.stopwatch?.isRunning) {
-      if (project) {
-        setDisplayTime(calculateTotalTime(project.stopwatch, { ignoreMs }));
-        setSplitDisplayTime(
-          calculateSplitTime(project.stopwatch, { ignoreMs }),
-        );
-      }
+    if (!project.stopwatch?.isRunning) {
+      setDisplayTime(calculateTotalTime(project.stopwatch, { ignoreMs }));
+      setSplitDisplayTime(calculateSplitTime(project.stopwatch, { ignoreMs }));
       return;
     }
 
@@ -68,9 +78,9 @@ export function useProject(projectId) {
       const now = Date.now();
       if (now - lastCheckpoint >= CHECKPOINT_INTERVAL) {
         lastCheckpoint = now;
-        projectRepository.save({
-          ...project,
-          stopwatch: { ...project.stopwatch, lastActiveAt: now },
+        projectRepository.setStopwatch(project.id, {
+          ...project.stopwatch,
+          lastActiveAt: now,
         });
       }
 

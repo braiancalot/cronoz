@@ -70,18 +70,6 @@ describe("getById", () => {
   });
 });
 
-describe("save", () => {
-  it("updates an existing project", async () => {
-    const project = await projectRepository.create();
-    project.name = "Updated";
-
-    await projectRepository.save(project);
-    const found = await projectRepository.getById(project.id);
-
-    expect(found.name).toBe("Updated");
-  });
-});
-
 describe("rename", () => {
   it("renames the project", async () => {
     const project = await projectRepository.create();
@@ -131,7 +119,7 @@ describe("addLap", () => {
     const project = await projectRepository.create();
 
     // Simulate a running stopwatch with accumulated time
-    await projectRepository.save({
+    await db.projects.put({
       ...project,
       stopwatch: {
         ...project.stopwatch,

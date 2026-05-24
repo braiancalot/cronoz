@@ -7,7 +7,6 @@ const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
   mockUseLiveQuery: vi.fn(),
   mockRepository: {
     getById: vi.fn(),
-    save: vi.fn(),
     setStopwatch: vi.fn(),
     rename: vi.fn(),
     remove: vi.fn(),
@@ -294,9 +293,8 @@ describe("useProject", () => {
       name: "Volta 1",
     });
 
-    // Must NOT touch either stopwatch write path — start() was the original
+    // Must NOT touch the stopwatch write path — start() was the original
     // culprit of the stale-state overwrite bug.
-    expect(mockRepository.save).not.toHaveBeenCalled();
     expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
   });
 
@@ -317,12 +315,12 @@ describe("useProject", () => {
   });
 
   describe("recovery (abandoned timer)", () => {
-    it("auto-pauses a running timer with lastActiveAt on mount", () => {
+    it("auto-pauses a running timer with stale lastActiveAt on mount", () => {
       const project = createProject({
         isRunning: true,
         startTimestamp: 5000,
         currentLapTime: 2000,
-        lastActiveAt: 15000,
+        lastActiveAt: 15000, // far in the past relative to wall clock → stale
       });
       mockUseLiveQuery.mockReturnValue(project);
 
@@ -365,31 +363,116 @@ describe("useProject", () => {
       expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
     });
 
-    it("does not recover twice after user starts the timer", () => {
-      // First render: paused project (no recovery needed)
+    it("does not recover when the timer was just started (fresh lastActiveAt)", () => {
       const pausedProject = createProject({ isRunning: false });
       mockUseLiveQuery.mockReturnValue(pausedProject);
 
       const { rerender } = renderHook(() => useProject("test-id"));
 
-      // User starts timer, checkpoint runs → lastActiveAt gets set
+      // User starts: lastActiveAt is set to now → staleness check fails → no recovery
+      const now = Date.now();
       const runningProject = createProject({
         isRunning: true,
-        startTimestamp: 5000,
+        startTimestamp: now,
         currentLapTime: 0,
-        lastActiveAt: 15000,
+        lastActiveAt: now,
       });
       mockUseLiveQuery.mockReturnValue(runningProject);
 
       rerender();
 
-      // Should NOT trigger recovery — timer was started in this session
       expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+    });
+
+    // Regression: cross-device scenario where a phone has a stale local copy
+    // (e.g., paused or non-existent) and then a sync pull brings the running
+    // stopwatch with a stale heartbeat. Recovery must fire on the post-pull
+    // render — not get gated out by a one-shot guard set on the first render.
+    it("recovers when sync pull brings a stale running stopwatch after a paused initial render", () => {
+      // Initial local state: paused (this device hadn't synced yet)
+      const pausedProject = createProject({ isRunning: false });
+      mockUseLiveQuery.mockReturnValue(pausedProject);
+
+      const { rerender } = renderHook(() => useProject("test-id"));
+
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+
+      // Sync pull arrives with running stopwatch + ancient heartbeat
+      const stalePulled = createProject({
+        isRunning: true,
+        startTimestamp: 5_000,
+        currentLapTime: 2_000,
+        lastActiveAt: 15_000, // stale relative to wall clock
+      });
+      mockUseLiveQuery.mockReturnValue(stalePulled);
+
+      rerender();
+
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
+        expect.objectContaining({
+          isRunning: false,
+          startTimestamp: null,
+          lastActiveAt: null,
+          currentLapTime: 12_000, // 2_000 + (15_000 - 5_000)
+        }),
+      );
+    });
+
+    // Regression: when recovery and checkpoint were in separate effects, the
+    // checkpoint loop could fire a stale lastActiveAt write right after
+    // recovery had pushed the pause, undoing it.
+    it("does not write checkpoint after recovery pauses the run", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(1_000_000));
+
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: 5_000,
+        currentLapTime: 2_000,
+        lastActiveAt: 15_000, // ancient — far past grace period
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      // Let any pending rAF ticks fire. Without the consolidation, the
+      // checkpoint loop would write a fresh lastActiveAt here.
+      await act(() => vi.advanceTimersByTime(100));
+
+      // Recovery must be the ONLY setStopwatch call. A second call would
+      // be the stale checkpoint write overwriting the pause.
+      expect(mockRepository.setStopwatch).toHaveBeenCalledTimes(1);
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
+        expect.objectContaining({ isRunning: false }),
+      );
+
+      vi.useRealTimers();
+    });
+
+    it("does not recover when lastActiveAt is within grace period (another device may be alive)", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(100_000));
+
+      const project = createProject({
+        isRunning: true,
+        startTimestamp: 5_000,
+        currentLapTime: 2_000,
+        lastActiveAt: 95_000, // 5s ago — fresh heartbeat
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      renderHook(() => useProject("test-id"));
+
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
   });
 
   describe("checkpoint (lastActiveAt)", () => {
-    it("saves lastActiveAt periodically while timer is running", async () => {
+    it("writes lastActiveAt periodically while timer is running", async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(100000));
 
@@ -404,25 +487,24 @@ describe("useProject", () => {
 
       // Trigger first rAF tick — no checkpoint yet (interval not elapsed)
       await act(() => vi.advanceTimersByTime(1));
-      expect(mockRepository.save).not.toHaveBeenCalled();
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
 
       // Advance system time past checkpoint interval and trigger rAF
       vi.setSystemTime(new Date(110001));
       await act(() => vi.runOnlyPendingTimers());
 
-      expect(mockRepository.save).toHaveBeenCalledWith(
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
         expect.objectContaining({
-          stopwatch: expect.objectContaining({
-            lastActiveAt: expect.any(Number),
-            isRunning: true,
-          }),
+          lastActiveAt: expect.any(Number),
+          isRunning: true,
         }),
       );
 
       vi.useRealTimers();
     });
 
-    it("does not save checkpoint before interval elapses", () => {
+    it("does not write checkpoint before interval elapses", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(100000));
 
@@ -439,7 +521,7 @@ describe("useProject", () => {
       vi.setSystemTime(new Date(105000));
       vi.advanceTimersByTime(0);
 
-      expect(mockRepository.save).not.toHaveBeenCalled();
+      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
 
       vi.useRealTimers();
     });
