@@ -11,7 +11,6 @@ npm run lint         # Run ESLint across all workspaces
 npm run lint:check   # Check Prettier formatting
 npm run test         # Run all tests
 npm run test:coverage # Run tests with coverage
-npm run commit       # Create commit using Conventional Commits (use this instead of git commit)
 ```
 
 **Node version:** 24.13.0 (see `.nvmrc`)
@@ -116,7 +115,7 @@ Consulte `docs/IDEA.md` para entender as ideias, requisitos e direção do proje
 
 ## Commit Convention
 
-This project enforces Conventional Commits via commitlint. Always use `npm run commit` for interactive commit creation with proper format (feat:, fix:, refactor:, etc.).
+This project enforces Conventional Commits via commitlint (husky hook). Use `git commit` directly with a properly formatted message (feat:, fix:, refactor:, etc.).
 
 ## Metodologia de Trabalho (Senior Agile Vibe Coding)
 
