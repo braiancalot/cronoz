@@ -95,6 +95,96 @@ describe("remove", () => {
   });
 });
 
+describe("undeleteProject", () => {
+  it("clears deletedAt on a soft-deleted project, making it visible again", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.remove(project.id);
+
+    expect(await projectRepository.getById(project.id)).toBeNull();
+
+    await projectRepository.undeleteProject(project.id);
+
+    const restored = await projectRepository.getById(project.id);
+    expect(restored).not.toBeNull();
+    expect(restored.deletedAt).toBeNull();
+  });
+
+  it("undeleted project reappears in getAll", async () => {
+    const p1 = await projectRepository.create();
+    await projectRepository.remove(p1.id);
+    await projectRepository.undeleteProject(p1.id);
+
+    const all = await projectRepository.getAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].id).toBe(p1.id);
+  });
+
+  it("bumps updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.remove(project.id);
+    const afterDelete = (await db.projects.get(project.id)).updatedAt;
+
+    await projectRepository.undeleteProject(project.id);
+    const restored = await db.projects.get(project.id);
+    expect(restored.updatedAt).toBeGreaterThanOrEqual(afterDelete);
+  });
+});
+
+describe("undeleteLap", () => {
+  it("clears deletedAt on a single lap without touching others", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 1000,
+      name: "Volta 1",
+    });
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 2000,
+      name: "Volta 2",
+    });
+
+    const before = await projectRepository.getById(project.id);
+    const targetLapId = before.stopwatch.laps[1].id; // Volta 1
+
+    await projectRepository.removeLap({ id: project.id, lapId: targetLapId });
+    expect(
+      (await projectRepository.getById(project.id)).stopwatch.laps,
+    ).toHaveLength(1);
+
+    await projectRepository.undeleteLap({ id: project.id, lapId: targetLapId });
+
+    const after = await projectRepository.getById(project.id);
+    expect(after.stopwatch.laps).toHaveLength(2);
+    const restoredLap = after.stopwatch.laps.find((l) => l.id === targetLapId);
+    expect(restoredLap.deletedAt).toBeNull();
+  });
+
+  it("bumps updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addLap({
+      id: project.id,
+      lapTime: 1000,
+      name: "Volta 1",
+    });
+    const withLap = await projectRepository.getById(project.id);
+    const lapId = withLap.stopwatch.laps[0].id;
+
+    await projectRepository.removeLap({ id: project.id, lapId });
+    const before = (await db.projects.get(project.id)).updatedAt;
+
+    await projectRepository.undeleteLap({ id: project.id, lapId });
+    const after = (await db.projects.get(project.id)).updatedAt;
+    expect(after).toBeGreaterThanOrEqual(before);
+  });
+
+  it("does nothing for non-existent project", async () => {
+    await expect(
+      projectRepository.undeleteLap({ id: "missing", lapId: "x" }),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe("complete / reopen", () => {
   it("marks the project as completed with a timestamp", async () => {
     const project = await projectRepository.create();

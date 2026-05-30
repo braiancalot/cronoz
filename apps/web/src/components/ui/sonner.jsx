@@ -28,6 +28,8 @@ const Toaster = ({ ...props }) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          actionButton:
+            "!bg-secondary !text-secondary-foreground hover:!bg-secondary/80 !border !border-transparent !rounded-4xl !h-6 !px-2.5 !text-xs !font-medium !whitespace-nowrap !transition-all active:!translate-y-px",
         },
       }}
       {...props}

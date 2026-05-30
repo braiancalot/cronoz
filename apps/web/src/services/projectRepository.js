@@ -79,6 +79,10 @@ async function remove(id) {
   await mutateLocal(id, { deletedAt: Date.now() });
 }
 
+async function undeleteProject(id) {
+  await mutateLocal(id, { deletedAt: null });
+}
+
 async function complete(id) {
   await mutateLocal(id, { completedAt: Date.now() });
 }
@@ -134,6 +138,19 @@ async function removeLap({ id, lapId }) {
   });
 }
 
+async function undeleteLap({ id, lapId }) {
+  const project = await getRawById(id);
+  if (!project) return;
+
+  const laps = project.stopwatch.laps.map((lap) =>
+    lap.id === lapId ? { ...lap, deletedAt: null } : lap,
+  );
+
+  await mutateLocal(id, {
+    stopwatch: { ...project.stopwatch, laps },
+  });
+}
+
 // User-final stopwatch transitions (start/pause/reset/recovery). Unlike
 // save(), this bumps updatedAt and emits a mutation event so the change
 // reaches other devices via push.
@@ -149,11 +166,13 @@ const projectRepository = {
   create,
   rename,
   remove,
+  undeleteProject,
   complete,
   reopen,
   addLap,
   renameLap,
   removeLap,
+  undeleteLap,
   setStopwatch,
 };
 

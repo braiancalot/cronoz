@@ -83,7 +83,7 @@ describe("Laps", () => {
   });
 
   it("calls onDeleteLap after confirming deletion", async () => {
-    const onDeleteLap = vi.fn();
+    const onDeleteLap = vi.fn().mockResolvedValue({ undo: vi.fn() });
     render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={onDeleteLap} />,
     );

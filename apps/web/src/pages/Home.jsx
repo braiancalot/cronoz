@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { showUndoToast } from "@/lib/undoToast.js";
 import { useLiveQuery } from "dexie-react-hooks";
 
 function NewProjectButton({ onCreate }) {
@@ -48,9 +49,12 @@ export default function Home() {
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
-    const id = pendingDelete.id;
+    const { id, name } = pendingDelete;
     setPendingDelete(null);
     await projectRepository.remove(id);
+    showUndoToast(`Projeto "${name}" excluído`, () =>
+      projectRepository.undeleteProject(id),
+    );
   }
 
   if (projects === undefined) return null;
@@ -117,7 +121,7 @@ export default function Home() {
         title="Apagar projeto?"
         description={
           pendingDelete
-            ? `"${pendingDelete.name}" e todas as suas voltas serão removidas. Essa ação não pode ser desfeita.`
+            ? `"${pendingDelete.name}" e todas as suas voltas serão removidas.`
             : ""
         }
         confirmLabel="Apagar"

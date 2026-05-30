@@ -16,6 +16,7 @@ import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { showUndoToast } from "@/lib/undoToast.js";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ export default function ProjectPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isConfirmingDiscard, setIsConfirmingDiscard] = useState(false);
+  const [isConfirmingReset, setIsConfirmingReset] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [lapName, setLapName] = useState("");
 
@@ -44,6 +46,7 @@ export default function ProjectPage() {
     rename,
     deleteProject,
     discardCurrentTime,
+    reset,
     renameLap,
     deleteLap,
   } = useProject(id);
@@ -79,8 +82,10 @@ export default function ProjectPage() {
   async function handleConfirmDeleteProject() {
     setIsConfirmingDelete(false);
     setIsDeleting(true);
-    await deleteProject();
+    const projectName = project.name;
+    const { undo } = await deleteProject();
     navigate("/");
+    showUndoToast(`Projeto "${projectName}" excluído`, undo);
   }
 
   function handleRequestDiscard() {
@@ -89,7 +94,18 @@ export default function ProjectPage() {
 
   function handleConfirmDiscard() {
     setIsConfirmingDiscard(false);
-    discardCurrentTime();
+    const { undo } = discardCurrentTime();
+    showUndoToast("Tempo atual descartado", undo);
+  }
+
+  function handleRequestReset() {
+    setIsConfirmingReset(true);
+  }
+
+  function handleConfirmReset() {
+    setIsConfirmingReset(false);
+    const { undo } = reset();
+    showUndoToast("Cronômetro resetado", undo);
   }
 
   if (!project) {
@@ -107,6 +123,7 @@ export default function ProjectPage() {
   const hasLaps = project.stopwatch.laps?.length > 0;
   const canDiscardCurrentTime =
     project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
+  const canReset = canDiscardCurrentTime || hasLaps;
 
   return (
     <PageContainer className="items-center justify-center">
@@ -116,6 +133,8 @@ export default function ProjectPage() {
         onDelete={handleRequestDeleteProject}
         onDiscardCurrentTime={handleRequestDiscard}
         canDiscardCurrentTime={canDiscardCurrentTime}
+        onReset={handleRequestReset}
+        canReset={canReset}
       />
 
       <div
@@ -156,7 +175,7 @@ export default function ProjectPage() {
       <ConfirmDialog
         open={isConfirmingDelete}
         title="Apagar projeto?"
-        description={`"${project.name}" e todas as suas voltas serão removidas. Essa ação não pode ser desfeita.`}
+        description={`"${project.name}" e todas as suas voltas serão removidas.`}
         confirmLabel="Apagar"
         cancelLabel="Cancelar"
         onConfirm={handleConfirmDeleteProject}
@@ -166,11 +185,21 @@ export default function ProjectPage() {
       <ConfirmDialog
         open={isConfirmingDiscard}
         title="Descartar tempo atual?"
-        description="O tempo em andamento será zerado. As voltas já registradas serão mantidas. Essa ação não pode ser desfeita."
+        description="O tempo em andamento será zerado. As voltas já registradas serão mantidas."
         confirmLabel="Descartar"
         cancelLabel="Cancelar"
         onConfirm={handleConfirmDiscard}
         onCancel={() => setIsConfirmingDiscard(false)}
+      />
+
+      <ConfirmDialog
+        open={isConfirmingReset}
+        title="Resetar cronômetro?"
+        description="O tempo atual e todas as voltas serão apagados."
+        confirmLabel="Resetar"
+        cancelLabel="Cancelar"
+        onConfirm={handleConfirmReset}
+        onCancel={() => setIsConfirmingReset(false)}
       />
     </PageContainer>
   );

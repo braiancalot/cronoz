@@ -10,9 +10,11 @@ const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
     setStopwatch: vi.fn(),
     rename: vi.fn(),
     remove: vi.fn(),
+    undeleteProject: vi.fn(),
     addLap: vi.fn(),
     renameLap: vi.fn(),
     removeLap: vi.fn(),
+    undeleteLap: vi.fn(),
   },
 }));
 
@@ -152,6 +154,98 @@ describe("useProject", () => {
     );
   });
 
+  it("reset returns an undo that restores the previous stopwatch (paused)", () => {
+    const laps = [{ id: "l1", name: "Volta 1", lapTime: 1000 }];
+    const project = createProject({
+      currentLapTime: 5000,
+      isRunning: true,
+      startTimestamp: 1000,
+      lastActiveAt: 2000,
+      laps,
+    });
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    let undoer;
+    act(() => {
+      undoer = result.current.reset();
+    });
+    expect(undoer).toEqual(
+      expect.objectContaining({ undo: expect.any(Function) }),
+    );
+
+    mockRepository.setStopwatch.mockClear();
+
+    act(() => {
+      undoer.undo();
+    });
+
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith("test-id", {
+      ...project.stopwatch,
+      isRunning: false,
+      startTimestamp: null,
+      lastActiveAt: null,
+    });
+  });
+
+  it("discardCurrentTime zeroes currentLapTime and pauses", () => {
+    const project = createProject({
+      isRunning: true,
+      startTimestamp: 1000,
+      currentLapTime: 4000,
+    });
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    act(() => {
+      result.current.discardCurrentTime();
+    });
+
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+      "test-id",
+      expect.objectContaining({
+        isRunning: false,
+        startTimestamp: null,
+        lastActiveAt: null,
+        currentLapTime: 0,
+      }),
+    );
+  });
+
+  it("discardCurrentTime returns an undo that restores the prior currentLapTime (paused)", () => {
+    const project = createProject({
+      isRunning: true,
+      startTimestamp: 1000,
+      currentLapTime: 4000,
+    });
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    let undoer;
+    act(() => {
+      undoer = result.current.discardCurrentTime();
+    });
+    expect(undoer).toEqual(
+      expect.objectContaining({ undo: expect.any(Function) }),
+    );
+
+    mockRepository.setStopwatch.mockClear();
+
+    act(() => {
+      undoer.undo();
+    });
+
+    expect(mockRepository.setStopwatch).toHaveBeenCalledWith("test-id", {
+      ...project.stopwatch,
+      isRunning: false,
+      startTimestamp: null,
+      lastActiveAt: null,
+    });
+  });
+
   it("toggle calls start when stopped", () => {
     const project = createProject({ isRunning: false });
     mockUseLiveQuery.mockReturnValue(project);
@@ -256,6 +350,27 @@ describe("useProject", () => {
     expect(mockRepository.remove).toHaveBeenCalledWith("test-id");
   });
 
+  it("deleteProject returns an undo that calls undeleteProject", async () => {
+    const project = createProject();
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    let undoer;
+    await act(async () => {
+      undoer = await result.current.deleteProject();
+    });
+    expect(undoer).toEqual(
+      expect.objectContaining({ undo: expect.any(Function) }),
+    );
+
+    act(() => {
+      undoer.undo();
+    });
+
+    expect(mockRepository.undeleteProject).toHaveBeenCalledWith("test-id");
+  });
+
   it("renameLap calls repository", async () => {
     const project = createProject();
     mockUseLiveQuery.mockReturnValue(project);
@@ -309,6 +424,30 @@ describe("useProject", () => {
     });
 
     expect(mockRepository.removeLap).toHaveBeenCalledWith({
+      id: "test-id",
+      lapId: "lap-1",
+    });
+  });
+
+  it("deleteLap returns an undo that calls undeleteLap", async () => {
+    const project = createProject();
+    mockUseLiveQuery.mockReturnValue(project);
+
+    const { result } = renderHook(() => useProject("test-id"));
+
+    let undoer;
+    await act(async () => {
+      undoer = await result.current.deleteLap("lap-1");
+    });
+    expect(undoer).toEqual(
+      expect.objectContaining({ undo: expect.any(Function) }),
+    );
+
+    act(() => {
+      undoer.undo();
+    });
+
+    expect(mockRepository.undeleteLap).toHaveBeenCalledWith({
       id: "test-id",
       lapId: "lap-1",
     });

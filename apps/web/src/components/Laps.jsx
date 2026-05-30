@@ -20,6 +20,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useLongPress } from "@/hooks/useLongPress.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
+import { showUndoToast } from "@/lib/undoToast.js";
 import { toast } from "sonner";
 
 function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
@@ -178,9 +179,10 @@ export function Laps({
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
-    const id = pendingDelete.id;
+    const { id, name } = pendingDelete;
     setPendingDelete(null);
-    await onDeleteLap(id);
+    const { undo } = await onDeleteLap(id);
+    showUndoToast(`Volta "${name}" excluída`, undo);
   }
 
   return (
@@ -226,7 +228,7 @@ export function Laps({
         title="Apagar volta?"
         description={
           pendingDelete
-            ? `"${pendingDelete.name}" será removida e seu tempo será perdido. Essa ação não pode ser desfeita.`
+            ? `"${pendingDelete.name}" será removida e seu tempo deixará de contar no total.`
             : ""
         }
         confirmLabel="Apagar"

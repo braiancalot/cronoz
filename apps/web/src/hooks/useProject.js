@@ -120,10 +120,21 @@ export function useProject(projectId) {
   }
 
   function reset() {
+    const snapshot = { ...project.stopwatch };
     projectRepository.setStopwatch(project.id, { ...DEFAULT_STOPWATCH });
+    return {
+      undo: () =>
+        projectRepository.setStopwatch(project.id, {
+          ...snapshot,
+          isRunning: false,
+          startTimestamp: null,
+          lastActiveAt: null,
+        }),
+    };
   }
 
   function discardCurrentTime() {
+    const snapshot = { ...project.stopwatch };
     projectRepository.setStopwatch(project.id, {
       ...project.stopwatch,
       isRunning: false,
@@ -131,6 +142,15 @@ export function useProject(projectId) {
       lastActiveAt: null,
       currentLapTime: 0,
     });
+    return {
+      undo: () =>
+        projectRepository.setStopwatch(project.id, {
+          ...snapshot,
+          isRunning: false,
+          startTimestamp: null,
+          lastActiveAt: null,
+        }),
+    };
   }
 
   function toggle() {
@@ -152,7 +172,9 @@ export function useProject(projectId) {
   }
 
   async function deleteProject() {
-    await projectRepository.remove(project.id);
+    const id = project.id;
+    await projectRepository.remove(id);
+    return { undo: () => projectRepository.undeleteProject(id) };
   }
 
   async function renameLap(lapId, name) {
@@ -160,7 +182,9 @@ export function useProject(projectId) {
   }
 
   async function deleteLap(lapId) {
-    await projectRepository.removeLap({ id: project.id, lapId });
+    const id = project.id;
+    await projectRepository.removeLap({ id, lapId });
+    return { undo: () => projectRepository.undeleteLap({ id, lapId }) };
   }
 
   return {

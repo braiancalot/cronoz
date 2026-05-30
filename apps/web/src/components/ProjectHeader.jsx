@@ -17,6 +17,8 @@ export function ProjectHeader({
   onDelete,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
+  onReset,
+  canReset,
 }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
@@ -83,6 +85,9 @@ export function ProjectHeader({
               disabled={!canDiscardCurrentTime}
             >
               Descartar tempo atual
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onReset} disabled={!canReset}>
+              Resetar cronômetro
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={handleStartRename}>
