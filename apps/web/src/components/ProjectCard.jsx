@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu.jsx";
-import { calculateTotalTime } from "@/lib/stopwatch.js";
+import { calculateTotalTime, isStopwatchLive } from "@/lib/stopwatch.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { cn } from "@/lib/utils.js";
 
@@ -22,6 +22,9 @@ export function ProjectCard({
   const ignoreMs = useIgnoreMilliseconds();
   const displayTime = calculateTotalTime(project.stopwatch, { ignoreMs });
   const isCompleted = project.completedAt !== null;
+  // Running with a fresh heartbeat means it's ticking somewhere — almost always
+  // another device, since leaving for the Home screen pauses the local run.
+  const isLive = isStopwatchLive(project.stopwatch);
 
   return (
     <Link to={`/project/${project.id}`}>
@@ -33,7 +36,17 @@ export function ProjectCard({
         )}
       >
         <CardContent className="flex justify-between items-center">
-          <span>{project.name}</span>
+          <span className="flex items-center gap-2 min-w-0">
+            {isLive && (
+              <span
+                role="status"
+                aria-label="Ativo em outro dispositivo"
+                title="Ativo em outro dispositivo"
+                className="size-2 shrink-0 rounded-full bg-primary animate-pulse"
+              />
+            )}
+            <span className="truncate">{project.name}</span>
+          </span>
           <div className="flex items-center gap-4">
             <FormattedTime time={displayTime} />
             <DropdownMenu>

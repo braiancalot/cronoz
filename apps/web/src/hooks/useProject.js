@@ -4,17 +4,16 @@ import { useLiveQuery } from "dexie-react-hooks";
 import projectRepository, {
   DEFAULT_STOPWATCH,
 } from "@/services/projectRepository.js";
-import { calculateSplitTime, calculateTotalTime } from "@/lib/stopwatch.js";
+import {
+  calculateSplitTime,
+  calculateTotalTime,
+  isStopwatchStale,
+} from "@/lib/stopwatch.js";
 import { useAutoPause } from "./useAutoPause.js";
 import { useIgnoreMilliseconds } from "./useIgnoreMilliseconds.js";
 import { useWakeLock } from "./useWakeLock.js";
 
 const CHECKPOINT_INTERVAL = 10_000;
-
-// A fresh checkpoint within this window means another device (or a recent
-// same-device session) may still be alive — skip recovery to avoid pausing
-// a remote run. Must be > CHECKPOINT_INTERVAL + sync debounce + slack.
-const RECOVERY_GRACE_PERIOD = 30_000;
 
 export function useProject(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
@@ -43,12 +42,8 @@ export function useProject(projectId) {
     if (!project) return;
 
     const sw = project.stopwatch;
-    const isStale =
-      sw?.isRunning &&
-      sw.lastActiveAt &&
-      Date.now() - sw.lastActiveAt >= RECOVERY_GRACE_PERIOD;
 
-    if (isStale) {
+    if (isStopwatchStale(sw)) {
       const elapsed = sw.lastActiveAt - sw.startTimestamp;
       projectRepository.setStopwatch(project.id, {
         ...sw,

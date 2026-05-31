@@ -7,6 +7,9 @@ import {
   sumLapTimes,
   hasHours,
   truncateToSecond,
+  isStopwatchLive,
+  isStopwatchStale,
+  RECOVERY_GRACE_PERIOD,
 } from "@/lib/stopwatch.js";
 
 describe("formatTime", () => {
@@ -158,6 +161,38 @@ describe("calculateTotalTime", () => {
     expect(calculateTotalTime(stopwatch)).toBe(3000);
   });
 
+  it("caps elapsed at lastActiveAt when the heartbeat is stale", () => {
+    vi.setSystemTime(new Date(100000));
+
+    const stopwatch = {
+      isRunning: true,
+      startTimestamp: 7000,
+      lastActiveAt: 17000, // now - lastActiveAt = 83000 ≥ grace → stale
+      currentLapTime: 2000,
+      laps: [{ lapTime: 4000 }],
+    };
+
+    // elapsed capped at lastActiveAt: 17000 - 7000 = 10000
+    // sumLaps (4000) + currentLapTime (2000) + 10000 = 16000
+    expect(calculateTotalTime(stopwatch)).toBe(16000);
+  });
+
+  it("uses now (not lastActiveAt) when the heartbeat is fresh", () => {
+    vi.setSystemTime(new Date(20000));
+
+    const stopwatch = {
+      isRunning: true,
+      startTimestamp: 7000,
+      lastActiveAt: 19000, // now - lastActiveAt = 1000 < grace → live
+      currentLapTime: 1000,
+      laps: [{ lapTime: 4000 }],
+    };
+
+    // elapsed = now (20000) - startTimestamp (7000) = 13000
+    // sumLaps (4000) + currentLapTime (1000) + 13000 = 18000
+    expect(calculateTotalTime(stopwatch)).toBe(18000);
+  });
+
   it("truncates each lap before summing when ignoreMs is true", () => {
     const stopwatch = {
       isRunning: false,
@@ -237,6 +272,20 @@ describe("calculateSplitTime", () => {
       laps: [{ lapTime: 7000 }],
     };
     // currentLapTime (2000) + elapsed (5000) = 7000
+    expect(calculateSplitTime(stopwatch)).toBe(7000);
+  });
+
+  it("caps elapsed at lastActiveAt when the heartbeat is stale", () => {
+    vi.setSystemTime(new Date(100000));
+
+    const stopwatch = {
+      isRunning: true,
+      startTimestamp: 15000,
+      lastActiveAt: 20000, // stale
+      currentLapTime: 2000,
+      laps: [{ lapTime: 7000 }],
+    };
+    // currentLapTime (2000) + capped elapsed (20000 - 15000 = 5000) = 7000
     expect(calculateSplitTime(stopwatch)).toBe(7000);
   });
 
@@ -321,6 +370,75 @@ describe("formatTimeCompact", () => {
 
   it("returns 0s for 0", () => {
     expect(formatTimeCompact(0)).toBe("0s");
+  });
+});
+
+describe("isStopwatchLive", () => {
+  it("returns true when running with a fresh heartbeat", () => {
+    const now = 100000;
+    const stopwatch = {
+      isRunning: true,
+      lastActiveAt: now - (RECOVERY_GRACE_PERIOD - 1),
+    };
+    expect(isStopwatchLive(stopwatch, now)).toBe(true);
+  });
+
+  it("returns false when running with a stale heartbeat", () => {
+    const now = 100000;
+    const stopwatch = {
+      isRunning: true,
+      lastActiveAt: now - RECOVERY_GRACE_PERIOD,
+    };
+    expect(isStopwatchLive(stopwatch, now)).toBe(false);
+  });
+
+  it("returns false when paused", () => {
+    const now = 100000;
+    const stopwatch = { isRunning: false, lastActiveAt: now };
+    expect(isStopwatchLive(stopwatch, now)).toBe(false);
+  });
+
+  it("returns false when running without a heartbeat", () => {
+    expect(
+      isStopwatchLive({ isRunning: true, lastActiveAt: null }, 100000),
+    ).toBe(false);
+  });
+
+  it("returns false for null/undefined", () => {
+    expect(isStopwatchLive(null, 100000)).toBe(false);
+    expect(isStopwatchLive(undefined, 100000)).toBe(false);
+  });
+});
+
+describe("isStopwatchStale", () => {
+  it("returns true when running with a stale heartbeat", () => {
+    const now = 100000;
+    const stopwatch = {
+      isRunning: true,
+      lastActiveAt: now - RECOVERY_GRACE_PERIOD,
+    };
+    expect(isStopwatchStale(stopwatch, now)).toBe(true);
+  });
+
+  it("returns false when running with a fresh heartbeat", () => {
+    const now = 100000;
+    const stopwatch = {
+      isRunning: true,
+      lastActiveAt: now - (RECOVERY_GRACE_PERIOD - 1),
+    };
+    expect(isStopwatchStale(stopwatch, now)).toBe(false);
+  });
+
+  it("returns false when paused", () => {
+    const now = 100000;
+    const stopwatch = { isRunning: false, lastActiveAt: now - 999999 };
+    expect(isStopwatchStale(stopwatch, now)).toBe(false);
+  });
+
+  it("returns false when running without a heartbeat", () => {
+    expect(
+      isStopwatchStale({ isRunning: true, lastActiveAt: null }, 100000),
+    ).toBe(false);
   });
 });
 

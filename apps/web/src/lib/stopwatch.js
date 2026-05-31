@@ -1,3 +1,26 @@
+// A running stopwatch writes a heartbeat (lastActiveAt) every ~10s. If the
+// newest heartbeat is older than this, the run was abandoned (the device that
+// was ticking died) and its elapsed time should be capped at the last heartbeat
+// rather than kept growing. Single source of truth — also used by useProject's
+// recovery so the Home list and the project page agree on the displayed time.
+export const RECOVERY_GRACE_PERIOD = 30_000;
+
+export function isStopwatchLive(stopwatch, now = Date.now()) {
+  return Boolean(
+    stopwatch?.isRunning &&
+    stopwatch.lastActiveAt &&
+    now - stopwatch.lastActiveAt < RECOVERY_GRACE_PERIOD,
+  );
+}
+
+export function isStopwatchStale(stopwatch, now = Date.now()) {
+  return Boolean(
+    stopwatch?.isRunning &&
+    stopwatch.lastActiveAt &&
+    now - stopwatch.lastActiveAt >= RECOVERY_GRACE_PERIOD,
+  );
+}
+
 export function formatTime(ms) {
   const hours = Math.floor(ms / 3600000)
     .toString()
@@ -26,7 +49,11 @@ export function calculateTotalTime(stopwatch, { ignoreMs = false } = {}) {
   if (!stopwatch) return 0;
 
   const { isRunning, startTimestamp, currentLapTime, laps } = stopwatch;
-  const elapsed = isRunning && startTimestamp ? Date.now() - startTimestamp : 0;
+  const now = Date.now();
+  // Cap the running elapsed at lastActiveAt once the heartbeat goes stale, so an
+  // abandoned run stops growing — matches what useProject's recovery commits.
+  const end = isStopwatchStale(stopwatch, now) ? stopwatch.lastActiveAt : now;
+  const elapsed = isRunning && startTimestamp ? end - startTimestamp : 0;
   const inProgress = currentLapTime + elapsed;
 
   if (!ignoreMs) {
@@ -44,7 +71,9 @@ export function calculateSplitTime(stopwatch, { ignoreMs = false } = {}) {
   if (!stopwatch) return 0;
 
   const { isRunning, startTimestamp, currentLapTime } = stopwatch;
-  const elapsed = isRunning && startTimestamp ? Date.now() - startTimestamp : 0;
+  const now = Date.now();
+  const end = isStopwatchStale(stopwatch, now) ? stopwatch.lastActiveAt : now;
+  const elapsed = isRunning && startTimestamp ? end - startTimestamp : 0;
   const split = currentLapTime + elapsed;
 
   return ignoreMs ? truncateToSecond(split) : split;
