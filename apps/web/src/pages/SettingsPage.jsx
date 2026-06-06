@@ -1,8 +1,9 @@
 import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "react-router";
-import { useLiveQuery } from "dexie-react-hooks";
 
 import settingsRepository from "@/services/settingsRepository.js";
+import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
+import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Switch } from "@/components/ui/switch.jsx";
@@ -19,17 +20,8 @@ import { BackupCard } from "@/components/BackupCard.jsx";
 import { FEATURES } from "@/lib/featureFlags.js";
 
 export default function SettingsPage() {
-  const hourlyPrice = useLiveQuery(
-    () => settingsRepository.get("hourlyPrice"),
-    [],
-    10,
-  );
-
-  const ignoreMilliseconds = useLiveQuery(
-    () => settingsRepository.get("ignoreMilliseconds"),
-    [],
-    false,
-  );
+  const hourlyPrice = useHourlyPrice();
+  const ignoreMilliseconds = useIgnoreMilliseconds();
 
   async function handlePriceChange(e) {
     const value = parseFloat(e.target.value);

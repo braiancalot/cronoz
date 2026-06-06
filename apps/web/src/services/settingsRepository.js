@@ -1,7 +1,7 @@
 import db from "./db.js";
 import { emitMutation } from "./repoEvents.js";
 
-const DEFAULTS = {
+export const DEFAULTS = {
   hourlyPrice: 10,
   ignoreMilliseconds: false,
 };
@@ -9,6 +9,17 @@ const DEFAULTS = {
 async function get(key) {
   const entry = await db.settings.get(key);
   return entry ? entry.value : (DEFAULTS[key] ?? null);
+}
+
+async function getResolved() {
+  const entries = await db.settings.toArray();
+  const stored = Object.fromEntries(entries.map((e) => [e.key, e.value]));
+  return Object.fromEntries(
+    Object.keys(DEFAULTS).map((key) => [
+      key,
+      key in stored ? stored[key] : DEFAULTS[key],
+    ]),
+  );
 }
 
 async function set(key, value) {
@@ -26,6 +37,6 @@ async function applyFromSync({ key, value, updatedAt }) {
   await db.settings.put({ key, value, updatedAt });
 }
 
-const settingsRepository = { get, set, getAll, applyFromSync };
+const settingsRepository = { get, getResolved, set, getAll, applyFromSync };
 
 export default settingsRepository;

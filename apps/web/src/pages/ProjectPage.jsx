@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useLiveQuery } from "dexie-react-hooks";
 
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
-import settingsRepository from "@/services/settingsRepository.js";
+import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 
 import { ArrowLeftIcon } from "lucide-react";
 
@@ -28,11 +27,7 @@ export default function ProjectPage() {
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [lapName, setLapName] = useState("");
 
-  const hourlyPrice = useLiveQuery(
-    () => settingsRepository.get("hourlyPrice"),
-    [],
-    10,
-  );
+  const hourlyPrice = useHourlyPrice();
 
   const {
     isLoading,

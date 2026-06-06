@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { LAST_SYNCED_AT_KEY, SYNC_TOKEN_KEY } from "@cronoz/shared";
-import db from "@/services/db.js";
 import syncManager from "@/services/syncManager.js";
+import { useSyncData } from "@/providers/SyncStatusProvider.jsx";
 
 export function useSyncStatus() {
-  const tokenRow = useLiveQuery(() => db.internal.get(SYNC_TOKEN_KEY));
-  const lastSyncRow = useLiveQuery(() => db.internal.get(LAST_SYNCED_AT_KEY));
-
-  const isPaired = !!tokenRow?.value;
-  const lastSyncedAt = lastSyncRow?.value ?? null;
+  const { isPaired, lastSyncedAt } = useSyncData();
 
   const { syncing, error } = useSyncExternalStore(
     syncManager.subscribe,

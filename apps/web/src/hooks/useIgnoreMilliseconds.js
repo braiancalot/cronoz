@@ -1,11 +1,5 @@
-import { useLiveQuery } from "dexie-react-hooks";
-
-import settingsRepository from "@/services/settingsRepository.js";
+import { useSettings } from "@/providers/SettingsProvider.jsx";
 
 export function useIgnoreMilliseconds() {
-  return useLiveQuery(
-    () => settingsRepository.get("ignoreMilliseconds"),
-    [],
-    false,
-  );
+  return useSettings().ignoreMilliseconds;
 }

@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Outlet } from "react-router";
 import { InstallBanner } from "@/components/InstallBanner.jsx";
 import { Toaster } from "@/components/ui/sonner.jsx";
+import { SettingsProvider } from "@/providers/SettingsProvider.jsx";
+import { SyncStatusProvider } from "@/providers/SyncStatusProvider.jsx";
 import { useSyncManager } from "@/hooks/useSyncManager.js";
 import deviceService from "./services/deviceService.js";
 
@@ -15,10 +17,14 @@ export default function App() {
   useSyncManager();
 
   return (
-    <div className="antialiased h-full">
-      <Outlet />
-      <InstallBanner />
-      <Toaster />
-    </div>
+    <SettingsProvider>
+      <SyncStatusProvider>
+        <div className="antialiased h-full">
+          <Outlet />
+          <InstallBanner />
+          <Toaster />
+        </div>
+      </SyncStatusProvider>
+    </SettingsProvider>
   );
 }
