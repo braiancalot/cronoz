@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ArrowLeftIcon, MoreVerticalIcon } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
@@ -10,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
+import { useInlineRename } from "@/hooks/useInlineRename.js";
 
 export function ProjectHeader({
   name,
@@ -20,26 +20,19 @@ export function ProjectHeader({
   onReset,
   canReset,
 }) {
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newName, setNewName] = useState("");
+  const {
+    isEditing: isRenaming,
+    draft,
+    setDraft,
+    displayName,
+    start: handleStartRename,
+    cancel: handleCancel,
+    submit,
+  } = useInlineRename(name, onRename);
 
-  function handleStartRename() {
-    setNewName(name);
-    setIsRenaming(true);
-  }
-
-  async function handleRename(event) {
+  function handleRename(event) {
     event.preventDefault();
-    if (!newName) return;
-
-    await onRename(newName);
-    setIsRenaming(false);
-    setNewName("");
-  }
-
-  function handleCancel() {
-    setIsRenaming(false);
-    setNewName("");
+    submit();
   }
 
   return (
@@ -52,14 +45,14 @@ export function ProjectHeader({
         {isRenaming ? (
           <form onSubmit={handleRename} className="w-auto">
             <Input
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
               onFocus={(event) => event.target.select()}
               autoFocus
             />
           </form>
         ) : (
-          <h1 className="text-lg font-medium">{name}</h1>
+          <h1 className="text-lg font-medium">{displayName}</h1>
         )}
       </div>
 

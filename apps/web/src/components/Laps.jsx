@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { MoreVerticalIcon } from "lucide-react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -18,16 +18,30 @@ import {
 } from "@/components/ui/tooltip.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { useInlineRename } from "@/hooks/useInlineRename.js";
 import { useLongPress } from "@/hooks/useLongPress.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
 import { showUndoToast } from "@/lib/undoToast.js";
 import { toast } from "sonner";
 
 function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newName, setNewName] = useState("");
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const nameRef = useRef(null);
+
+  const handleRenameLap = useCallback(
+    (name) => onRename(lap.id, name),
+    [onRename, lap.id],
+  );
+
+  const {
+    isEditing: isRenaming,
+    draft,
+    setDraft,
+    displayName,
+    start: handleStartRename,
+    cancel: handleCancel,
+    submit,
+  } = useInlineRename(lap.name, handleRenameLap);
 
   const isTruncated = () => {
     const el = nameRef.current;
@@ -35,26 +49,12 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
   };
 
   const longPressHandlers = useLongPress(() => {
-    if (isTruncated()) toast(lap.name, { position: "top-center" });
+    if (isTruncated()) toast(displayName, { position: "top-center" });
   });
 
-  function handleStartRename() {
-    setNewName(lap.name);
-    setIsRenaming(true);
-  }
-
-  async function handleRename(event) {
+  function handleRename(event) {
     event.preventDefault();
-    if (!newName) return;
-
-    await onRename(lap.id, newName);
-    setIsRenaming(false);
-    setNewName("");
-  }
-
-  function handleCancel() {
-    setIsRenaming(false);
-    setNewName("");
+    submit();
   }
 
   function handleKeyDown(event) {
@@ -73,8 +73,8 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
         className="col-span-full flex items-center min-h-9"
       >
         <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleCancel}
           className="flex-1 h-7 text-sm"
@@ -98,10 +98,10 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
               onContextMenu={(e) => e.preventDefault()}
               {...longPressHandlers}
             >
-              {lap.name}
+              {displayName}
             </span>
           </TooltipTrigger>
-          <TooltipContent>{lap.name}</TooltipContent>
+          <TooltipContent>{displayName}</TooltipContent>
         </Tooltip>
       </div>
       <div
