@@ -5,9 +5,9 @@ PWA offline-first para gerenciar múltiplos cronômetros de projetos de crochê.
 ## Stack
 
 - **Monorepo** — Turborepo + npm workspaces
-- **Frontend** (`apps/web`) — Vite + React 19 + React Router + Tailwind CSS 4
-- **API** (`apps/api`) — Hono (serverless, para futura sincronização)
-- **Persistência** — Dexie (IndexedDB), offline-first
+- **Frontend** (`apps/web`) — Vite + React 19 + React Router + Tailwind CSS 4 + shadcn/ui
+- **API** (`apps/api`) — Hono (serverless) — pareamento e sincronização entre dispositivos
+- **Persistência** — Dexie (IndexedDB) offline-first; Postgres (Neon) via Drizzle ORM para o sync
 - **PWA** — vite-plugin-pwa (Workbox)
 
 ## Estrutura
@@ -16,8 +16,9 @@ PWA offline-first para gerenciar múltiplos cronômetros de projetos de crochê.
 cronoz/
 ├── apps/
 │   ├── web/     — SPA PWA (Vite + React Router)
-│   └── api/     — API Hono (health check, futuro sync)
-├── packages/    — Pacotes compartilhados (futuro)
+│   └── api/     — API Hono (pareamento + sync)
+├── packages/
+│   └── shared/  — constantes e schemas compartilhados (sync)
 ├── turbo.json
 └── package.json
 ```
@@ -34,16 +35,17 @@ npm run dev
 
 ## Scripts
 
-| Comando                 | Descrição                                |
-| ----------------------- | ---------------------------------------- |
-| `npm run dev`           | Inicia todos os apps em modo dev         |
-| `npm run build`         | Build de produção                        |
-| `npm run lint`          | ESLint em todos os workspaces            |
-| `npm run lint:check`    | Verifica formatação (Prettier)           |
-| `npm run test`          | Roda todos os testes                     |
-| `npm run test:coverage` | Testes com cobertura                     |
-| `npm run commit`        | Commit interativo (Conventional Commits) |
+| Comando                 | Descrição                                     |
+| ----------------------- | --------------------------------------------- |
+| `npm run dev`           | Inicia todos os apps em modo dev              |
+| `npm run build`         | Build de produção                             |
+| `npm run lint`          | ESLint em todos os workspaces                 |
+| `npm run lint:check`    | Verifica formatação (Prettier)                |
+| `npm run test`          | Roda todos os testes                          |
+| `npm run test:coverage` | Testes com cobertura                          |
+| `npm run services:up`   | Sobe os serviços locais (Postgres) via Docker |
+| `npm run services:down` | Derruba os serviços locais                    |
 
 ## Commits
 
-Este projeto usa [Conventional Commits](https://www.conventionalcommits.org/). Use `npm run commit` para criar commits padronizados.
+Este projeto usa [Conventional Commits](https://www.conventionalcommits.org/), validados por commitlint (hook do husky). Use `git commit` normalmente seguindo o padrão (`feat:`, `fix:`, `refactor:`...).

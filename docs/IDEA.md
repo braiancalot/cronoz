@@ -17,54 +17,55 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
 
 ## Stack
 
-**Em uso:**
-
 - Monorepo com Turborepo + npm workspaces
   - `apps/web` — Vite + React 19 + React Router (SPA, PWA offline-first)
   - `apps/api` — Hono (API serverless)
-- Tailwind CSS 4
-- Dexie (IndexedDB) — persistência local
+  - `packages/shared` — constantes e schemas Zod compartilhados (sync)
+- Tailwind CSS 4 + shadcn/ui — design system e componentes de UI
+- Dexie (IndexedDB) — persistência local offline-first
+- Drizzle ORM (adapter `drizzle-orm/neon-http`) + Neon (Postgres serverless) — banco remoto do sync
 - vite-plugin-pwa (Workbox) — PWA / Service Worker
 - Vercel — deploy (web e api)
 - Node 24
 
-**Planejado:**
+Arquitetura de sync: Dexie continua como banco local offline-first, Neon como banco remoto, a API Hono faz a ponte. Acesso ao Postgres via Drizzle ORM. Estratégia de conflito: last-write-wins. Deploy na Vercel, mantendo tudo no free tier.
 
-- `packages/shared` — tipos, schemas Zod, constantes compartilhadas (quando iniciar sync)
-- shadcn/ui — design system e componentes de UI
-- Drizzle ORM (adapter `drizzle-orm/neon-http`) — acesso type-safe ao banco
-- Neon (Postgres serverless) — banco remoto para sincronização
+## Sincronização entre Dispositivos (entregue)
 
-A arquitetura de sync: Dexie continua como banco local offline-first, Neon como banco remoto, Hono API faz a ponte. Drizzle ORM para acesso type-safe ao Postgres. Estratégia de conflito: last-write-wins. Deploy na Vercel. Objetivo é manter tudo no free tier.
+Sincroniza dados entre dispositivos sem login, via código de pareamento. Cada dispositivo tem um token único; um código temporário associa dispositivos a um grupo de sync; a autenticação na API Hono é via Bearer token. A troca é incremental (push/pull) com last-write-wins.
 
-## Pareamento entre Dispositivos
+## Estado Atual
 
-A ideia é sincronizar dados entre dispositivos através de um código simples, sem login. Estratégia provável: token único por dispositivo, associação via código de pareamento temporário, autenticação via JWT/Bearer no Hono. Detalhes de implementação ainda precisam ser definidos.
+A versão 1.0 está entregue e em uso em produção.
 
-## Escopo 1.0
-
-O que precisa estar pronto antes de considerar "versão 1.0":
+**Core (escopo 1.0):**
 
 - Criar, renomear, excluir, concluir e reabrir projetos
-- Cronômetro com start/pause
-- Voltas com modal + pausa automática ao marcar
-- Renomear e excluir voltas
+- Cronômetro com start/pause por projeto
+- Voltas com modal + pausa automática ao marcar; renomear e excluir voltas
 - Nomenclatura "Volta" (não "Lap")
-- Design system com shadcn/ui + página demo (`/design`)
-  - Configurar shadcn/ui (tema, tokens de cor, tipografia)
-  - Migrar componentes existentes para shadcn
-  - Página `/design` com catálogo dos componentes usados no app
-- Sincronização entre dispositivos (prioridade alta — bloqueio principal para uso real)
 - Cálculo de valor por hora
+- Projetos ativos separados dos concluídos
 - PWA offline instalável
-- Notas por projeto (tipo de linha, agulha, link de tutorial)
-- Tags/categorias para organizar projetos
-- Templates de voltas reutilizáveis
+- Design system com shadcn/ui + página demo (`/design`)
+- Sincronização entre dispositivos (código de pareamento)
+
+**Entregue além do escopo inicial:**
+
+- Backup/export e import dos dados
+- Undo (desfazer) para ações destrutivas
+- Recuperação de cronômetro entre dispositivos + indicador de "ativo em outro dispositivo" (heartbeat)
+- Preferência "ignorar milissegundos"
+- Wake lock (mantém a tela acesa com o cronômetro rodando)
+- Atalhos de teclado e auto-pause ao sair/minimizar o app
 
 ## Ideias Futuras
 
 Coisas que podem ser úteis mas não são prioridade agora:
 
+- Notas por projeto (tipo de linha, agulha, link de tutorial)
+- Tags/categorias para organizar projetos
+- Templates de voltas reutilizáveis
 - Tempo do cronômetro no título da aba do browser
 - Foto por volta para registrar progresso visual
 - Estimativa de tempo por projeto (ex: "12h de 20h")
