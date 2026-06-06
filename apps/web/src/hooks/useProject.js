@@ -90,6 +90,13 @@ export function useProject(projectId) {
   useAutoPause(pause);
   useWakeLock(project?.stopwatch?.isRunning ?? false);
 
+  // Reflect a stopwatch write in the display immediately, bridging the gap
+  // until useLiveQuery re-emits — otherwise the old time flashes for a frame.
+  function showStopwatch(sw) {
+    setDisplayTime(calculateTotalTime(sw, { ignoreMs }));
+    setSplitDisplayTime(calculateSplitTime(sw, { ignoreMs }));
+  }
+
   function start() {
     const now = Date.now();
     projectRepository.setStopwatch(project.id, {
@@ -116,35 +123,46 @@ export function useProject(projectId) {
 
   function reset() {
     const snapshot = { ...project.stopwatch };
-    projectRepository.setStopwatch(project.id, { ...DEFAULT_STOPWATCH });
+    const next = { ...DEFAULT_STOPWATCH };
+    projectRepository.setStopwatch(project.id, next);
+    showStopwatch(next);
     return {
-      undo: () =>
+      undo: () => {
+        // No optimistic display: reset cleared the laps, so the live project
+        // reports hasLaps=false for a frame and the total would show as the
+        // "current" time. Let the live query drive it consistently.
         projectRepository.setStopwatch(project.id, {
           ...snapshot,
           isRunning: false,
           startTimestamp: null,
           lastActiveAt: null,
-        }),
+        });
+      },
     };
   }
 
   function discardCurrentTime() {
     const snapshot = { ...project.stopwatch };
-    projectRepository.setStopwatch(project.id, {
+    const next = {
       ...project.stopwatch,
       isRunning: false,
       startTimestamp: null,
       lastActiveAt: null,
       currentLapTime: 0,
-    });
+    };
+    projectRepository.setStopwatch(project.id, next);
+    showStopwatch(next);
     return {
-      undo: () =>
-        projectRepository.setStopwatch(project.id, {
+      undo: () => {
+        const restored = {
           ...snapshot,
           isRunning: false,
           startTimestamp: null,
           lastActiveAt: null,
-        }),
+        };
+        projectRepository.setStopwatch(project.id, restored);
+        showStopwatch(restored);
+      },
     };
   }
 
