@@ -10,6 +10,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      "virtual:pwa-register/react": path.resolve(
+        __dirname,
+        "src/test/pwaRegisterStub.js",
+      ),
     },
   },
   test: {
@@ -22,6 +26,7 @@ export default defineConfig({
         "src/pages/**",
         "src/main.jsx",
         "src/App.jsx",
+        "src/test/**",
         // shadcn primitives — copy-pasted, no app logic worth testing
         "src/components/ui/**",
         // layout/presentational components excluded until UI redesign settles

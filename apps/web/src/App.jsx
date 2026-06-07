@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router";
 import { InstallBanner } from "@/components/InstallBanner.jsx";
+import { ReloadPrompt } from "@/components/ReloadPrompt.jsx";
 import { Toaster } from "@/components/ui/sonner.jsx";
 import { SettingsProvider } from "@/providers/SettingsProvider.jsx";
 import { SyncStatusProvider } from "@/providers/SyncStatusProvider.jsx";
@@ -22,6 +23,7 @@ export default function App() {
         <div className="antialiased h-full">
           <Outlet />
           <InstallBanner />
+          <ReloadPrompt />
           <Toaster />
         </div>
       </SyncStatusProvider>
