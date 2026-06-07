@@ -6,6 +6,7 @@ export function useKeyboardShortcuts({ onToggle }) {
       if (event.code === "Space") {
         const tag = event.target.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (event.target.closest?.('[role="dialog"], [role="menu"]')) return;
 
         event.preventDefault();
         onToggle();
