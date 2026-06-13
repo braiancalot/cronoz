@@ -121,52 +121,50 @@ export default function ProjectPage() {
   const canReset = canDiscardCurrentTime || hasLaps;
 
   return (
-    <PageContainer className="items-center overflow-y-auto">
-      <div className="flex flex-col min-h-full w-full">
-        <ProjectHeader
-          name={project.name}
-          onRename={rename}
-          onDelete={handleRequestDeleteProject}
-          onDiscardCurrentTime={handleRequestDiscard}
-          canDiscardCurrentTime={canDiscardCurrentTime}
-          onReset={handleRequestReset}
-          canReset={canReset}
-        />
+    <PageContainer className="items-center">
+      <ProjectHeader
+        name={project.name}
+        onRename={rename}
+        onDelete={handleRequestDeleteProject}
+        onDiscardCurrentTime={handleRequestDiscard}
+        canDiscardCurrentTime={canDiscardCurrentTime}
+        onReset={handleRequestReset}
+        canReset={canReset}
+      />
 
-        <div
-          onClick={project.stopwatch.isRunning ? pause : undefined}
-          className="flex flex-1 flex-col w-full items-center"
-        >
-          <section className="flex flex-1 items-center justify-center w-full mt-8">
-            <TimerDisplay
-              time={hasLaps ? splitDisplayTime : displayTime}
-              totalTime={hasLaps ? displayTime : null}
-              isRunning={project.stopwatch.isRunning}
-              hourlyPrice={hourlyPrice}
-            />
-          </section>
-
-          {(hasLaps || isAddingLap) && (
-            <Laps
-              laps={project.stopwatch.laps}
-              onRenameLap={renameLap}
-              onDeleteLap={deleteLap}
-              isAddingLap={isAddingLap}
-              addLapName={lapName}
-              onAddLapNameChange={setLapName}
-              onConfirmAddLap={handleConfirmAddLap}
-              onCancelAddLap={handleCancelAddLap}
-            />
-          )}
-
-          <TimerControls
+      <div
+        onClick={project.stopwatch.isRunning ? pause : undefined}
+        className="flex flex-1 flex-col w-full items-center min-h-0"
+      >
+        <section className="flex flex-1 items-center justify-center w-full mt-8">
+          <TimerDisplay
+            time={hasLaps ? splitDisplayTime : displayTime}
+            totalTime={hasLaps ? displayTime : null}
             isRunning={project.stopwatch.isRunning}
-            hasLapTime={splitDisplayTime > 0}
-            onStart={start}
-            onPause={pause}
-            onAddLap={handleStartAddLap}
+            hourlyPrice={hourlyPrice}
           />
-        </div>
+        </section>
+
+        {(hasLaps || isAddingLap) && (
+          <Laps
+            laps={project.stopwatch.laps}
+            onRenameLap={renameLap}
+            onDeleteLap={deleteLap}
+            isAddingLap={isAddingLap}
+            addLapName={lapName}
+            onAddLapNameChange={setLapName}
+            onConfirmAddLap={handleConfirmAddLap}
+            onCancelAddLap={handleCancelAddLap}
+          />
+        )}
+
+        <TimerControls
+          isRunning={project.stopwatch.isRunning}
+          hasLapTime={splitDisplayTime > 0}
+          onStart={start}
+          onPause={pause}
+          onAddLap={handleStartAddLap}
+        />
       </div>
 
       <ConfirmDialog
