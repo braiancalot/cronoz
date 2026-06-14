@@ -7,8 +7,10 @@ import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 
 import { ArrowLeftIcon } from "lucide-react";
 
+import { usePiPWindow } from "@/hooks/usePiPWindow.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
+import { PiPTimer } from "@/components/PiPTimer.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
@@ -47,6 +49,8 @@ export default function ProjectPage() {
   } = useProject(id);
 
   useKeyboardShortcuts({ onToggle: toggle });
+
+  const { isSupported: isPiPSupported, pipWindow, openPiP } = usePiPWindow();
 
   if (isLoading || isDeleting) return null;
 
@@ -130,6 +134,7 @@ export default function ProjectPage() {
         canDiscardCurrentTime={canDiscardCurrentTime}
         onReset={handleRequestReset}
         canReset={canReset}
+        onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
       />
 
       <div
@@ -166,6 +171,24 @@ export default function ProjectPage() {
           onAddLap={handleStartAddLap}
         />
       </div>
+
+      <PiPTimer pipWindow={pipWindow}>
+        <TimerDisplay
+          time={hasLaps ? splitDisplayTime : displayTime}
+          totalTime={hasLaps ? displayTime : null}
+          isRunning={project.stopwatch.isRunning}
+          hourlyPrice={hourlyPrice}
+        />
+
+        <TimerControls
+          isRunning={project.stopwatch.isRunning}
+          hasLapTime={splitDisplayTime > 0}
+          onStart={start}
+          onPause={pause}
+          showLap={false}
+          className="pb-0"
+        />
+      </PiPTimer>
 
       <ConfirmDialog
         open={isConfirmingDelete}

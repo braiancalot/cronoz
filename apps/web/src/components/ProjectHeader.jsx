@@ -1,4 +1,8 @@
-import { ArrowLeftIcon, MoreVerticalIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  MoreVerticalIcon,
+  PictureInPicture2Icon,
+} from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -19,6 +23,7 @@ export function ProjectHeader({
   canDiscardCurrentTime,
   onReset,
   canReset,
+  onOpenPiP,
 }) {
   const {
     isEditing: isRenaming,
@@ -66,31 +71,44 @@ export function ProjectHeader({
           </Button>
         </div>
       ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" title="Mais opções">
-              <MoreVerticalIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onSelect={onDiscardCurrentTime}
-              disabled={!canDiscardCurrentTime}
+        <div className="flex items-center gap-1">
+          {onOpenPiP && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Abrir em janela flutuante"
+              onClick={onOpenPiP}
             >
-              Descartar tempo atual
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onReset} disabled={!canReset}>
-              Resetar cronômetro
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={handleStartRename}>
-              Renomear
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-              Deletar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <PictureInPicture2Icon />
+            </Button>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="Mais opções">
+                <MoreVerticalIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={onDiscardCurrentTime}
+                disabled={!canDiscardCurrentTime}
+              >
+                Descartar tempo atual
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onReset} disabled={!canReset}>
+                Resetar cronômetro
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={handleStartRename}>
+                Renomear
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                Deletar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )}
     </header>
   );

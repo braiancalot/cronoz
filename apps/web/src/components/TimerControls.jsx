@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button.jsx";
+import { cn } from "@/lib/utils.js";
 
 export function TimerControls({
   isRunning,
@@ -6,17 +7,26 @@ export function TimerControls({
   onStart,
   onPause,
   onAddLap,
+  showLap = true,
+  className,
 }) {
   return (
-    <div className="flex w-full pb-8 gap-4 items-center justify-center">
-      <Button
-        variant="outline"
-        className="min-w-24 border-primary"
-        onClick={hasLapTime ? onAddLap : undefined}
-        disabled={!hasLapTime}
-      >
-        Volta
-      </Button>
+    <div
+      className={cn(
+        "flex w-full pb-8 gap-4 items-center justify-center",
+        className,
+      )}
+    >
+      {showLap && (
+        <Button
+          variant="outline"
+          className="min-w-24 border-primary"
+          onClick={hasLapTime ? onAddLap : undefined}
+          disabled={!hasLapTime}
+        >
+          Volta
+        </Button>
+      )}
 
       <Button
         variant={isRunning ? "secondary" : "default"}
