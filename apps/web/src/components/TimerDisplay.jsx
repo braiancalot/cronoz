@@ -17,6 +17,7 @@ export function TimerDisplay({
   totalTime = null,
   isRunning = false,
   hourlyPrice = 10,
+  enableCopy = true,
 }) {
   const ignoreMs = useIgnoreMilliseconds();
   const priceBase = totalTime !== null ? totalTime : time;
@@ -45,8 +46,12 @@ export function TimerDisplay({
           </span>
         )}
         <div
-          onClick={(e) => copyToClipboard(e, formatTimeCompact(time), "Tempo")}
-          className="cursor-pointer"
+          onClick={
+            enableCopy
+              ? (e) => copyToClipboard(e, formatTimeCompact(time), "Tempo")
+              : undefined
+          }
+          className={enableCopy ? "cursor-pointer" : undefined}
         >
           <FormattedTime
             time={time}
@@ -61,11 +66,20 @@ export function TimerDisplay({
         {totalTime !== null && (
           <>
             <div
-              onClick={(e) =>
-                !isRunning &&
-                copyToClipboard(e, formatTimeCompact(totalTime), "Tempo total")
+              onClick={
+                enableCopy && !isRunning
+                  ? (e) =>
+                      copyToClipboard(
+                        e,
+                        formatTimeCompact(totalTime),
+                        "Tempo total",
+                      )
+                  : undefined
               }
-              className={isRunning ? "invisible" : "cursor-pointer"}
+              className={cn(
+                isRunning && "invisible",
+                enableCopy && !isRunning && "cursor-pointer",
+              )}
             >
               <FormattedTime
                 time={totalTime}
@@ -74,7 +88,10 @@ export function TimerDisplay({
             </div>
 
             <span
-              className={`text-lg text-muted-foreground ${isRunning ? "invisible" : ""}`}
+              className={cn(
+                "text-lg text-muted-foreground",
+                isRunning && "invisible",
+              )}
             >
               •
             </span>
@@ -82,15 +99,20 @@ export function TimerDisplay({
         )}
 
         <span
-          onClick={(e) =>
-            !isRunning && copyToClipboard(e, priceFormatted, "Valor")
+          onClick={
+            enableCopy && !isRunning
+              ? (e) => copyToClipboard(e, priceFormatted, "Valor")
+              : undefined
           }
-          className={`font-medium text-md md:text-lg text-primary ${isRunning ? "invisible" : "cursor-pointer"}`}
+          className={cn(
+            "font-medium text-md md:text-lg text-primary",
+            isRunning ? "invisible" : enableCopy && "cursor-pointer",
+          )}
         >
           {priceFormatted}
         </span>
 
-        {totalTime !== null && (
+        {totalTime !== null && enableCopy && (
           <Button
             variant="ghost"
             size="icon-xs"
@@ -103,7 +125,7 @@ export function TimerDisplay({
             }
             title="Copiar tempo e valor"
             className={cn(
-              "text-muted-foreground transition-opacity md:absolute md:left-full md:top-1/2 md:-translate-y-1/2 md:ml-1 md:opacity-0 md:group-hover:opacity-100",
+              "text-muted-foreground transition-opacity md:absolute md:left-full md:inset-y-0 md:my-auto md:ml-1 md:opacity-0 md:group-hover:opacity-100",
               isRunning && "invisible transition-none",
             )}
           >

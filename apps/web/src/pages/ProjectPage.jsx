@@ -178,6 +178,7 @@ export default function ProjectPage() {
           totalTime={hasLaps ? displayTime : null}
           isRunning={project.stopwatch.isRunning}
           hourlyPrice={hourlyPrice}
+          enableCopy={false}
         />
 
         <TimerControls
