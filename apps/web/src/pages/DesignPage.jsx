@@ -1,15 +1,9 @@
 import { useState } from "react";
-import {
-  ArrowLeft,
-  Play,
-  Pause,
-  Plus,
-  Timer,
-  ListPlus,
-} from "@phosphor-icons/react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button.jsx";
+import { TimerControls } from "@/components/TimerControls.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
@@ -38,7 +32,6 @@ import {
   TabsContent,
 } from "@/components/ui/tabs.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
-import { cn } from "@/lib/utils.js";
 
 function Section({ title, children }) {
   return (
@@ -46,60 +39,6 @@ function Section({ title, children }) {
       <h2 className="text-lg font-semibold">{title}</h2>
       {children}
       <Separator />
-    </div>
-  );
-}
-
-function DemoCluster({ orientation = "horizontal", size = "md" }) {
-  const dims =
-    size === "sm"
-      ? { volta: "size-10 [&_svg]:size-6", main: "size-12 [&_svg]:size-7" }
-      : { volta: "size-12 [&_svg]:size-7", main: "size-14 [&_svg]:size-8" };
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-4",
-        orientation === "vertical" ? "flex-col" : "flex-row",
-      )}
-    >
-      <Button
-        variant="ghost"
-        className={cn("rounded-full bg-muted", dims.volta)}
-        aria-label="Volta"
-        title="Volta"
-      >
-        <Plus weight="bold" />
-      </Button>
-      <Button
-        className={cn("rounded-full", dims.main)}
-        aria-label="Pausar"
-        title="Pausar"
-      >
-        <Pause weight="fill" />
-      </Button>
-    </div>
-  );
-}
-
-function DemoTime({ size = "lg" }) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span
-        className={cn(
-          "font-medium tabular-nums",
-          size === "sm" ? "text-3xl" : "text-5xl",
-        )}
-      >
-        12:34
-      </span>
-      <span
-        className={cn(
-          "text-primary font-medium",
-          size === "sm" ? "text-xs" : "text-sm",
-        )}
-      >
-        R$ 37,39
-      </span>
     </div>
   );
 }
@@ -141,163 +80,34 @@ export default function DesignPage() {
           </div>
         </Section>
 
-        <Section title="Timer Controls — combinação escolhida (A + B)">
+        <Section title="Timer Controls">
           <p className="text-sm text-muted-foreground">
-            Start/Pause sólido (primary) + Volta tinted. Estados: rodando e
-            parado.
+            Botões redondos. Horizontal (tela normal) e vertical (tela
+            curta/PiP), nos estados parado e rodando.
           </p>
-          <div className="flex items-center gap-10">
-            <div className="flex items-center gap-5">
-              <Button
-                variant="ghost"
-                className="size-14 rounded-full bg-muted [&_svg]:size-7"
-                aria-label="Volta"
-                title="Volta"
-              >
-                <Plus weight="bold" />
-              </Button>
-              <Button
-                className="size-16 rounded-full [&_svg]:size-9"
-                aria-label="Pausar"
-                title="Pausar"
-              >
-                <Pause weight="fill" />
-              </Button>
-              <span className="text-xs text-muted-foreground">Rodando</span>
-            </div>
-
-            <div className="flex items-center gap-5">
-              <Button
-                variant="ghost"
-                className="size-14 rounded-full bg-muted [&_svg]:size-7"
-                aria-label="Volta"
-                title="Volta"
-              >
-                <Plus weight="bold" />
-              </Button>
-              <Button
-                className="size-16 rounded-full [&_svg]:size-9"
-                aria-label="Iniciar"
-                title="Iniciar"
-              >
-                <Play weight="fill" />
-              </Button>
-              <span className="text-xs text-muted-foreground">Parado</span>
-            </div>
-          </div>
-        </Section>
-
-        <Section title="Timer Controls — layout (ao lado vs embaixo)">
-          <p className="text-sm text-muted-foreground">
-            Tela normal: botões embaixo. Tela curta/split (pouca altura) e PiP:
-            cluster ao lado direito, aproveitando a largura.
-          </p>
-
-          <div className="flex flex-wrap gap-8 items-start">
-            <div className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                Tela normal — embaixo
-              </span>
-              <div className="w-56 h-80 rounded-2xl bg-card flex flex-col items-center p-4">
-                <div className="flex-1 flex items-center justify-center">
-                  <DemoTime />
-                </div>
-                <div className="pb-2">
-                  <DemoCluster />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                Tela curta / split — ao lado
-              </span>
-              <div className="w-[26rem] h-44 rounded-2xl bg-card flex items-center justify-center gap-6 p-4">
-                <div className="flex-1 flex items-center justify-center">
-                  <DemoTime />
-                </div>
-                <DemoCluster orientation="vertical" />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                PiP — ao lado (compacto)
-              </span>
-              <div className="w-72 h-40 rounded-2xl bg-card flex items-center justify-center gap-4 p-3">
-                <div className="flex-1 flex items-center justify-center">
-                  <DemoTime size="sm" />
-                </div>
-                <DemoCluster orientation="vertical" size="sm" />
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        <Section title="Ícone de Volta — candidatos (Phosphor)">
-          <p className="text-sm text-muted-foreground">
-            No círculo tinted escolhido. Qual representa melhor &quot;registrar
-            volta&quot;?
-          </p>
-
-          <div className="flex flex-wrap gap-10">
-            {[
-              { Icon: Plus, label: "Plus · adicionar volta" },
-              { Icon: Timer, label: "Timer · cronômetro/lap" },
-              { Icon: ListPlus, label: "ListPlus · lista de voltas" },
-            ].map(({ Icon, label }) => (
-              <div key={label} className="flex flex-col items-center gap-3">
-                <Button
-                  variant="ghost"
-                  className="size-14 rounded-full bg-muted [&_svg]:size-7"
-                  aria-label="Volta"
-                  title="Volta"
-                >
-                  <Icon weight="bold" />
-                </Button>
-                <span className="text-xs text-muted-foreground text-center">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section title="Play/Pause — peso do ícone (Phosphor)">
-          <p className="text-sm text-muted-foreground">
-            Antes era lucide preenchido (ficou pesado). O Phosphor tem pesos:
-            qual fica melhor no botão sólido?
-          </p>
-
-          <div className="flex flex-wrap gap-10">
-            {[
-              { weight: "regular", label: "Regular (outline)" },
-              { weight: "bold", label: "Bold" },
-              { weight: "fill", label: "Fill" },
-              { weight: "duotone", label: "Duotone" },
-            ].map(({ weight, label }) => (
-              <div key={weight} className="flex flex-col items-center gap-3">
-                <div className="flex items-center gap-4">
-                  <Button
-                    className="size-16 rounded-full [&_svg]:size-9"
-                    aria-label="Iniciar"
-                    title="Iniciar"
-                  >
-                    <Play weight={weight} />
-                  </Button>
-                  <Button
-                    className="size-16 rounded-full [&_svg]:size-9"
-                    aria-label="Pausar"
-                    title="Pausar"
-                  >
-                    <Pause weight={weight} />
-                  </Button>
-                </div>
-                <span className="text-xs text-muted-foreground text-center">
-                  {label}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-wrap items-start gap-12">
+            <TimerControls
+              isRunning={false}
+              hasLapTime
+              onStart={() => {}}
+              onPause={() => {}}
+              onAddLap={() => {}}
+            />
+            <TimerControls
+              isRunning
+              hasLapTime
+              onStart={() => {}}
+              onPause={() => {}}
+              onAddLap={() => {}}
+            />
+            <TimerControls
+              isRunning
+              hasLapTime
+              orientation="vertical"
+              onStart={() => {}}
+              onPause={() => {}}
+              onAddLap={() => {}}
+            />
           </div>
         </Section>
 
