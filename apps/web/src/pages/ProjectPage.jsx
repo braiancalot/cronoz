@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
+import { useShortViewport } from "@/hooks/useShortViewport.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 
 import { ArrowLeftIcon } from "lucide-react";
@@ -51,6 +52,8 @@ export default function ProjectPage() {
   useKeyboardShortcuts({ onToggle: toggle });
 
   const { isSupported: isPiPSupported, pipWindow, openPiP } = usePiPWindow();
+
+  const isShort = useShortViewport();
 
   if (isLoading || isDeleting) return null;
 
@@ -137,40 +140,84 @@ export default function ProjectPage() {
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
       />
 
-      <div
-        onClick={project.stopwatch.isRunning ? pause : undefined}
-        className="flex flex-1 flex-col w-full items-center min-h-0"
-      >
-        <section className="flex flex-1 items-center justify-center w-full mt-8">
-          <TimerDisplay
-            time={hasLaps ? splitDisplayTime : displayTime}
-            totalTime={hasLaps ? displayTime : null}
+      {isShort ? (
+        <div
+          onClick={project.stopwatch.isRunning ? pause : undefined}
+          className="flex flex-1 w-full min-h-0 items-stretch gap-4"
+        >
+          <div className="flex flex-1 flex-col items-center min-h-0">
+            <section className="flex flex-1 items-center justify-center w-full">
+              <TimerDisplay
+                time={hasLaps ? splitDisplayTime : displayTime}
+                totalTime={hasLaps ? displayTime : null}
+                isRunning={project.stopwatch.isRunning}
+                hourlyPrice={hourlyPrice}
+              />
+            </section>
+
+            {(hasLaps || isAddingLap) && (
+              <Laps
+                laps={project.stopwatch.laps}
+                onRenameLap={renameLap}
+                onDeleteLap={deleteLap}
+                isAddingLap={isAddingLap}
+                addLapName={lapName}
+                onAddLapNameChange={setLapName}
+                onConfirmAddLap={handleConfirmAddLap}
+                onCancelAddLap={handleCancelAddLap}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center pr-2">
+            <TimerControls
+              isRunning={project.stopwatch.isRunning}
+              hasLapTime={splitDisplayTime > 0}
+              onStart={start}
+              onPause={pause}
+              onAddLap={handleStartAddLap}
+              orientation="vertical"
+            />
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={project.stopwatch.isRunning ? pause : undefined}
+          className="flex flex-1 flex-col w-full items-center min-h-0"
+        >
+          <section className="flex flex-1 items-center justify-center w-full mt-8">
+            <TimerDisplay
+              time={hasLaps ? splitDisplayTime : displayTime}
+              totalTime={hasLaps ? displayTime : null}
+              isRunning={project.stopwatch.isRunning}
+              hourlyPrice={hourlyPrice}
+            />
+          </section>
+
+          {(hasLaps || isAddingLap) && (
+            <Laps
+              laps={project.stopwatch.laps}
+              onRenameLap={renameLap}
+              onDeleteLap={deleteLap}
+              isAddingLap={isAddingLap}
+              addLapName={lapName}
+              onAddLapNameChange={setLapName}
+              onConfirmAddLap={handleConfirmAddLap}
+              onCancelAddLap={handleCancelAddLap}
+            />
+          )}
+
+          <TimerControls
             isRunning={project.stopwatch.isRunning}
-            hourlyPrice={hourlyPrice}
+            hasLapTime={splitDisplayTime > 0}
+            onStart={start}
+            onPause={pause}
+            onAddLap={handleStartAddLap}
+            orientation="horizontal"
+            className="pb-8"
           />
-        </section>
-
-        {(hasLaps || isAddingLap) && (
-          <Laps
-            laps={project.stopwatch.laps}
-            onRenameLap={renameLap}
-            onDeleteLap={deleteLap}
-            isAddingLap={isAddingLap}
-            addLapName={lapName}
-            onAddLapNameChange={setLapName}
-            onConfirmAddLap={handleConfirmAddLap}
-            onCancelAddLap={handleCancelAddLap}
-          />
-        )}
-
-        <TimerControls
-          isRunning={project.stopwatch.isRunning}
-          hasLapTime={splitDisplayTime > 0}
-          onStart={start}
-          onPause={pause}
-          onAddLap={handleStartAddLap}
-        />
-      </div>
+        </div>
+      )}
 
       <PiPTimer pipWindow={pipWindow}>
         <TimerDisplay
@@ -189,7 +236,7 @@ export default function ProjectPage() {
           onPause={pause}
           showLap={false}
           size="compact"
-          className="pb-0"
+          orientation="vertical"
         />
       </PiPTimer>
 
