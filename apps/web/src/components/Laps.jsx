@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { MoreVerticalIcon } from "lucide-react";
+import { DotsThreeVertical } from "@phosphor-icons/react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -126,7 +126,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon-xs" title="Mais opções">
-            <MoreVerticalIcon />
+            <DotsThreeVertical />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

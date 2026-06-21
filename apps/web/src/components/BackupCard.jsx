@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { DownloadIcon, UploadIcon } from "lucide-react";
+import { DownloadSimple, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import backupService, { BackupError } from "@/services/backupService.js";
 import {
@@ -103,10 +103,10 @@ export function BackupCard() {
       <CardContent>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button onClick={handleExport}>
-            <DownloadIcon /> Exportar
+            <DownloadSimple /> Exportar
           </Button>
           <Button variant="outline" onClick={handleImportClick}>
-            <UploadIcon /> Importar
+            <UploadSimple /> Importar
           </Button>
           <input
             ref={fileInputRef}

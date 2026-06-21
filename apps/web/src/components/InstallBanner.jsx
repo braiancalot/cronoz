@@ -1,4 +1,4 @@
-import { XIcon } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
@@ -25,7 +25,7 @@ export function InstallBanner() {
             onClick={dismiss}
             aria-label="Fechar"
           >
-            <XIcon />
+            <X />
           </Button>
         </div>
       </CardContent>

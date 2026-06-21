@@ -1,4 +1,4 @@
-import { CopyIcon } from "lucide-react";
+import { Copy } from "@phosphor-icons/react";
 import { formatTimeCompact } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -181,7 +181,7 @@ export function TimerDisplay({
                   isRunning && "invisible transition-none",
                 )}
               >
-                <CopyIcon />
+                <Copy />
               </Button>
             )}
           </div>

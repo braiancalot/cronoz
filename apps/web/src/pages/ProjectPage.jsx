@@ -6,7 +6,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useShortViewport } from "@/hooks/useShortViewport.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeft } from "@phosphor-icons/react";
 
 import { usePiPWindow } from "@/hooks/usePiPWindow.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
@@ -115,7 +115,7 @@ export default function ProjectPage() {
       <PageContainer className="items-center justify-center">
         <EmptyState message="Projeto não encontrado.">
           <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeftIcon /> Voltar para a tela inicial
+            <ArrowLeft /> Voltar para a tela inicial
           </Button>
         </EmptyState>
       </PageContainer>
