@@ -179,6 +179,7 @@ export default function ProjectPage() {
           isRunning={project.stopwatch.isRunning}
           hourlyPrice={hourlyPrice}
           enableCopy={false}
+          size="compact"
         />
 
         <TimerControls
@@ -187,6 +188,7 @@ export default function ProjectPage() {
           onStart={start}
           onPause={pause}
           showLap={false}
+          size="compact"
           className="pb-0"
         />
       </PiPTimer>

@@ -1,6 +1,11 @@
 import { Button } from "@/components/ui/button.jsx";
 import { cn } from "@/lib/utils.js";
 
+const SIZES = {
+  default: { button: "default", minWidth: "min-w-24" },
+  compact: { button: "sm", minWidth: "min-w-20" },
+};
+
 export function TimerControls({
   isRunning,
   hasLapTime,
@@ -8,8 +13,11 @@ export function TimerControls({
   onPause,
   onAddLap,
   showLap = true,
+  size = "default",
   className,
 }) {
+  const s = SIZES[size];
+
   return (
     <div
       className={cn(
@@ -20,7 +28,8 @@ export function TimerControls({
       {showLap && (
         <Button
           variant="outline"
-          className="min-w-24 border-primary"
+          size={s.button}
+          className={cn(s.minWidth, "border-primary")}
           onClick={hasLapTime ? onAddLap : undefined}
           disabled={!hasLapTime}
         >
@@ -30,7 +39,8 @@ export function TimerControls({
 
       <Button
         variant={isRunning ? "secondary" : "default"}
-        className="min-w-24"
+        size={s.button}
+        className={s.minWidth}
         onClick={isRunning ? onPause : onStart}
       >
         {isRunning ? "Pause" : "Start"}
