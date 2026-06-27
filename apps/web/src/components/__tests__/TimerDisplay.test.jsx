@@ -18,11 +18,13 @@ describe("TimerDisplay", () => {
     expect(screen.getByText("R$ 100,00")).toBeInTheDocument();
   });
 
-  it("makes price invisible when running", () => {
+  it("collapses the meta line when running", () => {
     render(<TimerDisplay time={3600000} hourlyPrice={100} isRunning />);
 
     const price = screen.getByText("R$ 100,00");
-    expect(price).toHaveClass("invisible");
+    const collapse = price.closest(".grid");
+    expect(collapse).toHaveClass("opacity-0");
+    expect(collapse).toHaveClass("grid-rows-[0fr]");
   });
 
   it("shows totalTime separately when paused with totalTime prop", () => {
@@ -34,11 +36,12 @@ describe("TimerDisplay", () => {
     expect(container.textContent).toContain("•");
   });
 
-  it("hides totalTime block (invisible) when running", () => {
+  it("collapses the totalTime block when running", () => {
     render(<TimerDisplay time={5000} totalTime={10000} isRunning />);
 
     const separator = screen.getByText("•");
-    expect(separator).toHaveClass("invisible");
+    const collapse = separator.closest(".grid");
+    expect(collapse).toHaveClass("opacity-0");
   });
 
   it("calculates price from totalTime when provided", () => {

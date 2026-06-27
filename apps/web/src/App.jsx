@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router";
+import { IconContext } from "@phosphor-icons/react";
 import { InstallBanner } from "@/components/InstallBanner.jsx";
 import { ReloadPrompt } from "@/components/ReloadPrompt.jsx";
 import { Toaster } from "@/components/ui/sonner.jsx";
@@ -20,12 +21,14 @@ export default function App() {
   return (
     <SettingsProvider>
       <SyncStatusProvider>
-        <div className="antialiased h-full">
-          <Outlet />
-          <InstallBanner />
-          <ReloadPrompt />
-          <Toaster />
-        </div>
+        <IconContext.Provider value={{ weight: "bold" }}>
+          <div className="antialiased h-full">
+            <Outlet />
+            <InstallBanner />
+            <ReloadPrompt />
+            <Toaster />
+          </div>
+        </IconContext.Provider>
       </SyncStatusProvider>
     </SettingsProvider>
   );

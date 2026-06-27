@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button.jsx";
+import { TimerControls } from "@/components/TimerControls.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
@@ -50,7 +51,7 @@ export default function DesignPage() {
     <PageContainer className="max-w-300 mx-auto pb-12 overflow-auto">
       <header className="flex items-center gap-4 py-4">
         <Link to="/" className="text-lg">
-          <ArrowLeftIcon />
+          <ArrowLeft />
         </Link>
         <h1 className="text-lg font-bold tracking-tight">Design System</h1>
       </header>
@@ -76,6 +77,37 @@ export default function DesignPage() {
             <Button variant="outline" className="border-primary">
               Outline Primary
             </Button>
+          </div>
+        </Section>
+
+        <Section title="Timer Controls">
+          <p className="text-sm text-muted-foreground">
+            Botões redondos. Horizontal (tela normal) e vertical (tela
+            curta/PiP), nos estados parado e rodando.
+          </p>
+          <div className="flex flex-wrap items-start gap-12">
+            <TimerControls
+              isRunning={false}
+              hasLapTime
+              onStart={() => {}}
+              onPause={() => {}}
+              onAddLap={() => {}}
+            />
+            <TimerControls
+              isRunning
+              hasLapTime
+              onStart={() => {}}
+              onPause={() => {}}
+              onAddLap={() => {}}
+            />
+            <TimerControls
+              isRunning
+              hasLapTime
+              orientation="vertical"
+              onStart={() => {}}
+              onPause={() => {}}
+              onAddLap={() => {}}
+            />
           </div>
         </Section>
 

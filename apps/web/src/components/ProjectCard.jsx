@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { MoreVerticalIcon } from "lucide-react";
+import { DotsThreeVertical } from "@phosphor-icons/react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
@@ -60,7 +60,7 @@ export function ProjectCard({
                   }}
                   title="Mais opções"
                 >
-                  <MoreVerticalIcon />
+                  <DotsThreeVertical />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent

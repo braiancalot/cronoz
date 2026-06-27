@@ -1,4 +1,4 @@
-import { SettingsIcon } from "lucide-react";
+import { Gear } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
 import { SyncIndicator } from "@/components/SyncIndicator.jsx";
@@ -13,7 +13,7 @@ export function AppHeader() {
         {FEATURES.sync && <SyncIndicator />}
         <Button variant="ghost" size="icon-sm" asChild>
           <Link to="/settings" aria-label="Configurações">
-            <SettingsIcon />
+            <Gear />
           </Link>
         </Button>
       </div>

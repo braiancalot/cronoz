@@ -3,9 +3,10 @@ import { useNavigate, useParams } from "react-router";
 
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
+import { useShortViewport } from "@/hooks/useShortViewport.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeft } from "@phosphor-icons/react";
 
 import { usePiPWindow } from "@/hooks/usePiPWindow.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
@@ -18,6 +19,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { showUndoToast } from "@/lib/undoToast.js";
+import { cn } from "@/lib/utils.js";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -51,6 +53,8 @@ export default function ProjectPage() {
   useKeyboardShortcuts({ onToggle: toggle });
 
   const { isSupported: isPiPSupported, pipWindow, openPiP } = usePiPWindow();
+
+  const isShort = useShortViewport();
 
   if (isLoading || isDeleting) return null;
 
@@ -112,7 +116,7 @@ export default function ProjectPage() {
       <PageContainer className="items-center justify-center">
         <EmptyState message="Projeto não encontrado.">
           <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeftIcon /> Voltar para a tela inicial
+            <ArrowLeft /> Voltar para a tela inicial
           </Button>
         </EmptyState>
       </PageContainer>
@@ -137,40 +141,88 @@ export default function ProjectPage() {
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
       />
 
-      <div
-        onClick={project.stopwatch.isRunning ? pause : undefined}
-        className="flex flex-1 flex-col w-full items-center min-h-0"
-      >
-        <section className="flex flex-1 items-center justify-center w-full mt-8">
-          <TimerDisplay
-            time={hasLaps ? splitDisplayTime : displayTime}
-            totalTime={hasLaps ? displayTime : null}
+      {isShort ? (
+        <div
+          onClick={project.stopwatch.isRunning ? pause : undefined}
+          className="flex flex-1 flex-col w-full min-h-0 items-center"
+        >
+          <div
+            className={cn(
+              "flex items-center gap-6 sm:gap-12 shrink-0",
+              hasLaps || isAddingLap ? "pt-2" : "flex-1",
+            )}
+          >
+            <TimerDisplay
+              time={hasLaps ? splitDisplayTime : displayTime}
+              totalTime={hasLaps ? displayTime : null}
+              isRunning={project.stopwatch.isRunning}
+              hourlyPrice={hourlyPrice}
+              size="compact"
+            />
+
+            <TimerControls
+              isRunning={project.stopwatch.isRunning}
+              hasLapTime={splitDisplayTime > 0}
+              onStart={start}
+              onPause={pause}
+              onAddLap={handleStartAddLap}
+              orientation="vertical"
+              size="compact"
+            />
+          </div>
+
+          {(hasLaps || isAddingLap) && (
+            <Laps
+              laps={project.stopwatch.laps}
+              onRenameLap={renameLap}
+              onDeleteLap={deleteLap}
+              isAddingLap={isAddingLap}
+              addLapName={lapName}
+              onAddLapNameChange={setLapName}
+              onConfirmAddLap={handleConfirmAddLap}
+              onCancelAddLap={handleCancelAddLap}
+              className="mt-4 mb-4"
+            />
+          )}
+        </div>
+      ) : (
+        <div
+          onClick={project.stopwatch.isRunning ? pause : undefined}
+          className="flex flex-1 flex-col w-full items-center min-h-0"
+        >
+          <section className="flex flex-1 items-center justify-center w-full mt-8">
+            <TimerDisplay
+              time={hasLaps ? splitDisplayTime : displayTime}
+              totalTime={hasLaps ? displayTime : null}
+              isRunning={project.stopwatch.isRunning}
+              hourlyPrice={hourlyPrice}
+            />
+          </section>
+
+          {(hasLaps || isAddingLap) && (
+            <Laps
+              laps={project.stopwatch.laps}
+              onRenameLap={renameLap}
+              onDeleteLap={deleteLap}
+              isAddingLap={isAddingLap}
+              addLapName={lapName}
+              onAddLapNameChange={setLapName}
+              onConfirmAddLap={handleConfirmAddLap}
+              onCancelAddLap={handleCancelAddLap}
+            />
+          )}
+
+          <TimerControls
             isRunning={project.stopwatch.isRunning}
-            hourlyPrice={hourlyPrice}
+            hasLapTime={splitDisplayTime > 0}
+            onStart={start}
+            onPause={pause}
+            onAddLap={handleStartAddLap}
+            orientation="horizontal"
+            className="pb-8"
           />
-        </section>
-
-        {(hasLaps || isAddingLap) && (
-          <Laps
-            laps={project.stopwatch.laps}
-            onRenameLap={renameLap}
-            onDeleteLap={deleteLap}
-            isAddingLap={isAddingLap}
-            addLapName={lapName}
-            onAddLapNameChange={setLapName}
-            onConfirmAddLap={handleConfirmAddLap}
-            onCancelAddLap={handleCancelAddLap}
-          />
-        )}
-
-        <TimerControls
-          isRunning={project.stopwatch.isRunning}
-          hasLapTime={splitDisplayTime > 0}
-          onStart={start}
-          onPause={pause}
-          onAddLap={handleStartAddLap}
-        />
-      </div>
+        </div>
+      )}
 
       <PiPTimer pipWindow={pipWindow}>
         <TimerDisplay
@@ -179,6 +231,7 @@ export default function ProjectPage() {
           isRunning={project.stopwatch.isRunning}
           hourlyPrice={hourlyPrice}
           enableCopy={false}
+          size="mini"
         />
 
         <TimerControls
@@ -187,7 +240,8 @@ export default function ProjectPage() {
           onStart={start}
           onPause={pause}
           showLap={false}
-          className="pb-0"
+          size="compact"
+          orientation="vertical"
         />
       </PiPTimer>
 
