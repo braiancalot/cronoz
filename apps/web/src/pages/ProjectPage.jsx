@@ -12,6 +12,7 @@ import { usePiPWindow } from "@/hooks/usePiPWindow.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { PiPTimer } from "@/components/PiPTimer.jsx";
+import { PiPContent } from "@/components/PiPContent.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
@@ -97,6 +98,11 @@ export default function ProjectPage() {
 
   function handleConfirmDiscard() {
     setIsConfirmingDiscard(false);
+    const { undo } = discardCurrentTime();
+    showUndoToast("Tempo atual descartado", undo);
+  }
+
+  function handlePiPDiscard() {
     const { undo } = discardCurrentTime();
     showUndoToast("Tempo atual descartado", undo);
   }
@@ -225,23 +231,19 @@ export default function ProjectPage() {
       )}
 
       <PiPTimer pipWindow={pipWindow}>
-        <TimerDisplay
+        <PiPContent
+          name={project.name}
           time={hasLaps ? splitDisplayTime : displayTime}
           totalTime={hasLaps ? displayTime : null}
           isRunning={project.stopwatch.isRunning}
           hourlyPrice={hourlyPrice}
-          enableCopy={false}
-          size="mini"
-        />
-
-        <TimerControls
-          isRunning={project.stopwatch.isRunning}
           hasLapTime={splitDisplayTime > 0}
+          lapCount={project.stopwatch.laps?.length ?? 0}
           onStart={start}
           onPause={pause}
-          showLap={false}
-          size="compact"
-          orientation="vertical"
+          onAddLap={addLap}
+          onDiscardCurrentTime={handlePiPDiscard}
+          canDiscardCurrentTime={canDiscardCurrentTime}
         />
       </PiPTimer>
 
