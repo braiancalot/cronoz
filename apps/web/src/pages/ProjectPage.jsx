@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { showUndoToast } from "@/lib/undoToast.js";
+import { cn } from "@/lib/utils.js";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -143,33 +144,22 @@ export default function ProjectPage() {
       {isShort ? (
         <div
           onClick={project.stopwatch.isRunning ? pause : undefined}
-          className="flex flex-1 w-full min-h-0 items-stretch gap-4"
+          className="flex flex-1 flex-col w-full min-h-0 items-center"
         >
-          <div className="flex flex-1 flex-col items-center min-h-0">
-            <section className="flex flex-1 items-center justify-center w-full">
-              <TimerDisplay
-                time={hasLaps ? splitDisplayTime : displayTime}
-                totalTime={hasLaps ? displayTime : null}
-                isRunning={project.stopwatch.isRunning}
-                hourlyPrice={hourlyPrice}
-              />
-            </section>
-
-            {(hasLaps || isAddingLap) && (
-              <Laps
-                laps={project.stopwatch.laps}
-                onRenameLap={renameLap}
-                onDeleteLap={deleteLap}
-                isAddingLap={isAddingLap}
-                addLapName={lapName}
-                onAddLapNameChange={setLapName}
-                onConfirmAddLap={handleConfirmAddLap}
-                onCancelAddLap={handleCancelAddLap}
-              />
+          <div
+            className={cn(
+              "flex items-center gap-6 sm:gap-12 shrink-0",
+              hasLaps || isAddingLap ? "pt-2" : "flex-1",
             )}
-          </div>
+          >
+            <TimerDisplay
+              time={hasLaps ? splitDisplayTime : displayTime}
+              totalTime={hasLaps ? displayTime : null}
+              isRunning={project.stopwatch.isRunning}
+              hourlyPrice={hourlyPrice}
+              size="compact"
+            />
 
-          <div className="flex items-center pr-2">
             <TimerControls
               isRunning={project.stopwatch.isRunning}
               hasLapTime={splitDisplayTime > 0}
@@ -177,8 +167,23 @@ export default function ProjectPage() {
               onPause={pause}
               onAddLap={handleStartAddLap}
               orientation="vertical"
+              size="compact"
             />
           </div>
+
+          {(hasLaps || isAddingLap) && (
+            <Laps
+              laps={project.stopwatch.laps}
+              onRenameLap={renameLap}
+              onDeleteLap={deleteLap}
+              isAddingLap={isAddingLap}
+              addLapName={lapName}
+              onAddLapNameChange={setLapName}
+              onConfirmAddLap={handleConfirmAddLap}
+              onCancelAddLap={handleCancelAddLap}
+              className="mt-4 mb-4"
+            />
+          )}
         </div>
       ) : (
         <div
@@ -226,7 +231,7 @@ export default function ProjectPage() {
           isRunning={project.stopwatch.isRunning}
           hourlyPrice={hourlyPrice}
           enableCopy={false}
-          size="compact"
+          size="mini"
         />
 
         <TimerControls

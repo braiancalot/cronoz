@@ -22,6 +22,7 @@ import { useInlineRename } from "@/hooks/useInlineRename.js";
 import { useLongPress } from "@/hooks/useLongPress.js";
 import { formatTimeCompact, truncateToSecond } from "@/lib/stopwatch.js";
 import { showUndoToast } from "@/lib/undoToast.js";
+import { cn } from "@/lib/utils.js";
 import { toast } from "sonner";
 
 function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
@@ -164,6 +165,7 @@ export function Laps({
   onAddLapNameChange,
   onConfirmAddLap,
   onCancelAddLap,
+  className,
 }) {
   const ignoreMs = useIgnoreMilliseconds();
   const activeLaps = laps?.filter((lap) => !lap.deletedAt);
@@ -189,7 +191,10 @@ export function Laps({
     <>
       <Card
         size="xs"
-        className="mt-8 mb-8 w-full max-w-125 py-0 min-h-12 max-h-54"
+        className={cn(
+          "mt-8 mb-8 w-full max-w-125 py-0 min-h-12 max-h-54",
+          className,
+        )}
       >
         <ScrollArea className="flex-1 min-h-0">
           <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2 w-full">

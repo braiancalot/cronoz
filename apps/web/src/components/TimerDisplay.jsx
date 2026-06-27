@@ -17,11 +17,17 @@ const SIZES = {
     price: "text-base md:text-lg",
     indicatorOffset: "-left-8",
     indicatorSize: "size-4",
-    // Keep the meta line's space reserved (hidden, not removed) while running so
-    // the big timer doesn't jump on start/pause in the tall, scrollable page.
-    metaWhileRunning: "reserve",
   },
   compact: {
+    gap: "gap-2",
+    time: "text-5xl",
+    milliseconds: "text-3xl",
+    meta: "text-base",
+    price: "text-base",
+    indicatorOffset: "-left-7",
+    indicatorSize: "size-3.5",
+  },
+  mini: {
     gap: "gap-1.5",
     time: "text-3xl",
     milliseconds: "text-xl",
@@ -29,9 +35,6 @@ const SIZES = {
     price: "text-sm",
     indicatorOffset: "-left-5",
     indicatorSize: "size-2.5",
-    // The PiP window is small and centered, so reserved space looks like a hole.
-    // Collapse the meta line (animated height) while running instead.
-    metaWhileRunning: "collapse",
   },
 };
 
@@ -48,8 +51,6 @@ export function TimerDisplay({
   size = "default",
 }) {
   const s = SIZES[size];
-  const reserveMeta = isRunning && s.metaWhileRunning === "reserve";
-  const collapseMeta = s.metaWhileRunning === "collapse";
   const ignoreMs = useIgnoreMilliseconds();
   const priceBase = totalTime !== null ? totalTime : time;
   const price = calculateTotalPrice(priceBase, hourlyPrice);
@@ -104,14 +105,14 @@ export function TimerDisplay({
 
       <div
         className={cn(
-          "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-          collapseMeta && isRunning
+          "relative group grid transition-[grid-template-rows,opacity] duration-300 ease-out",
+          isRunning
             ? "grid-rows-[0fr] opacity-0"
             : "grid-rows-[1fr] opacity-100",
         )}
       >
-        <div className={collapseMeta ? "overflow-hidden" : undefined}>
-          <div className="relative flex gap-2 items-center group">
+        <div className="overflow-hidden">
+          <div className="flex gap-2 items-center justify-center">
             {totalTime !== null && (
               <>
                 <div
@@ -125,10 +126,9 @@ export function TimerDisplay({
                           )
                       : undefined
                   }
-                  className={cn(
-                    reserveMeta && "invisible",
-                    enableCopy && !isRunning && "cursor-pointer",
-                  )}
+                  className={
+                    enableCopy && !isRunning ? "cursor-pointer" : undefined
+                  }
                 >
                   <FormattedTime
                     time={totalTime}
@@ -136,15 +136,7 @@ export function TimerDisplay({
                   />
                 </div>
 
-                <span
-                  className={cn(
-                    "text-muted-foreground",
-                    s.meta,
-                    reserveMeta && "invisible",
-                  )}
-                >
-                  •
-                </span>
+                <span className={cn("text-muted-foreground", s.meta)}>•</span>
               </>
             )}
 
@@ -157,7 +149,6 @@ export function TimerDisplay({
               className={cn(
                 "font-medium text-primary",
                 s.price,
-                reserveMeta && "invisible",
                 !isRunning && enableCopy && "cursor-pointer",
               )}
             >

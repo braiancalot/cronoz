@@ -3,14 +3,8 @@ import { Button } from "@/components/ui/button.jsx";
 import { cn } from "@/lib/utils.js";
 
 const SIZES = {
-  default: {
-    volta: "size-14 [&_svg]:size-7",
-    main: "size-16 [&_svg]:size-9",
-  },
-  compact: {
-    volta: "size-10 [&_svg]:size-6",
-    main: "size-12 [&_svg]:size-7",
-  },
+  default: "size-14 [&_svg]:size-7",
+  compact: "size-12 [&_svg]:size-7",
 };
 
 export function TimerControls({
@@ -24,7 +18,7 @@ export function TimerControls({
   orientation = "horizontal",
   className,
 }) {
-  const s = SIZES[size];
+  const sizeClass = SIZES[size];
 
   return (
     <div
@@ -37,7 +31,7 @@ export function TimerControls({
       {showLap && (
         <Button
           variant="ghost"
-          className={cn("rounded-full bg-muted", s.volta)}
+          className={cn("rounded-full bg-muted", sizeClass)}
           onClick={hasLapTime ? onAddLap : undefined}
           disabled={!hasLapTime}
           aria-label="Volta"
@@ -48,7 +42,7 @@ export function TimerControls({
       )}
 
       <Button
-        className={cn("rounded-full", s.main)}
+        className={cn("rounded-full", sizeClass)}
         onClick={isRunning ? onPause : onStart}
         aria-label={isRunning ? "Pausar" : "Iniciar"}
         title={isRunning ? "Pausar" : "Iniciar"}
