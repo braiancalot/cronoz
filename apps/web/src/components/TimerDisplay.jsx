@@ -61,8 +61,15 @@ export function TimerDisplay({
 
   async function copyToClipboard(event, text, label) {
     event.stopPropagation();
-    await navigator.clipboard.writeText(text);
-    toast(`${label} copiado`, { position: "top-center" });
+    // Use the clipboard of the window holding the clicked element: in the PiP
+    // window the main document is unfocused, so its navigator.clipboard rejects.
+    const view = event.currentTarget.ownerDocument.defaultView ?? window;
+    await view.navigator.clipboard.writeText(text);
+    // The sonner toaster lives in the main document, so it's invisible from the
+    // PiP window — skip the toast there and copy silently.
+    if (view === window) {
+      toast(`${label} copiado`, { position: "top-center" });
+    }
   }
 
   return (

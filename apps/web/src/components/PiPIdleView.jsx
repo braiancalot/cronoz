@@ -52,7 +52,6 @@ export function PiPIdleView({
           totalTime={totalTime}
           isRunning={isRunning}
           hourlyPrice={hourlyPrice}
-          enableCopy={false}
           size="mini"
         />
 
