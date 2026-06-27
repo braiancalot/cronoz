@@ -16,6 +16,7 @@ export function PiPContent({
   onAddLap,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
+  pipWindow,
 }) {
   const [mode, setMode] = useState("idle");
   const [lapName, setLapName] = useState("");
@@ -70,6 +71,7 @@ export function PiPContent({
       onAddLap={handleStartLap}
       onDiscard={() => setMode("discard")}
       canDiscardCurrentTime={canDiscardCurrentTime}
+      menuContainer={pipWindow?.document?.body}
     />
   );
 }

@@ -32,8 +32,9 @@ describe("PiPContent", () => {
   it("opens the discard screen and confirms", async () => {
     const user = userEvent.setup();
     const props = setup();
+    await user.click(screen.getByTitle("Mais opções"));
     await user.click(
-      screen.getByRole("button", { name: "Descartar tempo atual" }),
+      await screen.findByRole("menuitem", { name: "Descartar tempo atual" }),
     );
     await user.click(screen.getByRole("button", { name: "Sim" }));
     expect(props.onDiscardCurrentTime).toHaveBeenCalledOnce();
@@ -43,8 +44,9 @@ describe("PiPContent", () => {
   it("cancels the discard screen without discarding", async () => {
     const user = userEvent.setup();
     const props = setup();
+    await user.click(screen.getByTitle("Mais opções"));
     await user.click(
-      screen.getByRole("button", { name: "Descartar tempo atual" }),
+      await screen.findByRole("menuitem", { name: "Descartar tempo atual" }),
     );
     await user.click(screen.getByRole("button", { name: "Não" }));
     expect(props.onDiscardCurrentTime).not.toHaveBeenCalled();

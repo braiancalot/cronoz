@@ -23,21 +23,25 @@ describe("PiPIdleView", () => {
     expect(screen.getByText("Projeto X")).toBeTruthy();
   });
 
-  it("calls onDiscard when discard button is clicked", async () => {
+  it("calls onDiscard from the options menu", async () => {
     const onDiscard = vi.fn();
     const user = userEvent.setup();
     render(<PiPIdleView {...baseProps} onDiscard={onDiscard} />);
+    await user.click(screen.getByTitle("Mais opções"));
     await user.click(
-      screen.getByRole("button", { name: "Descartar tempo atual" }),
+      await screen.findByRole("menuitem", { name: "Descartar tempo atual" }),
     );
     expect(onDiscard).toHaveBeenCalledOnce();
   });
 
-  it("disables discard when canDiscardCurrentTime is false", () => {
+  it("disables the discard menu item when canDiscardCurrentTime is false", async () => {
+    const user = userEvent.setup();
     render(<PiPIdleView {...baseProps} canDiscardCurrentTime={false} />);
-    expect(
-      screen.getByRole("button", { name: "Descartar tempo atual" }).disabled,
-    ).toBe(true);
+    await user.click(screen.getByTitle("Mais opções"));
+    const item = await screen.findByRole("menuitem", {
+      name: "Descartar tempo atual",
+    });
+    expect(item).toHaveAttribute("aria-disabled", "true");
   });
 
   it("calls onAddLap when lap button is clicked", async () => {

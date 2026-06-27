@@ -244,6 +244,7 @@ export default function ProjectPage() {
           onAddLap={addLap}
           onDiscardCurrentTime={handlePiPDiscard}
           canDiscardCurrentTime={canDiscardCurrentTime}
+          pipWindow={pipWindow}
         />
       </PiPTimer>
 
