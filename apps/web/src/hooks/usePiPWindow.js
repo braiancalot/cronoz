@@ -37,8 +37,8 @@ export function usePiPWindow() {
     if (!isSupported || pipWindow) return;
 
     const win = await window.documentPictureInPicture.requestWindow({
-      width: 260,
-      height: 180,
+      width: 200,
+      height: 160,
     });
 
     copyStyles(win);

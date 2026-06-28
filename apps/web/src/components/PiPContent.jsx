@@ -8,7 +8,6 @@ export function PiPContent({
   time,
   totalTime,
   isRunning,
-  hourlyPrice,
   hasLapTime,
   lapCount,
   onStart,
@@ -64,7 +63,6 @@ export function PiPContent({
       time={time}
       totalTime={totalTime}
       isRunning={isRunning}
-      hourlyPrice={hourlyPrice}
       hasLapTime={hasLapTime}
       onStart={onStart}
       onPause={onPause}

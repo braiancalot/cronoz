@@ -1,4 +1,4 @@
-import { DotsThreeVertical } from "@phosphor-icons/react";
+import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import {
   DropdownMenu,
@@ -14,7 +14,6 @@ export function PiPIdleView({
   time,
   totalTime,
   isRunning,
-  hourlyPrice,
   hasLapTime,
   onStart,
   onPause,
@@ -32,7 +31,7 @@ export function PiPIdleView({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-sm" title="Mais opções">
-              <DotsThreeVertical />
+              <DotsThreeVerticalIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" container={menuContainer}>
@@ -46,14 +45,16 @@ export function PiPIdleView({
         </DropdownMenu>
       </header>
 
-      <div className="flex flex-1 flex-row items-center justify-center gap-8">
-        <TimerDisplay
-          time={time}
-          totalTime={totalTime}
-          isRunning={isRunning}
-          hourlyPrice={hourlyPrice}
-          size="mini"
-        />
+      <div className="flex flex-1 flex-row items-center">
+        <div className="flex flex-1 justify-center">
+          <TimerDisplay
+            time={time}
+            totalTime={totalTime}
+            isRunning={isRunning}
+            showPrice={false}
+            size="mini"
+          />
+        </div>
 
         <TimerControls
           isRunning={isRunning}
@@ -64,6 +65,7 @@ export function PiPIdleView({
           size="mini"
           orientation="vertical"
           playFirst
+          className="shrink-0"
         />
       </div>
     </div>

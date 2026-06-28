@@ -8,7 +8,6 @@ const baseProps = {
   time: 1000,
   totalTime: null,
   isRunning: false,
-  hourlyPrice: 10,
   hasLapTime: true,
   onStart: vi.fn(),
   onPause: vi.fn(),
@@ -21,6 +20,14 @@ describe("PiPIdleView", () => {
   it("shows the project name", () => {
     render(<PiPIdleView {...baseProps} />);
     expect(screen.getByText("Projeto X")).toBeTruthy();
+  });
+
+  it("does not show the total price or copy-all button", () => {
+    render(
+      <PiPIdleView {...baseProps} totalTime={3_600_000} hourlyPrice={10} />,
+    );
+    expect(screen.queryByText(/R\$/)).toBeNull();
+    expect(screen.queryByTitle("Copiar tempo e valor")).toBeNull();
   });
 
   it("calls onDiscard from the options menu", async () => {

@@ -1,4 +1,4 @@
-import { Copy } from "@phosphor-icons/react";
+import { CopyIcon } from "@phosphor-icons/react";
 import { formatTimeCompact } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -48,6 +48,7 @@ export function TimerDisplay({
   isRunning = false,
   hourlyPrice = 10,
   enableCopy = true,
+  showPrice = true,
   size = "default",
 }) {
   const s = SIZES[size];
@@ -121,66 +122,70 @@ export function TimerDisplay({
         <div className="overflow-hidden">
           <div className="flex gap-2 items-center justify-center">
             {totalTime !== null && (
-              <>
-                <div
-                  onClick={
-                    enableCopy && !isRunning
-                      ? (e) =>
-                          copyToClipboard(
-                            e,
-                            formatTimeCompact(totalTime),
-                            "Tempo total",
-                          )
-                      : undefined
-                  }
-                  className={
-                    enableCopy && !isRunning ? "cursor-pointer" : undefined
-                  }
-                >
-                  <FormattedTime
-                    time={totalTime}
-                    className={cn("text-muted-foreground", s.meta)}
-                  />
-                </div>
-
-                <span className={cn("text-muted-foreground", s.meta)}>•</span>
-              </>
+              <div
+                onClick={
+                  enableCopy && !isRunning
+                    ? (e) =>
+                        copyToClipboard(
+                          e,
+                          formatTimeCompact(totalTime),
+                          "Tempo total",
+                        )
+                    : undefined
+                }
+                className={
+                  enableCopy && !isRunning ? "cursor-pointer" : undefined
+                }
+              >
+                <FormattedTime
+                  time={totalTime}
+                  className={cn("text-muted-foreground", s.meta)}
+                />
+              </div>
             )}
 
-            <span
-              onClick={
-                enableCopy && !isRunning
-                  ? (e) => copyToClipboard(e, priceFormatted, "Valor")
-                  : undefined
-              }
-              className={cn(
-                "font-medium text-primary",
-                s.price,
-                !isRunning && enableCopy && "cursor-pointer",
-              )}
-            >
-              {priceFormatted}
-            </span>
-
-            {totalTime !== null && enableCopy && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={(e) =>
-                  copyToClipboard(
-                    e,
-                    `${formatTimeCompact(totalTime)} (${priceFormatted})`,
-                    "Tempo e valor",
-                  )
-                }
-                title="Copiar tempo e valor"
-                className={cn(
-                  "text-muted-foreground transition-opacity md:absolute md:left-full md:inset-y-0 md:my-auto md:ml-1 md:opacity-0 md:group-hover:opacity-100",
-                  isRunning && "invisible transition-none",
+            {showPrice && (
+              <>
+                {totalTime !== null && (
+                  <span className={cn("text-muted-foreground", s.meta)}>•</span>
                 )}
-              >
-                <Copy />
-              </Button>
+
+                <span
+                  onClick={
+                    enableCopy && !isRunning
+                      ? (e) => copyToClipboard(e, priceFormatted, "Valor")
+                      : undefined
+                  }
+                  className={cn(
+                    "font-medium text-primary",
+                    s.price,
+                    !isRunning && enableCopy && "cursor-pointer",
+                  )}
+                >
+                  {priceFormatted}
+                </span>
+
+                {totalTime !== null && enableCopy && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={(e) =>
+                      copyToClipboard(
+                        e,
+                        `${formatTimeCompact(totalTime)} (${priceFormatted})`,
+                        "Tempo e valor",
+                      )
+                    }
+                    title="Copiar tempo e valor"
+                    className={cn(
+                      "text-muted-foreground transition-opacity md:absolute md:left-full md:inset-y-0 md:my-auto md:ml-1 md:opacity-0 md:group-hover:opacity-100",
+                      isRunning && "invisible transition-none",
+                    )}
+                  >
+                    <CopyIcon />
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

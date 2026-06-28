@@ -236,7 +236,6 @@ export default function ProjectPage() {
           time={hasLaps ? splitDisplayTime : displayTime}
           totalTime={hasLaps ? displayTime : null}
           isRunning={project.stopwatch.isRunning}
-          hourlyPrice={hourlyPrice}
           hasLapTime={splitDisplayTime > 0}
           lapCount={project.stopwatch.laps?.length ?? 0}
           onStart={start}
