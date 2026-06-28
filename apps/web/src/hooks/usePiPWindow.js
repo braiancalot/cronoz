@@ -40,7 +40,7 @@ export function usePiPWindow() {
 
     const win = await window.documentPictureInPicture.requestWindow({
       width: 200,
-      height: 160,
+      height: 170,
     });
 
     copyStyles(win);

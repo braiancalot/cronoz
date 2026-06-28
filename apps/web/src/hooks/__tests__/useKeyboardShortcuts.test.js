@@ -125,6 +125,17 @@ describe("useKeyboardShortcuts", () => {
     expect(buttonHandler).not.toHaveBeenCalled();
   });
 
+  it("does not call onToggle when disabled (e.g. while adjusting time)", () => {
+    const onToggle = vi.fn();
+    renderHook(() => useKeyboardShortcuts({ onToggle, enabled: false }));
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "Space", bubbles: true }),
+    );
+
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
   it("calls onToggle when Space is pressed inside the PiP window", () => {
     const onToggle = vi.fn();
     const pipWindow = {

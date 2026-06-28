@@ -246,6 +246,59 @@ describe("useProject", () => {
     });
   });
 
+  describe("setCurrentTime", () => {
+    it("commits the given value as currentLapTime", () => {
+      const project = createProject({ currentLapTime: 5000 });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      const { result } = renderHook(() => useProject("test-id"));
+
+      act(() => {
+        result.current.setCurrentTime(15000);
+      });
+
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
+        expect.objectContaining({ currentLapTime: 15000 }),
+      );
+    });
+
+    it("clamps negative values to 0", () => {
+      const project = createProject({ currentLapTime: 5000 });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      const { result } = renderHook(() => useProject("test-id"));
+
+      act(() => {
+        result.current.setCurrentTime(-2000);
+      });
+
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
+        expect.objectContaining({ currentLapTime: 0 }),
+      );
+    });
+
+    it("keeps the stopwatch paused", () => {
+      const project = createProject({
+        currentLapTime: 5000,
+        isRunning: false,
+      });
+      mockUseLiveQuery.mockReturnValue(project);
+
+      const { result } = renderHook(() => useProject("test-id"));
+
+      act(() => {
+        result.current.setCurrentTime(6000);
+      });
+
+      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
+        "test-id",
+        expect.objectContaining({ isRunning: false, currentLapTime: 6000 }),
+      );
+    });
+  });
+
   it("toggle calls start when stopped", () => {
     const project = createProject({ isRunning: false });
     mockUseLiveQuery.mockReturnValue(project);

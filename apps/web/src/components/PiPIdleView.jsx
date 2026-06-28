@@ -20,6 +20,7 @@ export function PiPIdleView({
   onAddLap,
   onDiscard,
   canDiscardCurrentTime,
+  onAdjust,
   menuContainer,
 }) {
   return (
@@ -35,6 +36,9 @@ export function PiPIdleView({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" container={menuContainer}>
+            <DropdownMenuItem onSelect={onAdjust}>
+              Ajustar tempo
+            </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={onDiscard}
               disabled={!canDiscardCurrentTime}

@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 
-export function useKeyboardShortcuts({ onToggle, pipWindow }) {
+export function useKeyboardShortcuts({ onToggle, pipWindow, enabled = true }) {
   useEffect(() => {
+    if (!enabled) return;
+
     const handleKeyDown = (event) => {
       if (event.code === "Space") {
         const tag = event.target.tagName;
@@ -25,5 +27,5 @@ export function useKeyboardShortcuts({ onToggle, pipWindow }) {
       docs.forEach((doc) =>
         doc.removeEventListener("keydown", handleKeyDown, true),
       );
-  }, [onToggle, pipWindow]);
+  }, [onToggle, pipWindow, enabled]);
 }

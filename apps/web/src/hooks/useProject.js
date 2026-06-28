@@ -166,6 +166,17 @@ export function useProject(projectId) {
     };
   }
 
+  // Commit an adjusted in-progress segment (clamped at 0). Called only while
+  // paused (adjust mode pauses on entry) with the value confirmed in the UI.
+  function setCurrentTime(value) {
+    const next = {
+      ...project.stopwatch,
+      currentLapTime: Math.max(0, value),
+    };
+    projectRepository.setStopwatch(project.id, next);
+    showStopwatch(next);
+  }
+
   function toggle() {
     project?.stopwatch?.isRunning ? pause() : start();
   }
@@ -209,6 +220,7 @@ export function useProject(projectId) {
     pause,
     reset,
     discardCurrentTime,
+    setCurrentTime,
     toggle,
     addLap,
     rename,

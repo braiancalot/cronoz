@@ -2,6 +2,8 @@ import { useState } from "react";
 import { PiPIdleView } from "@/components/PiPIdleView.jsx";
 import { PiPDiscardView } from "@/components/PiPDiscardView.jsx";
 import { PiPLapView } from "@/components/PiPLapView.jsx";
+import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
+import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 
 export function PiPContent({
   name,
@@ -15,15 +17,28 @@ export function PiPContent({
   onAddLap,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
+  onCommitAdjust,
   pipWindow,
 }) {
   const [mode, setMode] = useState("idle");
   const [lapName, setLapName] = useState("");
+  const draft = useAdjustDraft();
 
   function handleStartLap() {
     onPause();
     setLapName(`${lapCount + 1}º `);
     setMode("lap");
+  }
+
+  function handleStartAdjust() {
+    onPause();
+    draft.begin(time);
+    setMode("adjust");
+  }
+
+  function handleConfirmAdjust() {
+    onCommitAdjust(draft.value);
+    setMode("idle");
   }
 
   function handleSaveLap() {
@@ -57,6 +72,27 @@ export function PiPContent({
     );
   }
 
+  if (mode === "adjust") {
+    const previewTotal =
+      totalTime == null ? null : totalTime - time + draft.value;
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3">
+        <TimerAdjuster
+          time={draft.value}
+          totalTime={previewTotal}
+          showPrice={false}
+          size="mini"
+          onStep={draft.step}
+        />
+        <AdjustActions
+          size="mini"
+          onCancel={() => setMode("idle")}
+          onConfirm={handleConfirmAdjust}
+        />
+      </div>
+    );
+  }
+
   return (
     <PiPIdleView
       name={name}
@@ -69,6 +105,7 @@ export function PiPContent({
       onAddLap={handleStartLap}
       onDiscard={() => setMode("discard")}
       canDiscardCurrentTime={canDiscardCurrentTime}
+      onAdjust={handleStartAdjust}
       menuContainer={pipWindow?.document?.body}
     />
   );

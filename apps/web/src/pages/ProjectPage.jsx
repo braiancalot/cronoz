@@ -4,13 +4,17 @@ import { useNavigate, useParams } from "react-router";
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useShortViewport } from "@/hooks/useShortViewport.js";
+import { useNarrowViewport } from "@/hooks/useNarrowViewport.js";
+import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
+import { sumLapTimes } from "@/lib/stopwatch.js";
 
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 import { usePiPWindow } from "@/hooks/usePiPWindow.js";
 import { TimerControls } from "@/components/TimerControls.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
+import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
 import { PiPTimer } from "@/components/PiPTimer.jsx";
 import { PiPContent } from "@/components/PiPContent.jsx";
 import { Laps } from "@/components/Laps.jsx";
@@ -30,6 +34,7 @@ export default function ProjectPage() {
   const [isConfirmingDiscard, setIsConfirmingDiscard] = useState(false);
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
+  const [isAdjusting, setIsAdjusting] = useState(false);
   const [lapName, setLapName] = useState("");
 
   const hourlyPrice = useHourlyPrice();
@@ -46,6 +51,7 @@ export default function ProjectPage() {
     rename,
     deleteProject,
     discardCurrentTime,
+    setCurrentTime,
     reset,
     renameLap,
     deleteLap,
@@ -53,9 +59,11 @@ export default function ProjectPage() {
 
   const { isSupported: isPiPSupported, pipWindow, openPiP } = usePiPWindow();
 
-  useKeyboardShortcuts({ onToggle: toggle, pipWindow });
+  useKeyboardShortcuts({ onToggle: toggle, pipWindow, enabled: !isAdjusting });
 
   const isShort = useShortViewport();
+  const isNarrow = useNarrowViewport();
+  const draft = useAdjustDraft();
 
   if (isLoading || isDeleting) return null;
 
@@ -92,12 +100,33 @@ export default function ProjectPage() {
     showUndoToast(`Projeto "${projectName}" excluído`, undo);
   }
 
+  function handleStartAdjust() {
+    const sw = project.stopwatch;
+    const settled =
+      sw.isRunning && sw.startTimestamp
+        ? sw.currentLapTime + (Date.now() - sw.startTimestamp)
+        : sw.currentLapTime;
+    pause();
+    draft.begin(settled);
+    setIsAdjusting(true);
+  }
+
+  function handleConfirmAdjust() {
+    setCurrentTime(draft.value);
+    setIsAdjusting(false);
+  }
+
+  function handleCancelAdjust() {
+    setIsAdjusting(false);
+  }
+
   function handleRequestDiscard() {
     setIsConfirmingDiscard(true);
   }
 
   function handleConfirmDiscard() {
     setIsConfirmingDiscard(false);
+    setIsAdjusting(false);
     const { undo } = discardCurrentTime();
     showUndoToast("Tempo atual descartado", undo);
   }
@@ -113,6 +142,7 @@ export default function ProjectPage() {
 
   function handleConfirmReset() {
     setIsConfirmingReset(false);
+    setIsAdjusting(false);
     const { undo } = reset();
     showUndoToast("Cronômetro resetado", undo);
   }
@@ -134,6 +164,9 @@ export default function ProjectPage() {
     project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
   const canReset = canDiscardCurrentTime || hasLaps;
 
+  const lapsTotal = sumLapTimes(project.stopwatch.laps ?? []);
+  const adjustTotal = hasLaps ? lapsTotal + draft.value : null;
+
   return (
     <PageContainer className="items-center">
       <ProjectHeader
@@ -142,6 +175,8 @@ export default function ProjectPage() {
         onDelete={handleRequestDeleteProject}
         onDiscardCurrentTime={handleRequestDiscard}
         canDiscardCurrentTime={canDiscardCurrentTime}
+        onAdjust={handleStartAdjust}
+        canAdjust={!isAdjusting}
         onReset={handleRequestReset}
         canReset={canReset}
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
@@ -152,30 +187,53 @@ export default function ProjectPage() {
           onClick={project.stopwatch.isRunning ? pause : undefined}
           className="flex flex-1 flex-col w-full min-h-0 items-center"
         >
-          <div
-            className={cn(
-              "flex items-center gap-6 sm:gap-12 shrink-0",
-              hasLaps || isAddingLap ? "pt-2" : "flex-1",
-            )}
-          >
-            <TimerDisplay
-              time={hasLaps ? splitDisplayTime : displayTime}
-              totalTime={hasLaps ? displayTime : null}
-              isRunning={project.stopwatch.isRunning}
-              hourlyPrice={hourlyPrice}
-              size="compact"
-            />
+          {isAdjusting ? (
+            <div
+              className={cn(
+                "flex flex-col items-center gap-3 shrink-0",
+                hasLaps || isAddingLap ? "pt-2" : "flex-1 justify-center",
+              )}
+            >
+              <TimerAdjuster
+                time={draft.value}
+                totalTime={adjustTotal}
+                hourlyPrice={hourlyPrice}
+                size="compact"
+                stack={isNarrow}
+                onStep={draft.step}
+              />
+              <AdjustActions
+                size="compact"
+                onCancel={handleCancelAdjust}
+                onConfirm={handleConfirmAdjust}
+              />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "flex items-center gap-6 sm:gap-12 shrink-0",
+                hasLaps || isAddingLap ? "pt-2" : "flex-1",
+              )}
+            >
+              <TimerDisplay
+                time={hasLaps ? splitDisplayTime : displayTime}
+                totalTime={hasLaps ? displayTime : null}
+                isRunning={project.stopwatch.isRunning}
+                hourlyPrice={hourlyPrice}
+                size="compact"
+              />
 
-            <TimerControls
-              isRunning={project.stopwatch.isRunning}
-              hasLapTime={splitDisplayTime > 0}
-              onStart={start}
-              onPause={pause}
-              onAddLap={handleStartAddLap}
-              orientation="vertical"
-              size="compact"
-            />
-          </div>
+              <TimerControls
+                isRunning={project.stopwatch.isRunning}
+                hasLapTime={splitDisplayTime > 0}
+                onStart={start}
+                onPause={pause}
+                onAddLap={handleStartAddLap}
+                orientation="vertical"
+                size="compact"
+              />
+            </div>
+          )}
 
           {(hasLaps || isAddingLap) && (
             <Laps
@@ -197,12 +255,22 @@ export default function ProjectPage() {
           className="flex flex-1 flex-col w-full items-center min-h-0"
         >
           <section className="flex flex-1 items-center justify-center w-full mt-8">
-            <TimerDisplay
-              time={hasLaps ? splitDisplayTime : displayTime}
-              totalTime={hasLaps ? displayTime : null}
-              isRunning={project.stopwatch.isRunning}
-              hourlyPrice={hourlyPrice}
-            />
+            {isAdjusting ? (
+              <TimerAdjuster
+                time={draft.value}
+                totalTime={adjustTotal}
+                hourlyPrice={hourlyPrice}
+                stack={isNarrow}
+                onStep={draft.step}
+              />
+            ) : (
+              <TimerDisplay
+                time={hasLaps ? splitDisplayTime : displayTime}
+                totalTime={hasLaps ? displayTime : null}
+                isRunning={project.stopwatch.isRunning}
+                hourlyPrice={hourlyPrice}
+              />
+            )}
           </section>
 
           {(hasLaps || isAddingLap) && (
@@ -218,15 +286,23 @@ export default function ProjectPage() {
             />
           )}
 
-          <TimerControls
-            isRunning={project.stopwatch.isRunning}
-            hasLapTime={splitDisplayTime > 0}
-            onStart={start}
-            onPause={pause}
-            onAddLap={handleStartAddLap}
-            orientation="horizontal"
-            className="pb-8"
-          />
+          {isAdjusting ? (
+            <AdjustActions
+              onCancel={handleCancelAdjust}
+              onConfirm={handleConfirmAdjust}
+              className="pb-8"
+            />
+          ) : (
+            <TimerControls
+              isRunning={project.stopwatch.isRunning}
+              hasLapTime={splitDisplayTime > 0}
+              onStart={start}
+              onPause={pause}
+              onAddLap={handleStartAddLap}
+              orientation="horizontal"
+              className="pb-8"
+            />
+          )}
         </div>
       )}
 
@@ -243,6 +319,7 @@ export default function ProjectPage() {
           onAddLap={addLap}
           onDiscardCurrentTime={handlePiPDiscard}
           canDiscardCurrentTime={canDiscardCurrentTime}
+          onCommitAdjust={setCurrentTime}
           pipWindow={pipWindow}
         />
       </PiPTimer>

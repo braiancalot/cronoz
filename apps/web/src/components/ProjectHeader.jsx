@@ -21,6 +21,8 @@ export function ProjectHeader({
   onDelete,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
+  onAdjust,
+  canAdjust,
   onReset,
   canReset,
   onOpenPiP,
@@ -90,6 +92,9 @@ export function ProjectHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={onAdjust} disabled={!canAdjust}>
+                Ajustar tempo
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={onDiscardCurrentTime}
                 disabled={!canDiscardCurrentTime}
