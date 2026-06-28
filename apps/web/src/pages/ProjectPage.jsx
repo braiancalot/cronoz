@@ -6,8 +6,9 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useShortViewport } from "@/hooks/useShortViewport.js";
 import { useNarrowViewport } from "@/hooks/useNarrowViewport.js";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
+import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
-import { sumLapTimes } from "@/lib/stopwatch.js";
+import { adjustPreview } from "@/lib/stopwatch.js";
 
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 
@@ -63,6 +64,7 @@ export default function ProjectPage() {
 
   const isShort = useShortViewport();
   const isNarrow = useNarrowViewport();
+  const ignoreMs = useIgnoreMilliseconds();
   const draft = useAdjustDraft();
 
   if (isLoading || isDeleting) return null;
@@ -164,8 +166,11 @@ export default function ProjectPage() {
     project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
   const canReset = canDiscardCurrentTime || hasLaps;
 
-  const lapsTotal = sumLapTimes(project.stopwatch.laps ?? []);
-  const adjustTotal = hasLaps ? lapsTotal + draft.value : null;
+  const adjustPreviewTotals = adjustPreview(project.stopwatch, draft.value, {
+    ignoreMs,
+  });
+  const adjustSegment = adjustPreviewTotals.segment;
+  const adjustTotal = hasLaps ? adjustPreviewTotals.total : null;
 
   return (
     <PageContainer className="items-center">
@@ -195,7 +200,7 @@ export default function ProjectPage() {
               )}
             >
               <TimerAdjuster
-                time={draft.value}
+                time={adjustSegment}
                 totalTime={adjustTotal}
                 hourlyPrice={hourlyPrice}
                 size="compact"
@@ -257,7 +262,7 @@ export default function ProjectPage() {
           <section className="flex flex-1 items-center justify-center w-full mt-8">
             {isAdjusting ? (
               <TimerAdjuster
-                time={draft.value}
+                time={adjustSegment}
                 totalTime={adjustTotal}
                 hourlyPrice={hourlyPrice}
                 stack={isNarrow}

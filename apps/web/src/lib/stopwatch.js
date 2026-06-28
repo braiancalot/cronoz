@@ -79,6 +79,23 @@ export function calculateSplitTime(stopwatch, { ignoreMs = false } = {}) {
   return ignoreMs ? truncateToSecond(split) : split;
 }
 
+// Segment + total to show while adjusting, with the in-progress segment
+// replaced by `segment`. Routes through the same calc functions as the live
+// display so the "ignore ms" per-lap truncation matches exactly — otherwise a
+// raw lap sum over-counts the dropped sub-second remainders.
+export function adjustPreview(stopwatch, segment, { ignoreMs = false } = {}) {
+  const paused = {
+    ...stopwatch,
+    isRunning: false,
+    startTimestamp: null,
+    currentLapTime: segment,
+  };
+  return {
+    segment: calculateSplitTime(paused, { ignoreMs }),
+    total: calculateTotalTime(paused, { ignoreMs }),
+  };
+}
+
 export function hasHours(hours) {
   return hours !== "00";
 }

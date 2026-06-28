@@ -4,6 +4,7 @@ import {
   formatTimeCompact,
   calculateTotalTime,
   calculateSplitTime,
+  adjustPreview,
   sumLapTimes,
   hasHours,
   truncateToSecond,
@@ -320,6 +321,36 @@ describe("calculateSplitTime", () => {
       laps: [],
     };
     expect(calculateSplitTime(stopwatch, { ignoreMs: true })).toBe(0);
+  });
+});
+
+describe("adjustPreview", () => {
+  const stopwatch = {
+    isRunning: false,
+    startTimestamp: null,
+    currentLapTime: 800,
+    laps: [{ lapTime: 1500 }, { lapTime: 1500 }],
+  };
+
+  it("returns the raw segment and total when not ignoring ms", () => {
+    const { segment, total } = adjustPreview(stopwatch, 800);
+    expect(segment).toBe(800);
+    expect(total).toBe(3800); // 1500 + 1500 + 800
+  });
+
+  it("truncates each lap and the segment when ignoring ms", () => {
+    const { segment, total } = adjustPreview(stopwatch, 800, {
+      ignoreMs: true,
+    });
+    // trunc(800)=0 ; trunc(1500)+trunc(1500)+trunc(800) = 1000+1000+0
+    expect(segment).toBe(0);
+    expect(total).toBe(2000);
+  });
+
+  it("matches the live total when the segment equals currentLapTime", () => {
+    const paused = { ...stopwatch, currentLapTime: 1500 };
+    const { total } = adjustPreview(paused, 1500, { ignoreMs: true });
+    expect(total).toBe(calculateTotalTime(paused, { ignoreMs: true }));
   });
 });
 
