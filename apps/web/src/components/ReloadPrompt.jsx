@@ -13,6 +13,7 @@ export function ReloadPrompt() {
     toast("Nova versão disponível", {
       id: TOAST_ID,
       duration: Infinity,
+      position: "top-center",
       action: {
         label: "Atualizar",
         onClick: () => updateServiceWorker(true),
