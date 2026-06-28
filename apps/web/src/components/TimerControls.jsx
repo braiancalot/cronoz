@@ -1,4 +1,4 @@
-import { Play, Pause, Plus } from "@phosphor-icons/react";
+import { PlayIcon, PauseIcon, PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import { cn } from "@/lib/utils.js";
 
@@ -37,7 +37,7 @@ export function TimerControls({
       aria-label="Volta"
       title="Volta"
     >
-      <Plus />
+      <PlusIcon />
     </Button>
   );
 
@@ -48,7 +48,7 @@ export function TimerControls({
       aria-label={isRunning ? "Pausar" : "Iniciar"}
       title={isRunning ? "Pausar" : "Iniciar"}
     >
-      {isRunning ? <Pause weight="fill" /> : <Play weight="fill" />}
+      {isRunning ? <PauseIcon weight="fill" /> : <PlayIcon weight="fill" />}
     </Button>
   );
 

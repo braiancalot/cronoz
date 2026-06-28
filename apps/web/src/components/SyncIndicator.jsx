@@ -1,5 +1,9 @@
 import { Link } from "react-router";
-import { CloudCheck, CloudSlash, ArrowsClockwise } from "@phosphor-icons/react";
+import {
+  CloudCheckIcon,
+  CloudSlashIcon,
+  ArrowsClockwiseIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
 
@@ -8,20 +12,20 @@ export function SyncIndicator() {
 
   if (!isPaired) return null;
 
-  let Icon = CloudCheck;
+  let Icon = CloudCheckIcon;
   let className = "text-muted-foreground";
   let label = "Sincronizado";
 
   if (!isOnline) {
-    Icon = CloudSlash;
+    Icon = CloudSlashIcon;
     className = "text-destructive";
     label = "Offline";
   } else if (syncing) {
-    Icon = ArrowsClockwise;
+    Icon = ArrowsClockwiseIcon;
     className = "text-muted-foreground animate-spin";
     label = "Sincronizando";
   } else if (error) {
-    Icon = CloudSlash;
+    Icon = CloudSlashIcon;
     className = "text-destructive";
     label = "Erro de sincronização";
   }

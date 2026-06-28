@@ -1,10 +1,10 @@
 import { Toaster as Sonner } from "sonner";
 import {
-  CheckCircle,
-  Info,
-  Warning,
-  XCircle,
-  CircleNotch,
+  CheckCircleIcon,
+  InfoIcon,
+  WarningIcon,
+  XCircleIcon,
+  CircleNotchIcon,
 } from "@phosphor-icons/react";
 
 const Toaster = ({ ...props }) => {
@@ -13,11 +13,11 @@ const Toaster = ({ ...props }) => {
       theme="dark"
       className="toaster group"
       icons={{
-        success: <CheckCircle className="size-4" />,
-        info: <Info className="size-4" />,
-        warning: <Warning className="size-4" />,
-        error: <XCircle className="size-4" />,
-        loading: <CircleNotch className="size-4 animate-spin" />,
+        success: <CheckCircleIcon className="size-4" />,
+        info: <InfoIcon className="size-4" />,
+        warning: <WarningIcon className="size-4" />,
+        error: <XCircleIcon className="size-4" />,
+        loading: <CircleNotchIcon className="size-4 animate-spin" />,
       }}
       style={{
         "--normal-bg": "var(--popover)",

@@ -1,7 +1,7 @@
 import {
-  ArrowLeft,
-  DotsThreeVertical,
-  PictureInPicture,
+  ArrowLeftIcon,
+  DotsThreeVerticalIcon,
+  PictureInPictureIcon,
 } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
@@ -44,7 +44,7 @@ export function ProjectHeader({
     <header className="w-full h-16 flex items-center justify-between gap-4">
       <div className="flex items-center gap-4 justify-start">
         <Link to="/" className="text-lg">
-          <ArrowLeft className="size-5" />
+          <ArrowLeftIcon className="size-5" />
         </Link>
 
         {isRenaming ? (
@@ -79,14 +79,14 @@ export function ProjectHeader({
               title="Abrir em janela flutuante"
               onClick={onOpenPiP}
             >
-              <PictureInPicture />
+              <PictureInPictureIcon />
             </Button>
           )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" title="Mais opções">
-                <DotsThreeVertical />
+                <DotsThreeVerticalIcon />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

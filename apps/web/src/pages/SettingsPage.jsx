@@ -1,4 +1,4 @@
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import settingsRepository from "@/services/settingsRepository.js";
@@ -39,7 +39,7 @@ export default function SettingsPage() {
       <header className="flex items-center gap-2 py-4">
         <Button variant="ghost" size="icon-sm" asChild>
           <Link to="/" aria-label="Voltar">
-            <ArrowLeft />
+            <ArrowLeftIcon />
           </Link>
         </Button>
         <h1 className="text-lg font-bold tracking-tight">Configurações</h1>
