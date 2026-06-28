@@ -51,9 +51,9 @@ export default function ProjectPage() {
     deleteLap,
   } = useProject(id);
 
-  useKeyboardShortcuts({ onToggle: toggle });
-
   const { isSupported: isPiPSupported, pipWindow, openPiP } = usePiPWindow();
+
+  useKeyboardShortcuts({ onToggle: toggle, pipWindow });
 
   const isShort = useShortViewport();
 
