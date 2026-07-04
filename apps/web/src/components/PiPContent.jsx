@@ -4,6 +4,7 @@ import { PiPDiscardView } from "@/components/PiPDiscardView.jsx";
 import { PiPLapView } from "@/components/PiPLapView.jsx";
 import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
+import { usePiPSize } from "@/hooks/usePiPSize.js";
 
 export function PiPContent({
   name,
@@ -20,6 +21,7 @@ export function PiPContent({
   onCommitAdjust,
   pipWindow,
 }) {
+  const size = usePiPSize(pipWindow);
   const [mode, setMode] = useState("idle");
   const [lapName, setLapName] = useState("");
   const draft = useAdjustDraft();
@@ -55,6 +57,7 @@ export function PiPContent({
   if (mode === "discard") {
     return (
       <PiPDiscardView
+        size={size}
         onConfirm={handleConfirmDiscard}
         onCancel={() => setMode("idle")}
       />
@@ -64,6 +67,7 @@ export function PiPContent({
   if (mode === "lap") {
     return (
       <PiPLapView
+        size={size}
         value={lapName}
         onChange={setLapName}
         onSubmit={handleSaveLap}
@@ -81,11 +85,11 @@ export function PiPContent({
           time={draft.value}
           totalTime={previewTotal}
           showPrice={false}
-          size="mini"
+          size={size}
           onStep={draft.step}
         />
         <AdjustActions
-          size="mini"
+          size={size}
           onCancel={() => setMode("idle")}
           onConfirm={handleConfirmAdjust}
         />
@@ -95,6 +99,7 @@ export function PiPContent({
 
   return (
     <PiPIdleView
+      size={size}
       name={name}
       time={time}
       totalTime={totalTime}

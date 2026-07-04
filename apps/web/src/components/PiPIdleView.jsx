@@ -8,8 +8,16 @@ import {
 } from "@/components/ui/dropdown-menu.jsx";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { TimerControls } from "@/components/TimerControls.jsx";
+import { cn } from "@/lib/utils.js";
+
+const HEADER_TEXT = {
+  default: "text-lg",
+  compact: "text-base",
+  mini: "text-sm",
+};
 
 export function PiPIdleView({
+  size = "mini",
   name,
   time,
   totalTime,
@@ -26,7 +34,12 @@ export function PiPIdleView({
   return (
     <div className="flex h-full w-full flex-col p-3">
       <header className="flex items-center justify-between gap-2">
-        <h1 className="truncate text-sm font-medium text-muted-foreground">
+        <h1
+          className={cn(
+            "truncate font-medium text-muted-foreground",
+            HEADER_TEXT[size],
+          )}
+        >
           {name}
         </h1>
         <DropdownMenu>
@@ -56,7 +69,7 @@ export function PiPIdleView({
             totalTime={totalTime}
             isRunning={isRunning}
             showPrice={false}
-            size="mini"
+            size={size}
           />
         </div>
 
@@ -66,7 +79,7 @@ export function PiPIdleView({
           onStart={onStart}
           onPause={onPause}
           onAddLap={onAddLap}
-          size="mini"
+          size={size}
           orientation="vertical"
           playFirst
           className="shrink-0"
