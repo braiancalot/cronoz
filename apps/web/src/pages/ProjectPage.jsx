@@ -18,6 +18,7 @@ import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
 import { PiPTimer } from "@/components/PiPTimer.jsx";
 import { PiPContent } from "@/components/PiPContent.jsx";
+import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
 import { Laps } from "@/components/Laps.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
@@ -58,7 +59,12 @@ export default function ProjectPage() {
     deleteLap,
   } = useProject(id);
 
-  const { isSupported: isPiPSupported, pipWindow, openPiP } = usePiPWindow();
+  const {
+    isSupported: isPiPSupported,
+    pipWindow,
+    openPiP,
+    closePiP,
+  } = usePiPWindow();
 
   useKeyboardShortcuts({ onToggle: toggle, pipWindow, enabled: !isAdjusting });
 
@@ -172,6 +178,20 @@ export default function ProjectPage() {
   const adjustSegment = adjustPreviewTotals.segment;
   const adjustTotal = hasLaps ? adjustPreviewTotals.total : null;
 
+  const isPiPActive = !!pipWindow;
+
+  const lapsProps = {
+    laps: project.stopwatch.laps,
+    onRenameLap: renameLap,
+    onDeleteLap: deleteLap,
+    isAddingLap,
+    addLapName: lapName,
+    onAddLapNameChange: setLapName,
+    onConfirmAddLap: handleConfirmAddLap,
+    onCancelAddLap: handleCancelAddLap,
+  };
+  const hasLapsSection = hasLaps || isAddingLap;
+
   return (
     <PageContainer className="items-center">
       <ProjectHeader
@@ -181,13 +201,25 @@ export default function ProjectPage() {
         onDiscardCurrentTime={handleRequestDiscard}
         canDiscardCurrentTime={canDiscardCurrentTime}
         onAdjust={handleStartAdjust}
-        canAdjust={!isAdjusting}
+        canAdjust={!isAdjusting && !isPiPActive}
         onReset={handleRequestReset}
         canReset={canReset}
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
       />
 
-      {isShort ? (
+      {isPiPActive ? (
+        <div className="flex flex-1 flex-col w-full items-center min-h-0">
+          <section className="flex flex-1 items-center justify-center w-full">
+            <PiPPlaceholder onClose={closePiP} />
+          </section>
+
+          {hasLapsSection && <Laps {...lapsProps} />}
+
+          {/* Mirror the bottom TimerControls footprint (size-14 + pb-8) so the
+              laps list doesn't shift when toggling PiP. */}
+          <div aria-hidden className="h-22 shrink-0" />
+        </div>
+      ) : isShort ? (
         <div
           onClick={project.stopwatch.isRunning ? pause : undefined}
           className="flex flex-1 flex-col w-full min-h-0 items-center"
@@ -240,19 +272,7 @@ export default function ProjectPage() {
             </div>
           )}
 
-          {(hasLaps || isAddingLap) && (
-            <Laps
-              laps={project.stopwatch.laps}
-              onRenameLap={renameLap}
-              onDeleteLap={deleteLap}
-              isAddingLap={isAddingLap}
-              addLapName={lapName}
-              onAddLapNameChange={setLapName}
-              onConfirmAddLap={handleConfirmAddLap}
-              onCancelAddLap={handleCancelAddLap}
-              className="mt-4 mb-4"
-            />
-          )}
+          {hasLapsSection && <Laps {...lapsProps} className="mt-4 mb-4" />}
         </div>
       ) : (
         <div
@@ -278,18 +298,7 @@ export default function ProjectPage() {
             )}
           </section>
 
-          {(hasLaps || isAddingLap) && (
-            <Laps
-              laps={project.stopwatch.laps}
-              onRenameLap={renameLap}
-              onDeleteLap={deleteLap}
-              isAddingLap={isAddingLap}
-              addLapName={lapName}
-              onAddLapNameChange={setLapName}
-              onConfirmAddLap={handleConfirmAddLap}
-              onCancelAddLap={handleCancelAddLap}
-            />
-          )}
+          {hasLapsSection && <Laps {...lapsProps} />}
 
           {isAdjusting ? (
             <AdjustActions
