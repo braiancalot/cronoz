@@ -1,3 +1,4 @@
+import { MinusCircleIcon, PlusCircleIcon } from "@phosphor-icons/react";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
@@ -12,38 +13,82 @@ const STEPS = [
 const STEP_BTN = {
   default: "h-11 w-14 text-sm",
   compact: "h-10 w-12 text-sm",
-  mini: "h-8 w-10 text-xs",
+  // Narrowed so the single row of 8 (2 round + 6 step) clears a 360px phone.
+  mini: "h-8 w-9 text-xs",
 };
 
-function StepGroup({ sign, onStep, size, orientation }) {
-  // In the stacked (below) layout the smallest step sits closest to the timer's
-  // center, so the increase group reads 1s/10s/1m from the center outward.
-  const steps =
-    orientation === "horizontal" && sign > 0 ? [...STEPS].reverse() : STEPS;
+// The round button shares the stepper footprint so every control is the same
+// size, with a larger icon so it fills the button and reads as one.
+const ROUND_ICON = {
+  default: "[&_svg]:size-7",
+  compact: "[&_svg]:size-6",
+  mini: "[&_svg]:size-5",
+};
 
-  // A stacked row holds all 6 buttons side by side, so it can't afford the
-  // widest metric on a 360px phone — cap it at the mini size there.
-  const btnSize = orientation === "horizontal" ? "mini" : size;
+// Snaps the segment to a whole minute — down (floor) or up (ceil).
+function RoundButton({ direction, size, onSnap }) {
+  const Icon = direction === "down" ? MinusCircleIcon : PlusCircleIcon;
+  return (
+    <Button
+      variant="outline"
+      onClick={() => onSnap(direction)}
+      className={cn("rounded-full px-0", STEP_BTN[size], ROUND_ICON[size])}
+      aria-label={
+        direction === "down" ? "Arredondar para baixo" : "Arredondar para cima"
+      }
+    >
+      <Icon />
+    </Button>
+  );
+}
+
+// A decrease (sign −1) or increase (sign +1) group: the steppers plus, when
+// onSnap is given, the round button as the outermost item.
+//   - vertical: round on top, steppers below.
+//   - horizontal + mirror: the two groups mirror around the timer's center, so
+//     the increase group reads outward and its round sits at the far right.
+//     Used by the single-row layout.
+function StepGroup({
+  sign,
+  steps,
+  onStep,
+  onSnap,
+  size,
+  orientation,
+  mirror = false,
+}) {
+  const horizontal = orientation === "horizontal";
+  const orderedSteps =
+    horizontal && mirror && sign > 0 ? [...steps].reverse() : steps;
+  const direction = sign < 0 ? "down" : "up";
+
+  const roundButton = onSnap ? (
+    <RoundButton direction={direction} size={size} onSnap={onSnap} />
+  ) : null;
+
+  const roundFirst = !horizontal || !mirror || sign < 0;
 
   return (
     <div
       className={cn(
-        "flex gap-2",
-        orientation === "vertical" ? "flex-col" : "flex-row",
+        "flex items-center",
+        horizontal ? "flex-row gap-1" : "flex-col gap-2",
       )}
     >
-      {steps.map((step) => (
+      {roundFirst && roundButton}
+      {orderedSteps.map((step) => (
         <Button
           key={step.label}
           variant="outline"
           onClick={() => onStep(sign * step.ms)}
-          className={cn("rounded-full px-0 tabular-nums", STEP_BTN[btnSize])}
+          className={cn("rounded-full px-0 tabular-nums", STEP_BTN[size])}
           aria-label={`${sign < 0 ? "Diminuir" : "Aumentar"} ${step.label}`}
         >
           {sign < 0 ? "−" : "+"}
           {step.label}
         </Button>
       ))}
+      {!roundFirst && roundButton}
     </div>
   );
 }
@@ -84,17 +129,27 @@ export function AdjustActions({
   );
 }
 
-// Controlled cluster: the timer flanked by (or stacked over) the steppers. The
-// draft value and the action buttons live in the consumer.
+// Controlled cluster: the timer with its steppers. The draft value and the
+// action buttons live in the consumer. Two layouts:
+//   - "flank" (default): steppers in columns on either side of the timer.
+//   - "row": timer above a single row (narrow phone, fits 360px).
+// `omitMinuteStep` drops the ±1m stepper (the round button covers the minute),
+// keeping the tight PiP column short enough to avoid a scrollbar.
 export function TimerAdjuster({
   time,
   totalTime = null,
   hourlyPrice = 10,
   showPrice = true,
   size = "default",
-  stack = false,
+  layout = "flank",
+  omitMinuteStep = false,
   onStep,
+  onSnap,
 }) {
+  const steps = omitMinuteStep
+    ? STEPS.filter((step) => step.ms !== 60_000)
+    : STEPS;
+
   const display = (
     <TimerDisplay
       time={time}
@@ -107,23 +162,31 @@ export function TimerAdjuster({
     />
   );
 
-  if (stack) {
+  if (layout === "row") {
+    // The single row can't afford the widest metric on a 360px phone, so it is
+    // pinned to the mini button size regardless of the display size.
     return (
       <div className="flex flex-col items-center gap-4">
         {display}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <StepGroup
             sign={-1}
+            steps={steps}
             onStep={onStep}
-            size={size}
+            onSnap={onSnap}
+            size="mini"
             orientation="horizontal"
+            mirror
           />
           <Separator orientation="vertical" className="h-8" />
           <StepGroup
             sign={1}
+            steps={steps}
             onStep={onStep}
-            size={size}
+            onSnap={onSnap}
+            size="mini"
             orientation="horizontal"
+            mirror
           />
         </div>
       </div>
@@ -132,9 +195,23 @@ export function TimerAdjuster({
 
   return (
     <div className="flex items-center justify-center gap-3 sm:gap-4">
-      <StepGroup sign={-1} onStep={onStep} size={size} orientation="vertical" />
+      <StepGroup
+        sign={-1}
+        steps={steps}
+        onStep={onStep}
+        onSnap={onSnap}
+        size={size}
+        orientation="vertical"
+      />
       {display}
-      <StepGroup sign={1} onStep={onStep} size={size} orientation="vertical" />
+      <StepGroup
+        sign={1}
+        steps={steps}
+        onStep={onStep}
+        onSnap={onSnap}
+        size={size}
+        orientation="vertical"
+      />
     </div>
   );
 }

@@ -86,7 +86,9 @@ export function PiPContent({
           totalTime={previewTotal}
           showPrice={false}
           size={size}
+          omitMinuteStep
           onStep={draft.step}
+          onSnap={draft.snap}
         />
         <AdjustActions
           size={size}

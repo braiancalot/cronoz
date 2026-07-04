@@ -8,6 +8,8 @@ import {
   sumLapTimes,
   hasHours,
   truncateToSecond,
+  roundDownToMinute,
+  roundUpToMinute,
   isStopwatchLive,
   isStopwatchStale,
   RECOVERY_GRACE_PERIOD,
@@ -492,5 +494,45 @@ describe("truncateToSecond", () => {
 
   it("floors a multi-minute value", () => {
     expect(truncateToSecond(154567)).toBe(154000);
+  });
+});
+
+describe("roundDownToMinute", () => {
+  it("returns 0 for 0", () => {
+    expect(roundDownToMinute(0)).toBe(0);
+  });
+
+  it("floors a sub-minute value to 0", () => {
+    expect(roundDownToMinute(45_000)).toBe(0);
+  });
+
+  it("floors down to the whole minute", () => {
+    expect(roundDownToMinute(12 * 60_000 + 34_000)).toBe(12 * 60_000);
+  });
+
+  it("steps a full minute down when already on an exact minute", () => {
+    expect(roundDownToMinute(12 * 60_000)).toBe(11 * 60_000);
+  });
+
+  it("does not go below 0 from an exact minute", () => {
+    expect(roundDownToMinute(0)).toBe(0);
+  });
+});
+
+describe("roundUpToMinute", () => {
+  it("ceils a sub-minute value up to one minute", () => {
+    expect(roundUpToMinute(45_000)).toBe(60_000);
+  });
+
+  it("ceils up to the next whole minute", () => {
+    expect(roundUpToMinute(12 * 60_000 + 34_000)).toBe(13 * 60_000);
+  });
+
+  it("steps a full minute up when already on an exact minute", () => {
+    expect(roundUpToMinute(12 * 60_000)).toBe(13 * 60_000);
+  });
+
+  it("goes to one minute from 0", () => {
+    expect(roundUpToMinute(0)).toBe(60_000);
   });
 });

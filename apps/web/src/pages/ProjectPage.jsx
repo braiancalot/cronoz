@@ -236,8 +236,9 @@ export default function ProjectPage() {
                 totalTime={adjustTotal}
                 hourlyPrice={hourlyPrice}
                 size="compact"
-                stack={isNarrow}
+                layout={isNarrow ? "row" : "flank"}
                 onStep={draft.step}
+                onSnap={draft.snap}
               />
               <AdjustActions
                 size="compact"
@@ -285,8 +286,9 @@ export default function ProjectPage() {
                 time={adjustSegment}
                 totalTime={adjustTotal}
                 hourlyPrice={hourlyPrice}
-                stack={isNarrow}
+                layout={isNarrow ? "row" : "flank"}
                 onStep={draft.step}
+                onSnap={draft.snap}
               />
             ) : (
               <TimerDisplay

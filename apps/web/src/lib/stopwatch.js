@@ -118,3 +118,14 @@ export function formatTimeCompact(ms) {
 export function truncateToSecond(ms) {
   return Math.floor(ms / 1000) * 1000;
 }
+
+// Snap to a whole minute, always landing on a different mark: with a
+// sub-minute remainder it floors/ceils, and when already on an exact minute it
+// steps a full minute like the ±1m buttons. Clamped at 0.
+export function roundDownToMinute(ms) {
+  return Math.max(0, (Math.ceil(ms / 60000) - 1) * 60000);
+}
+
+export function roundUpToMinute(ms) {
+  return (Math.floor(ms / 60000) + 1) * 60000;
+}

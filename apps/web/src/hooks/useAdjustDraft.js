@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { roundDownToMinute, roundUpToMinute } from "@/lib/stopwatch.js";
 
 // Holds the in-progress segment value while the adjust UI is open. Edits stay
 // local (live preview) and are only committed on "Pronto"; "Cancelar" just
@@ -10,5 +11,11 @@ export function useAdjustDraft() {
     value,
     begin: (initial) => setValue(Math.max(0, initial)),
     step: (delta) => setValue((current) => Math.max(0, current + delta)),
+    snap: (direction) =>
+      setValue((current) =>
+        direction === "up"
+          ? roundUpToMinute(current)
+          : roundDownToMinute(current),
+      ),
   };
 }

@@ -105,7 +105,7 @@ describe("PiPContent", () => {
     await user.click(
       await screen.findByRole("menuitem", { name: "Ajustar tempo" }),
     );
-    await user.click(screen.getByRole("button", { name: "Aumentar 1m" }));
+    await user.click(screen.getByRole("button", { name: "Aumentar 10s" }));
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(props.onCommitAdjust).not.toHaveBeenCalled();
     expect(screen.getByText("Projeto X")).toBeTruthy();

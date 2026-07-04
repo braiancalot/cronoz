@@ -4,6 +4,7 @@ import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button.jsx";
 import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
+import { roundDownToMinute, roundUpToMinute } from "@/lib/stopwatch.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
@@ -46,7 +47,12 @@ function Section({ title, children }) {
 // 2h30 já registrado em voltas salvas; o ajuste mexe só no segmento atual.
 const ADJUST_LAPS_TOTAL = 2 * 3_600_000 + 30 * 60_000;
 
-function AdjustDemo({ size, stack = false, showPrice = true }) {
+function AdjustDemo({
+  size,
+  layout = "flank",
+  omitMinuteStep = false,
+  showPrice = true,
+}) {
   const [current, setCurrent] = useState(47 * 60_000);
   return (
     <div className="flex flex-col items-center gap-4">
@@ -56,8 +62,14 @@ function AdjustDemo({ size, stack = false, showPrice = true }) {
         hourlyPrice={20}
         showPrice={showPrice}
         size={size}
-        stack={stack}
+        layout={layout}
+        omitMinuteStep={omitMinuteStep}
         onStep={(ms) => setCurrent((c) => Math.max(0, c + ms))}
+        onSnap={(dir) =>
+          setCurrent((c) =>
+            dir === "up" ? roundUpToMinute(c) : roundDownToMinute(c),
+          )
+        }
       />
       <AdjustActions
         size={size}
@@ -139,17 +151,26 @@ export default function DesignPage() {
             <Frame label="Split — compact" width={420}>
               <AdjustDemo size="compact" />
             </Frame>
-            <Frame label="PiP — mini (sem preço)" width={280}>
-              <AdjustDemo size="mini" showPrice={false} />
+          </div>
+
+          <h3 className="text-sm font-medium">
+            Linha única (celular estreito, ≤480px)
+          </h3>
+          <div className="flex flex-wrap items-start gap-6">
+            <Frame label="Celular — default" width={360}>
+              <AdjustDemo size="default" layout="row" />
             </Frame>
           </div>
 
           <h3 className="text-sm font-medium">
-            Empilhado (celular estreito, ≤480px)
+            PiP (flanqueado, sem o stepper de 1m)
           </h3>
           <div className="flex flex-wrap items-start gap-6">
-            <Frame label="Celular — default" width={360}>
-              <AdjustDemo size="default" stack />
+            <Frame label="PiP — mini (sem preço)" width={280}>
+              <AdjustDemo size="mini" omitMinuteStep showPrice={false} />
+            </Frame>
+            <Frame label="PiP — compact (sem preço)" width={320}>
+              <AdjustDemo size="compact" omitMinuteStep showPrice={false} />
             </Frame>
           </div>
         </Section>
