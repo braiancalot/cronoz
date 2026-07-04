@@ -96,6 +96,36 @@ export function adjustPreview(stopwatch, segment, { ignoreMs = false } = {}) {
   };
 }
 
+const MS_PER_HOUR = 3600000;
+
+export function calculateTotalPrice(ms, hourlyPrice) {
+  return (ms / MS_PER_HOUR) * hourlyPrice;
+}
+
+// Snapshot for the "exact time" consultation panel: what the total time/price
+// currently are (rounded, with per-lap ms truncation) versus what they'd be
+// without the truncation, plus the difference the rounding drops.
+export function summarizeExactTime(stopwatch, hourlyPrice) {
+  const roundedTime = calculateTotalTime(stopwatch, { ignoreMs: true });
+  const exactTime = calculateTotalTime(stopwatch, { ignoreMs: false });
+  const differenceTime = exactTime - roundedTime;
+
+  return {
+    rounded: {
+      time: roundedTime,
+      price: calculateTotalPrice(roundedTime, hourlyPrice),
+    },
+    exact: {
+      time: exactTime,
+      price: calculateTotalPrice(exactTime, hourlyPrice),
+    },
+    difference: {
+      time: differenceTime,
+      price: calculateTotalPrice(differenceTime, hourlyPrice),
+    },
+  };
+}
+
 export function hasHours(hours) {
   return hours !== "00";
 }
@@ -113,6 +143,30 @@ export function formatTimeCompact(ms) {
   if (minutes > 0) parts.push(`${minutes}m`);
   if (seconds > 0) parts.push(`${seconds}s`);
   return parts.length > 0 ? parts.join("") : "0s";
+}
+
+// Labeled h/m/s format for readability (e.g. "1h 23m 47,85s"). With
+// `fraction`, the seconds carry two decimals (centiseconds, pt-BR comma) so the
+// "exact time" panel can show the sub-second the rounding drops.
+export function formatHms(ms, { fraction = false } = {}) {
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms / 60000) % 60);
+  const seconds = Math.floor((ms / 1000) % 60);
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (hours > 0 || minutes > 0) parts.push(`${minutes}m`);
+
+  if (fraction) {
+    const centis = Math.floor((ms % 1000) / 10)
+      .toString()
+      .padStart(2, "0");
+    parts.push(`${seconds},${centis}s`);
+  } else {
+    parts.push(`${seconds}s`);
+  }
+
+  return parts.join(" ");
 }
 
 export function truncateToSecond(ms) {

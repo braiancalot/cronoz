@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   formatTime,
   formatTimeCompact,
+  formatHms,
   calculateTotalTime,
   calculateSplitTime,
   adjustPreview,
@@ -12,6 +13,8 @@ import {
   roundUpToMinute,
   isStopwatchLive,
   isStopwatchStale,
+  calculateTotalPrice,
+  summarizeExactTime,
   RECOVERY_GRACE_PERIOD,
 } from "@/lib/stopwatch.js";
 
@@ -494,6 +497,113 @@ describe("truncateToSecond", () => {
 
   it("floors a multi-minute value", () => {
     expect(truncateToSecond(154567)).toBe(154000);
+  });
+});
+
+describe("formatHms", () => {
+  it("returns 0s for 0", () => {
+    expect(formatHms(0)).toBe("0s");
+  });
+
+  it("shows only seconds under a minute", () => {
+    expect(formatHms(5000)).toBe("5s");
+  });
+
+  it("shows minutes and seconds", () => {
+    expect(formatHms(65000)).toBe("1m 5s");
+  });
+
+  it("shows hours, minutes and seconds", () => {
+    expect(formatHms(3665000)).toBe("1h 1m 5s");
+  });
+
+  it("keeps a zero minutes segment when hours are present", () => {
+    expect(formatHms(3605000)).toBe("1h 0m 5s");
+  });
+
+  it("appends the fraction of a second when requested", () => {
+    // 3s + floor(998/10)=99 centis
+    expect(formatHms(3998, { fraction: true })).toBe("3,99s");
+  });
+
+  it("appends the fraction alongside minutes", () => {
+    expect(formatHms(65850, { fraction: true })).toBe("1m 5,85s");
+  });
+
+  it("zero-pads the fraction to two digits", () => {
+    expect(formatHms(2050, { fraction: true })).toBe("2,05s");
+  });
+
+  it("keeps a two-digit fraction of zero", () => {
+    expect(formatHms(2000, { fraction: true })).toBe("2,00s");
+  });
+});
+
+describe("calculateTotalPrice", () => {
+  it("returns 0 for 0ms", () => {
+    expect(calculateTotalPrice(0, 100)).toBe(0);
+  });
+
+  it("charges the full hourly price for one hour", () => {
+    expect(calculateTotalPrice(3600000, 100)).toBe(100);
+  });
+
+  it("charges half the hourly price for 30 minutes", () => {
+    expect(calculateTotalPrice(1800000, 100)).toBe(50);
+  });
+});
+
+describe("summarizeExactTime", () => {
+  it("compares rounded, exact and difference for a paused stopwatch with laps", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 0,
+      laps: [{ lapTime: 1999 }, { lapTime: 1999 }, { lapTime: 1999 }],
+    };
+
+    const summary = summarizeExactTime(stopwatch, 3600);
+
+    // rounded: trunc(1999)*3 = 3000 ; exact: 5997 ; diff: 2997
+    expect(summary.rounded.time).toBe(3000);
+    expect(summary.exact.time).toBe(5997);
+    expect(summary.difference.time).toBe(2997);
+
+    // price = (ms / 3600000) * 3600 = ms / 1000
+    expect(summary.rounded.price).toBeCloseTo(3);
+    expect(summary.exact.price).toBeCloseTo(5.997);
+    expect(summary.difference.price).toBeCloseTo(2.997);
+  });
+
+  it("reports zero difference when every segment lands on a whole second", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 3000,
+      laps: [{ lapTime: 1000 }, { lapTime: 2000 }],
+    };
+
+    const summary = summarizeExactTime(stopwatch, 3600);
+
+    expect(summary.rounded.time).toBe(6000);
+    expect(summary.exact.time).toBe(6000);
+    expect(summary.difference.time).toBe(0);
+    expect(summary.difference.price).toBe(0);
+  });
+
+  it("captures the dropped sub-second when there are no laps", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 1750,
+      laps: [],
+    };
+
+    const summary = summarizeExactTime(stopwatch, 3600);
+
+    expect(summary.rounded.time).toBe(1000);
+    expect(summary.exact.time).toBe(1750);
+    expect(summary.difference.time).toBe(750);
   });
 });
 

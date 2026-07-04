@@ -1,12 +1,10 @@
 import { CopyIcon } from "@phosphor-icons/react";
-import { formatTimeCompact } from "@/lib/stopwatch";
+import { formatTimeCompact, calculateTotalPrice } from "@/lib/stopwatch";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { cn } from "@/lib/utils.js";
 import { toast } from "sonner";
-
-const MS_PER_HOUR = 60 * 60 * 1000;
 
 const SIZES = {
   default: {
@@ -37,10 +35,6 @@ const SIZES = {
     indicatorSize: "size-2.5",
   },
 };
-
-function calculateTotalPrice(totalTime, hourlyPrice) {
-  return (totalTime / MS_PER_HOUR) * hourlyPrice;
-}
 
 export function TimerDisplay({
   time,

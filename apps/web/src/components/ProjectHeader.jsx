@@ -1,6 +1,7 @@
 import {
   ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
+  ClockCountdownIcon,
   ClockIcon,
   DotsThreeVerticalIcon,
   EraserIcon,
@@ -31,6 +32,7 @@ export function ProjectHeader({
   onReset,
   canReset,
   onOpenPiP,
+  onViewExactTime,
 }) {
   const {
     isEditing: isRenaming,
@@ -108,6 +110,12 @@ export function ProjectHeader({
                 <EraserIcon />
                 Descartar tempo atual
               </DropdownMenuItem>
+              {onViewExactTime && (
+                <DropdownMenuItem onSelect={onViewExactTime}>
+                  <ClockCountdownIcon />
+                  Tempo exato
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={handleStartRename}>
                 <PencilSimpleIcon />

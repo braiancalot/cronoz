@@ -20,6 +20,7 @@ import { PiPTimer } from "@/components/PiPTimer.jsx";
 import { PiPContent } from "@/components/PiPContent.jsx";
 import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
 import { Laps } from "@/components/Laps.jsx";
+import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
@@ -37,6 +38,7 @@ export default function ProjectPage() {
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
+  const [exactTimeSnapshot, setExactTimeSnapshot] = useState(null);
   const [lapName, setLapName] = useState("");
 
   const hourlyPrice = useHourlyPrice();
@@ -128,6 +130,22 @@ export default function ProjectPage() {
     setIsAdjusting(false);
   }
 
+  // Freeze the current total into a paused snapshot so the consultation panel
+  // reads a static value while the stopwatch keeps running underneath.
+  function handleViewExactTime() {
+    const sw = project.stopwatch;
+    const settled =
+      sw.isRunning && sw.startTimestamp
+        ? sw.currentLapTime + (Date.now() - sw.startTimestamp)
+        : sw.currentLapTime;
+    setExactTimeSnapshot({
+      ...sw,
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: settled,
+    });
+  }
+
   function handleRequestDiscard() {
     setIsConfirmingDiscard(true);
   }
@@ -205,6 +223,7 @@ export default function ProjectPage() {
         onReset={handleRequestReset}
         canReset={canReset}
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
+        onViewExactTime={ignoreMs ? handleViewExactTime : null}
       />
 
       {isPiPActive ? (
@@ -339,6 +358,13 @@ export default function ProjectPage() {
           pipWindow={pipWindow}
         />
       </PiPTimer>
+
+      <ExactTimeDialog
+        open={!!exactTimeSnapshot}
+        onOpenChange={(isOpen) => !isOpen && setExactTimeSnapshot(null)}
+        stopwatch={exactTimeSnapshot ?? project.stopwatch}
+        hourlyPrice={hourlyPrice}
+      />
 
       <ConfirmDialog
         open={isConfirmingDelete}
