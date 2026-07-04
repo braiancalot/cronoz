@@ -1,5 +1,10 @@
 import { Link } from "react-router";
-import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
+import {
+  ArrowCounterClockwiseIcon,
+  CheckCircleIcon,
+  DotsThreeVerticalIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
@@ -68,12 +73,18 @@ export function ProjectCard({
                 onClick={(e) => e.stopPropagation()}
               >
                 <DropdownMenuItem onSelect={() => onToggleComplete(project)}>
+                  {isCompleted ? (
+                    <ArrowCounterClockwiseIcon />
+                  ) : (
+                    <CheckCircleIcon />
+                  )}
                   {isCompleted ? "Reabrir" : "Concluir"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
                   onSelect={() => onDelete(project)}
                 >
+                  <TrashIcon />
                   Deletar
                 </DropdownMenuItem>
               </DropdownMenuContent>

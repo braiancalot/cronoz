@@ -1,4 +1,8 @@
-import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
+import {
+  ClockIcon,
+  DotsThreeVerticalIcon,
+  EraserIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import {
   DropdownMenu,
@@ -50,12 +54,14 @@ export function PiPIdleView({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" container={menuContainer}>
             <DropdownMenuItem onSelect={onAdjust}>
+              <ClockIcon />
               Ajustar tempo
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={onDiscard}
               disabled={!canDiscardCurrentTime}
             >
+              <EraserIcon />
               Descartar tempo atual
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from "react";
-import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
+import {
+  CopyIcon,
+  DotsThreeVerticalIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -139,15 +144,18 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
               )
             }
           >
+            <CopyIcon />
             Copiar tempos
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={handleStartRename}>
+            <PencilSimpleIcon />
             Renomear
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => onRequestDelete(lap)}
           >
+            <TrashIcon />
             Apagar
           </DropdownMenuItem>
         </DropdownMenuContent>

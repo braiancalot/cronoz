@@ -1,7 +1,12 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
+  ClockIcon,
   DotsThreeVerticalIcon,
+  EraserIcon,
+  PencilSimpleIcon,
   PictureInPictureIcon,
+  TrashIcon,
 } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
@@ -93,22 +98,31 @@ export function ProjectHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={onAdjust} disabled={!canAdjust}>
+                <ClockIcon />
                 Ajustar tempo
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={onDiscardCurrentTime}
                 disabled={!canDiscardCurrentTime}
               >
+                <EraserIcon />
                 Descartar tempo atual
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={onReset} disabled={!canReset}>
-                Resetar cronômetro
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={handleStartRename}>
+                <PencilSimpleIcon />
                 Renomear
               </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={onReset}
+                disabled={!canReset}
+              >
+                <ArrowCounterClockwiseIcon />
+                Resetar cronômetro
+              </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                <TrashIcon />
                 Deletar
               </DropdownMenuItem>
             </DropdownMenuContent>
