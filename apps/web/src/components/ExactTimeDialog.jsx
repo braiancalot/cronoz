@@ -29,7 +29,7 @@ function Row({
   const valueClass = emphasized ? "font-medium" : "text-muted-foreground";
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="flex items-baseline gap-2">
         <span className="font-medium">{label}</span>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
