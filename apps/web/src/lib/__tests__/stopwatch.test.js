@@ -517,25 +517,38 @@ describe("formatHms", () => {
     expect(formatHms(3665000)).toBe("1h 1m 5s");
   });
 
-  it("keeps a zero minutes segment when hours are present", () => {
+  it("keeps an interior zero segment", () => {
     expect(formatHms(3605000)).toBe("1h 0m 5s");
   });
 
-  it("appends the fraction of a second when requested", () => {
+  it("drops a trailing zero seconds segment", () => {
+    expect(formatHms(60000)).toBe("1m");
+    expect(formatHms(3600000)).toBe("1h");
+  });
+
+  it("shows milliseconds as a separate two-digit segment", () => {
     // 3s + floor(998/10)=99 centis
-    expect(formatHms(3998, { fraction: true })).toBe("3,99s");
+    expect(formatHms(3998, { fraction: true })).toBe("3s 99ms");
   });
 
-  it("appends the fraction alongside minutes", () => {
-    expect(formatHms(65850, { fraction: true })).toBe("1m 5,85s");
+  it("shows milliseconds alongside minutes", () => {
+    expect(formatHms(65850, { fraction: true })).toBe("1m 5s 85ms");
   });
 
-  it("zero-pads the fraction to two digits", () => {
-    expect(formatHms(2050, { fraction: true })).toBe("2,05s");
+  it("zero-pads the millisecond segment to two digits", () => {
+    expect(formatHms(2050, { fraction: true })).toBe("2s 05ms");
   });
 
-  it("keeps a two-digit fraction of zero", () => {
-    expect(formatHms(2000, { fraction: true })).toBe("2,00s");
+  it("drops a trailing zero millisecond segment", () => {
+    expect(formatHms(2000, { fraction: true })).toBe("2s");
+  });
+
+  it("shows only milliseconds when the higher segments are zero", () => {
+    expect(formatHms(850, { fraction: true })).toBe("85ms");
+  });
+
+  it("falls back to 0s when everything is zero", () => {
+    expect(formatHms(0, { fraction: true })).toBe("0s");
   });
 });
 

@@ -145,28 +145,38 @@ export function formatTimeCompact(ms) {
   return parts.length > 0 ? parts.join("") : "0s";
 }
 
-// Labeled h/m/s format for readability (e.g. "1h 23m 47,85s"). With
-// `fraction`, the seconds carry two decimals (centiseconds, pt-BR comma) so the
-// "exact time" panel can show the sub-second the rounding drops.
+// Labeled h/m/s format for readability (e.g. "1h 23m 47s"). Leading and
+// trailing zero segments are dropped, but interior zeros stay so place value
+// reads right ("1h 0m 5s", "1m"). With `fraction`, a separate two-digit
+// millisecond segment (centiseconds, matching the main timer) trails the
+// seconds so the "exact time" panel can show the sub-second rounding drops.
 export function formatHms(ms, { fraction = false } = {}) {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms / 60000) % 60);
   const seconds = Math.floor((ms / 1000) % 60);
 
-  const parts = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (hours > 0 || minutes > 0) parts.push(`${minutes}m`);
+  const segments = [
+    { value: hours, text: `${hours}h` },
+    { value: minutes, text: `${minutes}m` },
+    { value: seconds, text: `${seconds}s` },
+  ];
 
   if (fraction) {
-    const centis = Math.floor((ms % 1000) / 10)
-      .toString()
-      .padStart(2, "0");
-    parts.push(`${seconds},${centis}s`);
-  } else {
-    parts.push(`${seconds}s`);
+    const centis = Math.floor((ms % 1000) / 10);
+    segments.push({
+      value: centis,
+      text: `${String(centis).padStart(2, "0")}ms`,
+    });
   }
 
-  return parts.join(" ");
+  const first = segments.findIndex((s) => s.value !== 0);
+  if (first === -1) return "0s";
+  const last = segments.findLastIndex((s) => s.value !== 0);
+
+  return segments
+    .slice(first, last + 1)
+    .map((s) => s.text)
+    .join(" ");
 }
 
 export function truncateToSecond(ms) {

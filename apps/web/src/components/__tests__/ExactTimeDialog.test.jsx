@@ -53,8 +53,8 @@ describe("ExactTimeDialog", () => {
     renderOpen();
 
     expect(screen.getByText("2s")).toBeInTheDocument(); // rounded, no fraction
-    expect(screen.getByText("3,99s")).toBeInTheDocument(); // exact, with fraction
-    expect(screen.getByText("+1,99s")).toBeInTheDocument(); // difference, prefixed
+    expect(screen.getByText("3s 99ms")).toBeInTheDocument(); // exact, with ms
+    expect(screen.getByText("+1s 99ms")).toBeInTheDocument(); // difference, prefixed
   });
 
   it("prefixes the difference price with a plus sign", () => {
