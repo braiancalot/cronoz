@@ -52,7 +52,7 @@ export function ProjectCard({
             )}
             <span className="truncate">{project.name}</span>
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <FormattedTime time={displayTime} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
