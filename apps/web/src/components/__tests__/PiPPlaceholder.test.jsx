@@ -9,11 +9,19 @@ describe("PiPPlaceholder", () => {
     expect(screen.getByText(/janela flutuante/i)).toBeTruthy();
   });
 
-  it("calls onClose when 'Trazer de volta' is clicked", async () => {
+  it("calls onClose when the block is clicked", async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
     render(<PiPPlaceholder onClose={onClose} />);
-    await user.click(screen.getByRole("button", { name: "Trazer de volta" }));
+    await user.click(screen.getByRole("button", { name: /trazer de volta/i }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("calls onClose when clicking the message, not just the label", async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<PiPPlaceholder onClose={onClose} />);
+    await user.click(screen.getByText(/janela flutuante/i));
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
