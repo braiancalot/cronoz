@@ -26,7 +26,7 @@ export default function App() {
             <Outlet />
             <InstallBanner />
             <ReloadPrompt />
-            <Toaster />
+            <Toaster position="top-center" />
           </div>
         </IconContext.Provider>
       </SyncStatusProvider>
