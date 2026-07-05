@@ -47,12 +47,7 @@ function Section({ title, children }) {
 // 2h30 já registrado em voltas salvas; o ajuste mexe só no segmento atual.
 const ADJUST_LAPS_TOTAL = 2 * 3_600_000 + 30 * 60_000;
 
-function AdjustDemo({
-  size,
-  layout = "flank",
-  omitMinuteStep = false,
-  showPrice = true,
-}) {
+function AdjustDemo({ size, layout = "flank", showPrice = true }) {
   const [current, setCurrent] = useState(47 * 60_000);
   return (
     <div className="flex flex-col items-center gap-4">
@@ -63,7 +58,6 @@ function AdjustDemo({
         showPrice={showPrice}
         size={size}
         layout={layout}
-        omitMinuteStep={omitMinuteStep}
         onStep={(ms) => setCurrent((c) => Math.max(0, c + ms))}
         onSnap={(dir) =>
           setCurrent((c) =>
@@ -162,15 +156,13 @@ export default function DesignPage() {
             </Frame>
           </div>
 
-          <h3 className="text-sm font-medium">
-            PiP (flanqueado, sem o stepper de 1m)
-          </h3>
+          <h3 className="text-sm font-medium">PiP (flanqueado)</h3>
           <div className="flex flex-wrap items-start gap-6">
             <Frame label="PiP — mini (sem preço)" width={280}>
-              <AdjustDemo size="mini" omitMinuteStep showPrice={false} />
+              <AdjustDemo size="mini" showPrice={false} />
             </Frame>
             <Frame label="PiP — compact (sem preço)" width={320}>
-              <AdjustDemo size="compact" omitMinuteStep showPrice={false} />
+              <AdjustDemo size="compact" showPrice={false} />
             </Frame>
           </div>
         </Section>

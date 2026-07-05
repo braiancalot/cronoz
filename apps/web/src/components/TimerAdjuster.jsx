@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { cn } from "@/lib/utils.js";
 
+// No ±1m stepper: the round-to-minute buttons already cover the minute.
 const STEPS = [
-  { ms: 60_000, label: "1m" },
   { ms: 10_000, label: "10s" },
   { ms: 1_000, label: "1s" },
 ];
@@ -13,7 +13,7 @@ const STEPS = [
 const STEP_BTN = {
   default: "h-11 w-14 text-sm",
   compact: "h-10 w-12 text-sm",
-  // Narrowed so the single row of 8 (2 round + 6 step) clears a 360px phone.
+  // Narrowed so the single row of 6 (2 round + 4 step) clears a 360px phone.
   mini: "h-8 w-9 text-xs",
 };
 
@@ -84,7 +84,7 @@ function StepGroup({
           className={cn("rounded-full px-0 tabular-nums", STEP_BTN[size])}
           aria-label={`${sign < 0 ? "Diminuir" : "Aumentar"} ${step.label}`}
         >
-          {sign < 0 ? "−" : "+"}
+          {sign < 0 ? "-" : "+"}
           {step.label}
         </Button>
       ))}
@@ -133,8 +133,6 @@ export function AdjustActions({
 // action buttons live in the consumer. Two layouts:
 //   - "flank" (default): steppers in columns on either side of the timer.
 //   - "row": timer above a single row (narrow phone, fits 360px).
-// `omitMinuteStep` drops the ±1m stepper (the round button covers the minute),
-// keeping the tight PiP column short enough to avoid a scrollbar.
 export function TimerAdjuster({
   time,
   totalTime = null,
@@ -142,13 +140,10 @@ export function TimerAdjuster({
   showPrice = true,
   size = "default",
   layout = "flank",
-  omitMinuteStep = false,
   onStep,
   onSnap,
 }) {
-  const steps = omitMinuteStep
-    ? STEPS.filter((step) => step.ms !== 60_000)
-    : STEPS;
+  const steps = STEPS;
 
   const display = (
     <TimerDisplay

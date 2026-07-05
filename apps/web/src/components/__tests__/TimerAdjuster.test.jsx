@@ -11,7 +11,7 @@ describe("TimerAdjuster", () => {
   it("renders a decrease and increase stepper for each step", () => {
     render(<TimerAdjuster time={60000} onStep={vi.fn()} />);
 
-    for (const label of ["1m", "10s", "1s"]) {
+    for (const label of ["10s", "1s"]) {
       expect(
         screen.getByRole("button", { name: `Diminuir ${label}` }),
       ).toBeInTheDocument();
@@ -26,8 +26,8 @@ describe("TimerAdjuster", () => {
     const user = userEvent.setup();
     render(<TimerAdjuster time={60000} onStep={onStep} />);
 
-    await user.click(screen.getByRole("button", { name: "Aumentar 1m" }));
-    expect(onStep).toHaveBeenCalledWith(60000);
+    await user.click(screen.getByRole("button", { name: "Aumentar 10s" }));
+    expect(onStep).toHaveBeenCalledWith(10000);
   });
 
   it("calls onStep with a negative delta when decreasing", async () => {
@@ -49,18 +49,12 @@ describe("TimerAdjuster", () => {
       />,
     );
 
-    expect(screen.getAllByRole("button")).toHaveLength(8);
+    // 2 round + (10s, 1s) on each side.
+    expect(screen.getAllByRole("button")).toHaveLength(6);
   });
 
-  it("drops the 1m steppers when omitMinuteStep is set", () => {
-    render(
-      <TimerAdjuster
-        time={60000}
-        omitMinuteStep
-        onStep={vi.fn()}
-        onSnap={vi.fn()}
-      />,
-    );
+  it("never renders a 1m stepper", () => {
+    render(<TimerAdjuster time={60000} onStep={vi.fn()} onSnap={vi.fn()} />);
 
     expect(
       screen.queryByRole("button", { name: "Diminuir 1m" }),
@@ -68,8 +62,6 @@ describe("TimerAdjuster", () => {
     expect(
       screen.queryByRole("button", { name: "Aumentar 1m" }),
     ).not.toBeInTheDocument();
-    // 2 round + (10s, 1s) on each side.
-    expect(screen.getAllByRole("button")).toHaveLength(6);
   });
 
   it("renders round-down and round-up buttons", () => {
