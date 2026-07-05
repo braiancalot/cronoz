@@ -83,4 +83,22 @@ describe("TimerDisplay", () => {
 
     expect(writeText).not.toHaveBeenCalled();
   });
+
+  it("uses the fixed tier text size by default", () => {
+    const { container } = render(<TimerDisplay time={61000} size="default" />);
+
+    const time = container.querySelector(".tabular-nums");
+    expect(time.className).toContain("text-6xl");
+    expect(time.className).not.toContain("clamp");
+  });
+
+  it("uses a fluid clamp-based text size when fluid is set", () => {
+    const { container } = render(
+      <TimerDisplay time={61000} size="default" fluid />,
+    );
+
+    const time = container.querySelector(".tabular-nums");
+    expect(time.className).toContain("clamp");
+    expect(time.className).not.toContain("text-6xl");
+  });
 });

@@ -36,6 +36,18 @@ const SIZES = {
   },
 };
 
+// PiP-only: the timer text scales continuously with the window (vmin) instead
+// of stepping through the tiers, so a small resize nudges the font too. Bounded
+// by a legible floor and a ceiling that won't overflow. Milliseconds ride at
+// 0.62em off the digits, so a single clamp drives both. Only the timer text
+// goes fluid — the running indicator and surrounding controls stay on `size`.
+const FLUID = {
+  gap: "gap-[clamp(0.35rem,2.5vmin,1rem)]",
+  time: "text-[clamp(1.75rem,18vmin,4rem)]",
+  milliseconds: "text-[0.62em]",
+  meta: "text-[clamp(0.8rem,5vmin,1.15rem)]",
+};
+
 export function TimerDisplay({
   time,
   totalTime = null,
@@ -44,8 +56,14 @@ export function TimerDisplay({
   enableCopy = true,
   showPrice = true,
   size = "default",
+  fluid = false,
 }) {
   const s = SIZES[size];
+  const gap = fluid ? FLUID.gap : s.gap;
+  const timeClass = fluid ? FLUID.time : s.time;
+  const msClass = fluid ? FLUID.milliseconds : s.milliseconds;
+  const metaClass = fluid ? FLUID.meta : s.meta;
+  const priceClass = fluid ? FLUID.meta : s.price;
   const ignoreMs = useIgnoreMilliseconds();
   const priceBase = totalTime !== null ? totalTime : time;
   const price = calculateTotalPrice(priceBase, hourlyPrice);
@@ -68,7 +86,7 @@ export function TimerDisplay({
   }
 
   return (
-    <div className={cn("flex flex-col items-center", s.gap)}>
+    <div className={cn("flex flex-col items-center", gap)}>
       <div className="relative">
         {isRunning && (
           <span
@@ -99,8 +117,8 @@ export function TimerDisplay({
           <FormattedTime
             time={time}
             showMilliseconds={!ignoreMs}
-            className={s.time}
-            millisecondsClassName={cn(s.milliseconds, "opacity-60")}
+            className={timeClass}
+            millisecondsClassName={cn(msClass, "opacity-60")}
           />
         </div>
       </div>
@@ -133,7 +151,7 @@ export function TimerDisplay({
               >
                 <FormattedTime
                   time={totalTime}
-                  className={cn("text-muted-foreground", s.meta)}
+                  className={cn("text-muted-foreground", metaClass)}
                 />
               </div>
             )}
@@ -141,7 +159,9 @@ export function TimerDisplay({
             {showPrice && (
               <>
                 {totalTime !== null && (
-                  <span className={cn("text-muted-foreground", s.meta)}>•</span>
+                  <span className={cn("text-muted-foreground", metaClass)}>
+                    •
+                  </span>
                 )}
 
                 <span
@@ -152,7 +172,7 @@ export function TimerDisplay({
                   }
                   className={cn(
                     "font-medium text-primary",
-                    s.price,
+                    priceClass,
                     !isRunning && enableCopy && "cursor-pointer",
                   )}
                 >

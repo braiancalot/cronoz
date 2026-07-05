@@ -76,6 +76,7 @@ export function PiPIdleView({
             isRunning={isRunning}
             showPrice={false}
             size={size}
+            fluid
           />
         </div>
 
