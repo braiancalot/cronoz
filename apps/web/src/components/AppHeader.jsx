@@ -6,10 +6,10 @@ import { FEATURES } from "@/lib/featureFlags.js";
 
 export function AppHeader() {
   return (
-    <header className="flex py-4 items-center justify-between">
+    <header className="grid grid-cols-3 py-4 items-center">
       <div />
-      <h1 className="text-lg font-bold tracking-tight">Cronoz</h1>
-      <div className="flex items-center gap-1">
+      <h1 className="text-center text-lg font-bold tracking-tight">Cronoz</h1>
+      <div className="flex items-center justify-end gap-1">
         {FEATURES.sync && <SyncIndicator />}
         <Button variant="ghost" size="icon-sm" asChild>
           <Link to="/settings" aria-label="Configurações">
