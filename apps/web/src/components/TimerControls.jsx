@@ -2,13 +2,15 @@ import { PlayIcon, PauseIcon, PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import { cn } from "@/lib/utils.js";
 
-const SIZES = {
+// Shared with AdjustActions so the adjust-mode ✕/✓ buttons keep the exact same
+// round footprint as the play/lap controls they replace.
+export const CONTROL_SIZES = {
   default: "size-14 [&_svg]:size-7",
   compact: "size-12 [&_svg]:size-7",
   mini: "size-10 [&_svg]:size-5",
 };
 
-const GAPS = {
+export const CONTROL_GAPS = {
   default: "gap-4",
   compact: "gap-4",
   mini: "gap-2.5",
@@ -26,7 +28,7 @@ export function TimerControls({
   orientation = "horizontal",
   className,
 }) {
-  const sizeClass = SIZES[size];
+  const sizeClass = CONTROL_SIZES[size];
 
   const lapButton = showLap && (
     <Button
@@ -56,7 +58,7 @@ export function TimerControls({
     <div
       className={cn(
         "flex items-center justify-center",
-        GAPS[size],
+        CONTROL_GAPS[size],
         orientation === "vertical" ? "flex-col" : "flex-row",
         className,
       )}

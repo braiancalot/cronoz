@@ -1,6 +1,7 @@
 import {
   ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
+  CheckIcon,
   ClockCountdownIcon,
   ClockIcon,
   DotsThreeVerticalIcon,
@@ -8,6 +9,7 @@ import {
   PencilSimpleIcon,
   PictureInPictureIcon,
   TrashIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
@@ -19,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
+import { useInlineEditForm } from "@/hooks/useInlineEditForm.js";
 import { useInlineRename } from "@/hooks/useInlineRename.js";
 
 export function ProjectHeader({
@@ -44,10 +47,11 @@ export function ProjectHeader({
     submit,
   } = useInlineRename(name, onRename);
 
-  function handleRename(event) {
-    event.preventDefault();
-    submit();
-  }
+  const { formProps, fieldProps, keepFocus } = useInlineEditForm({
+    value: draft,
+    onSubmit: submit,
+    onCancel: handleCancel,
+  });
 
   return (
     <header className="w-full h-16 flex items-center justify-between gap-4">
@@ -57,11 +61,12 @@ export function ProjectHeader({
         </Link>
 
         {isRenaming ? (
-          <form onSubmit={handleRename} className="w-auto">
+          <form {...formProps} className="w-auto">
             <Input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onFocus={(event) => event.target.select()}
+              {...fieldProps}
               autoFocus
             />
           </form>
@@ -71,12 +76,25 @@ export function ProjectHeader({
       </div>
 
       {isRenaming ? (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
-            Cancelar
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Cancelar"
+            aria-label="Cancelar"
+            {...keepFocus}
+            onClick={handleCancel}
+          >
+            <XIcon />
           </Button>
-          <Button size="sm" onClick={handleRename}>
-            Salvar
+          <Button
+            size="icon"
+            title="Salvar"
+            aria-label="Salvar"
+            {...keepFocus}
+            onClick={submit}
+          >
+            <CheckIcon />
           </Button>
         </div>
       ) : (

@@ -1,5 +1,8 @@
+import { CheckIcon, XIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
+import { CONTROL_SIZES, CONTROL_GAPS } from "@/components/TimerControls.jsx";
+import { cn } from "@/lib/utils.js";
 
 const TEXT = { default: "text-lg", compact: "text-base", mini: "text-sm" };
 const INPUT = {
@@ -15,7 +18,7 @@ export function PiPLapView({
   onSubmit,
   onCancel,
 }) {
-  const btnSize = size === "mini" ? "sm" : "default";
+  const sizeClass = CONTROL_SIZES[size];
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -37,12 +40,24 @@ export function PiPLapView({
         className={INPUT[size]}
         autoFocus
       />
-      <div className="flex gap-3">
-        <Button variant="ghost" size={btnSize} type="button" onClick={onCancel}>
-          Cancelar
+      <div className={cn("flex items-center", CONTROL_GAPS[size])}>
+        <Button
+          type="button"
+          variant="ghost"
+          className={cn("rounded-full bg-muted", sizeClass)}
+          onClick={onCancel}
+          aria-label="Cancelar"
+          title="Cancelar"
+        >
+          <XIcon weight="bold" />
         </Button>
-        <Button size={btnSize} type="submit">
-          Salvar
+        <Button
+          type="submit"
+          className={cn("rounded-full", sizeClass)}
+          aria-label="Salvar"
+          title="Salvar"
+        >
+          <CheckIcon weight="bold" />
         </Button>
       </div>
     </form>

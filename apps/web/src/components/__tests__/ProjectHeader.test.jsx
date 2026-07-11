@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
@@ -28,6 +28,13 @@ async function openMenu() {
   await userEvent.click(screen.getByTitle("Mais opções"));
 }
 
+async function startRename() {
+  await openMenu();
+  await userEvent.click(
+    await screen.findByRole("menuitem", { name: "Renomear" }),
+  );
+}
+
 describe("ProjectHeader", () => {
   it("shows the 'Tempo exato' item when onViewExactTime is provided", async () => {
     renderHeader({ onViewExactTime: () => {} });
@@ -53,5 +60,47 @@ describe("ProjectHeader", () => {
     await userEvent.click(screen.getByText("Tempo exato"));
 
     expect(onViewExactTime).toHaveBeenCalledOnce();
+  });
+
+  it("saves the rename when the ✓ button is clicked", async () => {
+    const onRename = vi.fn();
+    renderHeader({ onRename });
+
+    await startRename();
+    const input = screen.getByDisplayValue("Projeto");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Novo nome");
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
+
+    expect(onRename).toHaveBeenCalledWith("Novo nome");
+  });
+
+  it("cancels the rename when the ✕ button is clicked", async () => {
+    const onRename = vi.fn();
+    renderHeader({ onRename });
+
+    await startRename();
+    const input = screen.getByDisplayValue("Projeto");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Descartado");
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(onRename).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("heading", { name: "Projeto" }),
+    ).toBeInTheDocument();
+  });
+
+  it("commits the rename when the field loses focus", async () => {
+    const onRename = vi.fn();
+    renderHeader({ onRename });
+
+    await startRename();
+    const input = screen.getByDisplayValue("Projeto");
+    await userEvent.clear(input);
+    await userEvent.type(input, "Novo nome");
+    fireEvent.blur(input);
+
+    expect(onRename).toHaveBeenCalledWith("Novo nome");
   });
 });

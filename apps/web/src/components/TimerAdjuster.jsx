@@ -1,5 +1,11 @@
-import { MinusCircleIcon, PlusCircleIcon } from "@phosphor-icons/react";
+import {
+  CheckIcon,
+  MinusCircleIcon,
+  PlusCircleIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
+import { CONTROL_SIZES, CONTROL_GAPS } from "@/components/TimerControls.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { cn } from "@/lib/utils.js";
@@ -109,20 +115,32 @@ export function AdjustActions({
   onConfirm,
   className,
 }) {
-  const btnSize = size === "mini" ? "sm" : "default";
+  const sizeClass = CONTROL_SIZES[size];
   return (
     <div className={className}>
       <div
         className={cn(
-          "flex items-center justify-center gap-3",
+          "flex items-center justify-center",
+          CONTROL_GAPS[size],
           ACTIONS_MIN_H[size],
         )}
       >
-        <Button variant="ghost" size={btnSize} onClick={onCancel}>
-          Cancelar
+        <Button
+          variant="ghost"
+          className={cn("rounded-full bg-muted", sizeClass)}
+          onClick={onCancel}
+          aria-label="Cancelar"
+          title="Cancelar"
+        >
+          <XIcon weight="bold" />
         </Button>
-        <Button size={btnSize} onClick={onConfirm}>
-          Pronto
+        <Button
+          className={cn("rounded-full", sizeClass)}
+          onClick={onConfirm}
+          aria-label="Pronto"
+          title="Pronto"
+        >
+          <CheckIcon weight="bold" />
         </Button>
       </div>
     </div>
