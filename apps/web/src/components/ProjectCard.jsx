@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
 import { calculateTotalTime, isStopwatchLive } from "@/lib/stopwatch.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
@@ -72,7 +73,10 @@ export function ProjectCard({
                 align="end"
                 onClick={(e) => e.stopPropagation()}
               >
-                <DropdownMenuItem onSelect={() => onToggleComplete(project)}>
+                <DropdownMenuItem
+                  variant="complete"
+                  onSelect={() => onToggleComplete(project)}
+                >
                   {isCompleted ? (
                     <ArrowCounterClockwiseIcon />
                   ) : (
@@ -80,6 +84,7 @@ export function ProjectCard({
                   )}
                   {isCompleted ? "Reabrir" : "Concluir"}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
                   onSelect={() => onDelete(project)}

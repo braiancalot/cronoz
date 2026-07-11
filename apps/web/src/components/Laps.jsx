@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
 import { Card } from "@/components/ui/card.jsx";
@@ -137,6 +138,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
+            variant="info"
             onSelect={() =>
               copyToClipboard(
                 `${formatTimeCompact(cumulativeTime)} (${formatTimeCompact(lapTime)})`,
@@ -147,10 +149,11 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
             <CopyIcon />
             Copiar tempos
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={handleStartRename}>
+          <DropdownMenuItem variant="edit" onSelect={handleStartRename}>
             <PencilSimpleIcon />
             Renomear
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => onRequestDelete(lap)}

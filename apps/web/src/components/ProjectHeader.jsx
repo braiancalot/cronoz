@@ -99,28 +99,34 @@ export function ProjectHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={onAdjust} disabled={!canAdjust}>
+              <DropdownMenuItem
+                variant="edit"
+                onSelect={onAdjust}
+                disabled={!canAdjust}
+              >
                 <ClockIcon />
                 Ajustar tempo
               </DropdownMenuItem>
               <DropdownMenuItem
+                variant="edit"
                 onSelect={onDiscardCurrentTime}
                 disabled={!canDiscardCurrentTime}
               >
                 <EraserIcon />
                 Descartar tempo atual
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="edit" onSelect={handleStartRename}>
+                <PencilSimpleIcon />
+                Renomear
+              </DropdownMenuItem>
               {onViewExactTime && (
-                <DropdownMenuItem onSelect={onViewExactTime}>
+                <DropdownMenuItem variant="info" onSelect={onViewExactTime}>
                   <ClockCountdownIcon />
                   Tempo exato
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleStartRename}>
-                <PencilSimpleIcon />
-                Renomear
-              </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
                 onSelect={onReset}

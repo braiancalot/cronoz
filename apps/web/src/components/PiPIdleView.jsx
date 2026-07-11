@@ -53,11 +53,12 @@ export function PiPIdleView({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" container={menuContainer}>
-            <DropdownMenuItem onSelect={onAdjust}>
+            <DropdownMenuItem variant="edit" onSelect={onAdjust}>
               <ClockIcon />
               Ajustar tempo
             </DropdownMenuItem>
             <DropdownMenuItem
+              variant="edit"
               onSelect={onDiscard}
               disabled={!canDiscardCurrentTime}
             >

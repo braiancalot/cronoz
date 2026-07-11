@@ -59,7 +59,7 @@ function DropdownMenuItem({ className, inset, variant = "default", ...props }) {
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/dropdown-menu-item relative flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm whitespace-nowrap outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-9.5 data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group/dropdown-menu-item relative flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm whitespace-nowrap outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[variant=default]:focus:**:text-accent-foreground data-inset:pl-9.5 data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=info]:focus:bg-info/10 data-[variant=info]:focus:text-info dark:data-[variant=info]:focus:bg-info/20 data-[variant=edit]:focus:bg-warning/10 data-[variant=edit]:focus:text-warning dark:data-[variant=edit]:focus:bg-warning/20 data-[variant=complete]:focus:bg-success/10 data-[variant=complete]:focus:text-success dark:data-[variant=complete]:focus:bg-success/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
