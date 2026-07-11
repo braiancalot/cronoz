@@ -26,7 +26,12 @@ export default function App() {
             <Outlet />
             <InstallBanner />
             <ReloadPrompt />
-            <Toaster position="top-center" />
+            {/* top offset clears the ProjectHeader (h-16) so toasts don't cover it */}
+            <Toaster
+              position="top-center"
+              offset={{ top: "4.5rem" }}
+              mobileOffset={{ top: "4.5rem" }}
+            />
           </div>
         </IconContext.Provider>
       </SyncStatusProvider>
