@@ -268,17 +268,19 @@ export default function ProjectPage() {
           ) : (
             <div
               className={cn(
-                "flex items-center gap-6 sm:gap-12 shrink-0",
+                "flex w-full items-center shrink-0",
                 hasLaps || isAddingLap ? "pt-2" : "flex-1",
               )}
             >
-              <TimerDisplay
-                time={hasLaps ? splitDisplayTime : displayTime}
-                totalTime={hasLaps ? displayTime : null}
-                isRunning={project.stopwatch.isRunning}
-                hourlyPrice={hourlyPrice}
-                size="compact"
-              />
+              <div className="flex flex-1 justify-center">
+                <TimerDisplay
+                  time={hasLaps ? splitDisplayTime : displayTime}
+                  totalTime={hasLaps ? displayTime : null}
+                  isRunning={project.stopwatch.isRunning}
+                  hourlyPrice={hourlyPrice}
+                  size="compact"
+                />
+              </div>
 
               <TimerControls
                 isRunning={project.stopwatch.isRunning}
@@ -288,6 +290,7 @@ export default function ProjectPage() {
                 onAddLap={handleStartAddLap}
                 orientation="vertical"
                 size="compact"
+                className="shrink-0"
               />
             </div>
           )}
