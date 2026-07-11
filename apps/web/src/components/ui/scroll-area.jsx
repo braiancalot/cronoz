@@ -2,7 +2,7 @@ import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
-function ScrollArea({ className, children, ...props }) {
+function ScrollArea({ className, viewportClassName, children, ...props }) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -11,7 +11,10 @@ function ScrollArea({ className, children, ...props }) {
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] outline-none"
+        className={cn(
+          "size-full rounded-[inherit] outline-none",
+          viewportClassName,
+        )}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
@@ -38,7 +41,7 @@ function ScrollBar({ className, orientation = "vertical", ...props }) {
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        className="bg-border relative flex-1 rounded-full"
+        className="bg-muted-foreground/40 relative flex-1 rounded-full"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   );

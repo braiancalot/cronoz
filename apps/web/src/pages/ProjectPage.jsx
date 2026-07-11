@@ -232,7 +232,7 @@ export default function ProjectPage() {
             <PiPPlaceholder onClose={closePiP} />
           </section>
 
-          {hasLapsSection && <Laps {...lapsProps} />}
+          {hasLapsSection && <Laps {...lapsProps} reserve />}
 
           {/* Mirror the bottom TimerControls footprint (size-14 + pb-8) so the
               laps list doesn't shift when toggling PiP. */}
@@ -322,7 +322,7 @@ export default function ProjectPage() {
             )}
           </section>
 
-          {hasLapsSection && <Laps {...lapsProps} />}
+          {hasLapsSection && <Laps {...lapsProps} reserve />}
 
           {isAdjusting ? (
             <AdjustActions
