@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-const UNDO_DURATION_MS = 8000;
+const UNDO_DURATION_MS = 4000;
 
 export function showUndoToast(message, onUndo) {
   toast(message, {

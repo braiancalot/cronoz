@@ -1,8 +1,16 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
-  MoreVerticalIcon,
-  PictureInPicture2Icon,
-} from "lucide-react";
+  CheckIcon,
+  ClockCountdownIcon,
+  ClockIcon,
+  DotsThreeVerticalIcon,
+  EraserIcon,
+  PencilSimpleIcon,
+  PictureInPictureIcon,
+  TrashIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
@@ -13,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
+import { useInlineEditForm } from "@/hooks/useInlineEditForm.js";
 import { useInlineRename } from "@/hooks/useInlineRename.js";
 
 export function ProjectHeader({
@@ -21,9 +30,12 @@ export function ProjectHeader({
   onDelete,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
+  onAdjust,
+  canAdjust,
   onReset,
   canReset,
   onOpenPiP,
+  onViewExactTime,
 }) {
   const {
     isEditing: isRenaming,
@@ -35,24 +47,26 @@ export function ProjectHeader({
     submit,
   } = useInlineRename(name, onRename);
 
-  function handleRename(event) {
-    event.preventDefault();
-    submit();
-  }
+  const { formProps, fieldProps, keepFocus } = useInlineEditForm({
+    value: draft,
+    onSubmit: submit,
+    onCancel: handleCancel,
+  });
 
   return (
     <header className="w-full h-16 flex items-center justify-between gap-4">
       <div className="flex items-center gap-4 justify-start">
         <Link to="/" className="text-lg">
-          <ArrowLeftIcon />
+          <ArrowLeftIcon className="size-5" />
         </Link>
 
         {isRenaming ? (
-          <form onSubmit={handleRename} className="w-auto">
+          <form {...formProps} className="w-auto">
             <Input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onFocus={(event) => event.target.select()}
+              {...fieldProps}
               autoFocus
             />
           </form>
@@ -62,12 +76,25 @@ export function ProjectHeader({
       </div>
 
       {isRenaming ? (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
-            Cancelar
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Cancelar"
+            aria-label="Cancelar"
+            {...keepFocus}
+            onClick={handleCancel}
+          >
+            <XIcon />
           </Button>
-          <Button size="sm" onClick={handleRename}>
-            Salvar
+          <Button
+            size="icon"
+            title="Salvar"
+            aria-label="Salvar"
+            {...keepFocus}
+            onClick={submit}
+          >
+            <CheckIcon />
           </Button>
         </div>
       ) : (
@@ -79,31 +106,55 @@ export function ProjectHeader({
               title="Abrir em janela flutuante"
               onClick={onOpenPiP}
             >
-              <PictureInPicture2Icon />
+              <PictureInPictureIcon />
             </Button>
           )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" title="Mais opções">
-                <MoreVerticalIcon />
+                <DotsThreeVerticalIcon />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
+                variant="edit"
+                onSelect={onAdjust}
+                disabled={!canAdjust}
+              >
+                <ClockIcon />
+                Ajustar tempo
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="edit"
                 onSelect={onDiscardCurrentTime}
                 disabled={!canDiscardCurrentTime}
               >
+                <EraserIcon />
                 Descartar tempo atual
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={onReset} disabled={!canReset}>
-                Resetar cronômetro
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleStartRename}>
+              <DropdownMenuItem variant="edit" onSelect={handleStartRename}>
+                <PencilSimpleIcon />
                 Renomear
               </DropdownMenuItem>
+              {onViewExactTime && (
+                <DropdownMenuItem variant="info" onSelect={onViewExactTime}>
+                  <ClockCountdownIcon />
+                  Tempo exato
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={onReset}
+                disabled={!canReset}
+              >
+                <ArrowCounterClockwiseIcon />
+                Resetar cronômetro
+              </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                <TrashIcon />
                 Deletar
               </DropdownMenuItem>
             </DropdownMenuContent>

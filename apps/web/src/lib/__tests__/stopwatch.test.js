@@ -2,13 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   formatTime,
   formatTimeCompact,
+  formatHms,
   calculateTotalTime,
   calculateSplitTime,
+  adjustPreview,
   sumLapTimes,
   hasHours,
   truncateToSecond,
+  roundDownToMinute,
+  roundUpToMinute,
   isStopwatchLive,
   isStopwatchStale,
+  calculateTotalPrice,
+  summarizeExactTime,
   RECOVERY_GRACE_PERIOD,
 } from "@/lib/stopwatch.js";
 
@@ -323,6 +329,36 @@ describe("calculateSplitTime", () => {
   });
 });
 
+describe("adjustPreview", () => {
+  const stopwatch = {
+    isRunning: false,
+    startTimestamp: null,
+    currentLapTime: 800,
+    laps: [{ lapTime: 1500 }, { lapTime: 1500 }],
+  };
+
+  it("returns the raw segment and total when not ignoring ms", () => {
+    const { segment, total } = adjustPreview(stopwatch, 800);
+    expect(segment).toBe(800);
+    expect(total).toBe(3800); // 1500 + 1500 + 800
+  });
+
+  it("truncates each lap and the segment when ignoring ms", () => {
+    const { segment, total } = adjustPreview(stopwatch, 800, {
+      ignoreMs: true,
+    });
+    // trunc(800)=0 ; trunc(1500)+trunc(1500)+trunc(800) = 1000+1000+0
+    expect(segment).toBe(0);
+    expect(total).toBe(2000);
+  });
+
+  it("matches the live total when the segment equals currentLapTime", () => {
+    const paused = { ...stopwatch, currentLapTime: 1500 };
+    const { total } = adjustPreview(paused, 1500, { ignoreMs: true });
+    expect(total).toBe(calculateTotalTime(paused, { ignoreMs: true }));
+  });
+});
+
 describe("hasHours", () => {
   it('returns false for "00"', () => {
     expect(hasHours("00")).toBe(false);
@@ -461,5 +497,165 @@ describe("truncateToSecond", () => {
 
   it("floors a multi-minute value", () => {
     expect(truncateToSecond(154567)).toBe(154000);
+  });
+});
+
+describe("formatHms", () => {
+  it("returns 0s for 0", () => {
+    expect(formatHms(0)).toBe("0s");
+  });
+
+  it("shows only seconds under a minute", () => {
+    expect(formatHms(5000)).toBe("5s");
+  });
+
+  it("shows minutes and seconds", () => {
+    expect(formatHms(65000)).toBe("1m 5s");
+  });
+
+  it("shows hours, minutes and seconds", () => {
+    expect(formatHms(3665000)).toBe("1h 1m 5s");
+  });
+
+  it("keeps an interior zero segment", () => {
+    expect(formatHms(3605000)).toBe("1h 0m 5s");
+  });
+
+  it("drops a trailing zero seconds segment", () => {
+    expect(formatHms(60000)).toBe("1m");
+    expect(formatHms(3600000)).toBe("1h");
+  });
+
+  it("shows milliseconds as a separate two-digit segment", () => {
+    // 3s + floor(998/10)=99 centis
+    expect(formatHms(3998, { fraction: true })).toBe("3s 99ms");
+  });
+
+  it("shows milliseconds alongside minutes", () => {
+    expect(formatHms(65850, { fraction: true })).toBe("1m 5s 85ms");
+  });
+
+  it("zero-pads the millisecond segment to two digits", () => {
+    expect(formatHms(2050, { fraction: true })).toBe("2s 05ms");
+  });
+
+  it("drops a trailing zero millisecond segment", () => {
+    expect(formatHms(2000, { fraction: true })).toBe("2s");
+  });
+
+  it("shows only milliseconds when the higher segments are zero", () => {
+    expect(formatHms(850, { fraction: true })).toBe("85ms");
+  });
+
+  it("falls back to 0s when everything is zero", () => {
+    expect(formatHms(0, { fraction: true })).toBe("0s");
+  });
+});
+
+describe("calculateTotalPrice", () => {
+  it("returns 0 for 0ms", () => {
+    expect(calculateTotalPrice(0, 100)).toBe(0);
+  });
+
+  it("charges the full hourly price for one hour", () => {
+    expect(calculateTotalPrice(3600000, 100)).toBe(100);
+  });
+
+  it("charges half the hourly price for 30 minutes", () => {
+    expect(calculateTotalPrice(1800000, 100)).toBe(50);
+  });
+});
+
+describe("summarizeExactTime", () => {
+  it("compares rounded, exact and difference for a paused stopwatch with laps", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 0,
+      laps: [{ lapTime: 1999 }, { lapTime: 1999 }, { lapTime: 1999 }],
+    };
+
+    const summary = summarizeExactTime(stopwatch, 3600);
+
+    // rounded: trunc(1999)*3 = 3000 ; exact: 5997 ; diff: 2997
+    expect(summary.rounded.time).toBe(3000);
+    expect(summary.exact.time).toBe(5997);
+    expect(summary.difference.time).toBe(2997);
+
+    // price = (ms / 3600000) * 3600 = ms / 1000
+    expect(summary.rounded.price).toBeCloseTo(3);
+    expect(summary.exact.price).toBeCloseTo(5.997);
+    expect(summary.difference.price).toBeCloseTo(2.997);
+  });
+
+  it("reports zero difference when every segment lands on a whole second", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 3000,
+      laps: [{ lapTime: 1000 }, { lapTime: 2000 }],
+    };
+
+    const summary = summarizeExactTime(stopwatch, 3600);
+
+    expect(summary.rounded.time).toBe(6000);
+    expect(summary.exact.time).toBe(6000);
+    expect(summary.difference.time).toBe(0);
+    expect(summary.difference.price).toBe(0);
+  });
+
+  it("captures the dropped sub-second when there are no laps", () => {
+    const stopwatch = {
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 1750,
+      laps: [],
+    };
+
+    const summary = summarizeExactTime(stopwatch, 3600);
+
+    expect(summary.rounded.time).toBe(1000);
+    expect(summary.exact.time).toBe(1750);
+    expect(summary.difference.time).toBe(750);
+  });
+});
+
+describe("roundDownToMinute", () => {
+  it("returns 0 for 0", () => {
+    expect(roundDownToMinute(0)).toBe(0);
+  });
+
+  it("floors a sub-minute value to 0", () => {
+    expect(roundDownToMinute(45_000)).toBe(0);
+  });
+
+  it("floors down to the whole minute", () => {
+    expect(roundDownToMinute(12 * 60_000 + 34_000)).toBe(12 * 60_000);
+  });
+
+  it("steps a full minute down when already on an exact minute", () => {
+    expect(roundDownToMinute(12 * 60_000)).toBe(11 * 60_000);
+  });
+
+  it("does not go below 0 from an exact minute", () => {
+    expect(roundDownToMinute(0)).toBe(0);
+  });
+});
+
+describe("roundUpToMinute", () => {
+  it("ceils a sub-minute value up to one minute", () => {
+    expect(roundUpToMinute(45_000)).toBe(60_000);
+  });
+
+  it("ceils up to the next whole minute", () => {
+    expect(roundUpToMinute(12 * 60_000 + 34_000)).toBe(13 * 60_000);
+  });
+
+  it("steps a full minute up when already on an exact minute", () => {
+    expect(roundUpToMinute(12 * 60_000)).toBe(13 * 60_000);
+  });
+
+  it("goes to one minute from 0", () => {
+    expect(roundUpToMinute(0)).toBe(60_000);
   });
 });

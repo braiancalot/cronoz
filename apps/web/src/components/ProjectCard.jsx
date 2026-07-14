@@ -1,5 +1,10 @@
 import { Link } from "react-router";
-import { MoreVerticalIcon } from "lucide-react";
+import {
+  ArrowCounterClockwiseIcon,
+  CheckCircleIcon,
+  DotsThreeVerticalIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
 import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
@@ -8,6 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
 import { calculateTotalTime, isStopwatchLive } from "@/lib/stopwatch.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
@@ -47,7 +53,7 @@ export function ProjectCard({
             )}
             <span className="truncate">{project.name}</span>
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <FormattedTime time={displayTime} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -60,20 +66,30 @@ export function ProjectCard({
                   }}
                   title="Mais opções"
                 >
-                  <MoreVerticalIcon />
+                  <DotsThreeVerticalIcon />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
                 onClick={(e) => e.stopPropagation()}
               >
-                <DropdownMenuItem onSelect={() => onToggleComplete(project)}>
+                <DropdownMenuItem
+                  variant="complete"
+                  onSelect={() => onToggleComplete(project)}
+                >
+                  {isCompleted ? (
+                    <ArrowCounterClockwiseIcon />
+                  ) : (
+                    <CheckCircleIcon />
+                  )}
                   {isCompleted ? "Reabrir" : "Concluir"}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
                   onSelect={() => onDelete(project)}
                 >
+                  <TrashIcon />
                   Deletar
                 </DropdownMenuItem>
               </DropdownMenuContent>

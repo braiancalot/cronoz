@@ -3,80 +3,118 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TimerControls } from "@/components/TimerControls.jsx";
 
-const defaultProps = {
-  isRunning: false,
-  hasLapTime: false,
-  onStart: vi.fn(),
-  onPause: vi.fn(),
-  onAddLap: vi.fn(),
-};
-
-function renderControls(overrides = {}) {
-  return render(<TimerControls {...defaultProps} {...overrides} />);
-}
+const noop = () => {};
 
 describe("TimerControls", () => {
-  it("shows Start button when stopped", () => {
-    renderControls();
+  it("shows Iniciar when stopped and Pausar when running", () => {
+    const { rerender } = render(
+      <TimerControls
+        isRunning={false}
+        hasLapTime={false}
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Iniciar" })).toBeInTheDocument();
 
-    expect(screen.getByText("Start")).toBeInTheDocument();
-    expect(screen.queryByText("Pause")).not.toBeInTheDocument();
+    rerender(
+      <TimerControls
+        isRunning={true}
+        hasLapTime={false}
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Pausar" })).toBeInTheDocument();
   });
 
-  it("shows Pause button when running", () => {
-    renderControls({ isRunning: true });
-
-    expect(screen.getByText("Pause")).toBeInTheDocument();
-    expect(screen.queryByText("Start")).not.toBeInTheDocument();
-  });
-
-  it("shows Lap button always", () => {
-    renderControls();
-
-    expect(screen.getByText("Volta")).toBeInTheDocument();
-  });
-
-  it("disables Lap button when hasLapTime is false", () => {
-    renderControls({ hasLapTime: false });
-
-    expect(screen.getByText("Volta")).toBeDisabled();
-  });
-
-  it("enables Lap button when hasLapTime is true", () => {
-    renderControls({ hasLapTime: true });
-
-    expect(screen.getByText("Volta")).toBeEnabled();
-  });
-
-  it("does not call onAddLap when Lap is disabled", async () => {
-    const onAddLap = vi.fn();
-    renderControls({ hasLapTime: false, onAddLap });
-
-    await userEvent.click(screen.getByText("Volta"));
-    expect(onAddLap).not.toHaveBeenCalled();
-  });
-
-  it("calls onStart when Start is clicked", async () => {
+  it("calls onStart when stopped and onPause when running", async () => {
     const onStart = vi.fn();
-    renderControls({ onStart });
-
-    await userEvent.click(screen.getByText("Start"));
-    expect(onStart).toHaveBeenCalledOnce();
-  });
-
-  it("calls onPause when Pause is clicked", async () => {
     const onPause = vi.fn();
-    renderControls({ isRunning: true, onPause });
+    const user = userEvent.setup();
 
-    await userEvent.click(screen.getByText("Pause"));
+    const { rerender } = render(
+      <TimerControls
+        isRunning={false}
+        hasLapTime={false}
+        onStart={onStart}
+        onPause={onPause}
+        onAddLap={noop}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Iniciar" }));
+    expect(onStart).toHaveBeenCalledOnce();
+
+    rerender(
+      <TimerControls
+        isRunning={true}
+        hasLapTime={false}
+        onStart={onStart}
+        onPause={onPause}
+        onAddLap={noop}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Pausar" }));
     expect(onPause).toHaveBeenCalledOnce();
   });
 
-  it("calls onAddLap when Lap is clicked and enabled", async () => {
+  it("disables Volta without lap time and triggers onAddLap with it", async () => {
     const onAddLap = vi.fn();
-    renderControls({ hasLapTime: true, onAddLap });
+    const user = userEvent.setup();
 
-    await userEvent.click(screen.getByText("Volta"));
+    const { rerender } = render(
+      <TimerControls
+        isRunning
+        hasLapTime={false}
+        onStart={noop}
+        onPause={noop}
+        onAddLap={onAddLap}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Volta" })).toBeDisabled();
+
+    rerender(
+      <TimerControls
+        isRunning
+        hasLapTime
+        onStart={noop}
+        onPause={noop}
+        onAddLap={onAddLap}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Volta" }));
     expect(onAddLap).toHaveBeenCalledOnce();
+  });
+
+  it("hides Volta when showLap is false", () => {
+    render(
+      <TimerControls
+        isRunning={false}
+        hasLapTime={false}
+        showLap={false}
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Volta" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("applies vertical orientation", () => {
+    const { container } = render(
+      <TimerControls
+        isRunning={false}
+        hasLapTime={false}
+        orientation="vertical"
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+    expect(container.firstChild).toHaveClass("flex-col");
   });
 });

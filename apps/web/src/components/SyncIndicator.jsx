@@ -1,5 +1,9 @@
 import { Link } from "react-router";
-import { CloudCheckIcon, CloudOffIcon, RefreshCwIcon } from "lucide-react";
+import {
+  CloudCheckIcon,
+  CloudSlashIcon,
+  ArrowsClockwiseIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
 
@@ -13,15 +17,15 @@ export function SyncIndicator() {
   let label = "Sincronizado";
 
   if (!isOnline) {
-    Icon = CloudOffIcon;
+    Icon = CloudSlashIcon;
     className = "text-destructive";
     label = "Offline";
   } else if (syncing) {
-    Icon = RefreshCwIcon;
+    Icon = ArrowsClockwiseIcon;
     className = "text-muted-foreground animate-spin";
     label = "Sincronizando";
   } else if (error) {
-    Icon = CloudOffIcon;
+    Icon = CloudSlashIcon;
     className = "text-destructive";
     label = "Erro de sincronização";
   }

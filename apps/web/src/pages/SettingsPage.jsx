@@ -1,4 +1,4 @@
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import settingsRepository from "@/services/settingsRepository.js";

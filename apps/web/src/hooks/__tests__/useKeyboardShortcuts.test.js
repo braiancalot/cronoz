@@ -100,4 +100,72 @@ describe("useKeyboardShortcuts", () => {
 
     expect(onToggle).not.toHaveBeenCalled();
   });
+
+  it("does not re-activate the focused button when toggling", () => {
+    const onToggle = vi.fn();
+    renderHook(() => useKeyboardShortcuts({ onToggle }));
+
+    const button = document.createElement("button");
+    const buttonHandler = vi.fn();
+    button.addEventListener("keydown", buttonHandler);
+    document.body.appendChild(button);
+    button.focus();
+
+    button.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        code: "Space",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    document.body.removeChild(button);
+
+    expect(onToggle).toHaveBeenCalledOnce();
+    expect(buttonHandler).not.toHaveBeenCalled();
+  });
+
+  it("does not call onToggle when disabled (e.g. while adjusting time)", () => {
+    const onToggle = vi.fn();
+    renderHook(() => useKeyboardShortcuts({ onToggle, enabled: false }));
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "Space", bubbles: true }),
+    );
+
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("calls onToggle when Space is pressed inside the PiP window", () => {
+    const onToggle = vi.fn();
+    const pipWindow = {
+      document: document.implementation.createHTMLDocument(),
+    };
+    renderHook(() => useKeyboardShortcuts({ onToggle, pipWindow }));
+
+    pipWindow.document.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "Space", bubbles: true }),
+    );
+
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
+  it("stops listening to the PiP window after it closes", () => {
+    const onToggle = vi.fn();
+    const pipWindow = {
+      document: document.implementation.createHTMLDocument(),
+    };
+    const { rerender } = renderHook(
+      ({ win }) => useKeyboardShortcuts({ onToggle, pipWindow: win }),
+      { initialProps: { win: pipWindow } },
+    );
+
+    rerender({ win: null });
+
+    pipWindow.document.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "Space", bubbles: true }),
+    );
+
+    expect(onToggle).not.toHaveBeenCalled();
+  });
 });

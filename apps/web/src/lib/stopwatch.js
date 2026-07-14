@@ -79,6 +79,53 @@ export function calculateSplitTime(stopwatch, { ignoreMs = false } = {}) {
   return ignoreMs ? truncateToSecond(split) : split;
 }
 
+// Segment + total to show while adjusting, with the in-progress segment
+// replaced by `segment`. Routes through the same calc functions as the live
+// display so the "ignore ms" per-lap truncation matches exactly — otherwise a
+// raw lap sum over-counts the dropped sub-second remainders.
+export function adjustPreview(stopwatch, segment, { ignoreMs = false } = {}) {
+  const paused = {
+    ...stopwatch,
+    isRunning: false,
+    startTimestamp: null,
+    currentLapTime: segment,
+  };
+  return {
+    segment: calculateSplitTime(paused, { ignoreMs }),
+    total: calculateTotalTime(paused, { ignoreMs }),
+  };
+}
+
+const MS_PER_HOUR = 3600000;
+
+export function calculateTotalPrice(ms, hourlyPrice) {
+  return (ms / MS_PER_HOUR) * hourlyPrice;
+}
+
+// Snapshot for the "exact time" consultation panel: what the total time/price
+// currently are (rounded, with per-lap ms truncation) versus what they'd be
+// without the truncation, plus the difference the rounding drops.
+export function summarizeExactTime(stopwatch, hourlyPrice) {
+  const roundedTime = calculateTotalTime(stopwatch, { ignoreMs: true });
+  const exactTime = calculateTotalTime(stopwatch, { ignoreMs: false });
+  const differenceTime = exactTime - roundedTime;
+
+  return {
+    rounded: {
+      time: roundedTime,
+      price: calculateTotalPrice(roundedTime, hourlyPrice),
+    },
+    exact: {
+      time: exactTime,
+      price: calculateTotalPrice(exactTime, hourlyPrice),
+    },
+    difference: {
+      time: differenceTime,
+      price: calculateTotalPrice(differenceTime, hourlyPrice),
+    },
+  };
+}
+
 export function hasHours(hours) {
   return hours !== "00";
 }
@@ -98,6 +145,51 @@ export function formatTimeCompact(ms) {
   return parts.length > 0 ? parts.join("") : "0s";
 }
 
+// Labeled h/m/s format for readability (e.g. "1h 23m 47s"). Leading and
+// trailing zero segments are dropped, but interior zeros stay so place value
+// reads right ("1h 0m 5s", "1m"). With `fraction`, a separate two-digit
+// millisecond segment (centiseconds, matching the main timer) trails the
+// seconds so the "exact time" panel can show the sub-second rounding drops.
+export function formatHms(ms, { fraction = false } = {}) {
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms / 60000) % 60);
+  const seconds = Math.floor((ms / 1000) % 60);
+
+  const segments = [
+    { value: hours, text: `${hours}h` },
+    { value: minutes, text: `${minutes}m` },
+    { value: seconds, text: `${seconds}s` },
+  ];
+
+  if (fraction) {
+    const centis = Math.floor((ms % 1000) / 10);
+    segments.push({
+      value: centis,
+      text: `${String(centis).padStart(2, "0")}ms`,
+    });
+  }
+
+  const first = segments.findIndex((s) => s.value !== 0);
+  if (first === -1) return "0s";
+  const last = segments.findLastIndex((s) => s.value !== 0);
+
+  return segments
+    .slice(first, last + 1)
+    .map((s) => s.text)
+    .join(" ");
+}
+
 export function truncateToSecond(ms) {
   return Math.floor(ms / 1000) * 1000;
+}
+
+// Snap to a whole minute, always landing on a different mark: with a
+// sub-minute remainder it floors/ceils, and when already on an exact minute it
+// steps a full minute like the ±1m buttons. Clamped at 0.
+export function roundDownToMinute(ms) {
+  return Math.max(0, (Math.ceil(ms / 60000) - 1) * 60000);
+}
+
+export function roundUpToMinute(ms) {
+  return (Math.floor(ms / 60000) + 1) * 60000;
 }

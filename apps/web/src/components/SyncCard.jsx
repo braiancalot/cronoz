@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import {
   CheckIcon,
   PlusIcon,
-  RefreshCwIcon,
-  UnlinkIcon,
+  ArrowsClockwiseIcon,
+  LinkBreakIcon,
   XIcon,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import syncManager from "@/services/syncManager.js";
 import {
@@ -238,7 +238,7 @@ export function SyncCard() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button onClick={handleSyncNow}>
-                <RefreshCwIcon /> Sincronizar agora
+                <ArrowsClockwiseIcon /> Sincronizar agora
               </Button>
               <Button variant="outline" onClick={handleGenerate}>
                 <PlusIcon /> Adicionar dispositivo
@@ -247,7 +247,7 @@ export function SyncCard() {
                 variant="destructive"
                 onClick={() => setConfirmUnpair(true)}
               >
-                <UnlinkIcon /> Desparear
+                <LinkBreakIcon /> Desparear
               </Button>
             </div>
           </div>

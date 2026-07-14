@@ -1,8 +1,20 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { toast } from "sonner";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
 
+vi.mock("sonner", () => ({ toast: vi.fn() }));
+
+const writeText = vi.fn().mockResolvedValue(undefined);
+Object.defineProperty(window.Navigator.prototype, "clipboard", {
+  value: { writeText },
+  configurable: true,
+});
+
 describe("TimerDisplay", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   it("renders formatted time with milliseconds", () => {
     const { container } = render(<TimerDisplay time={61000} />);
 
@@ -18,11 +30,13 @@ describe("TimerDisplay", () => {
     expect(screen.getByText("R$ 100,00")).toBeInTheDocument();
   });
 
-  it("makes price invisible when running", () => {
+  it("collapses the meta line when running", () => {
     render(<TimerDisplay time={3600000} hourlyPrice={100} isRunning />);
 
     const price = screen.getByText("R$ 100,00");
-    expect(price).toHaveClass("invisible");
+    const collapse = price.closest(".grid");
+    expect(collapse).toHaveClass("opacity-0");
+    expect(collapse).toHaveClass("grid-rows-[0fr]");
   });
 
   it("shows totalTime separately when paused with totalTime prop", () => {
@@ -34,11 +48,12 @@ describe("TimerDisplay", () => {
     expect(container.textContent).toContain("•");
   });
 
-  it("hides totalTime block (invisible) when running", () => {
+  it("collapses the totalTime block when running", () => {
     render(<TimerDisplay time={5000} totalTime={10000} isRunning />);
 
     const separator = screen.getByText("•");
-    expect(separator).toHaveClass("invisible");
+    const collapse = separator.closest(".grid");
+    expect(collapse).toHaveClass("opacity-0");
   });
 
   it("calculates price from totalTime when provided", () => {
@@ -46,5 +61,44 @@ describe("TimerDisplay", () => {
     render(<TimerDisplay time={0} totalTime={3600000} hourlyPrice={50} />);
 
     expect(screen.getByText("R$ 50,00")).toBeInTheDocument();
+  });
+
+  it("copies the time and toasts when clicked", async () => {
+    const { container } = render(<TimerDisplay time={61000} />);
+
+    fireEvent.click(container.querySelector(".cursor-pointer"));
+    await Promise.resolve();
+
+    expect(writeText).toHaveBeenCalledWith("1m1s");
+    expect(toast).toHaveBeenCalledOnce();
+  });
+
+  it("does not copy when enableCopy is false", async () => {
+    const { container } = render(
+      <TimerDisplay time={61000} enableCopy={false} />,
+    );
+
+    fireEvent.click(container.querySelector(".tabular-nums"));
+    await Promise.resolve();
+
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("uses the fixed tier text size by default", () => {
+    const { container } = render(<TimerDisplay time={61000} size="default" />);
+
+    const time = container.querySelector(".tabular-nums");
+    expect(time.className).toContain("text-6xl");
+    expect(time.className).not.toContain("clamp");
+  });
+
+  it("uses a fluid clamp-based text size when fluid is set", () => {
+    const { container } = render(
+      <TimerDisplay time={61000} size="default" fluid />,
+    );
+
+    const time = container.querySelector(".tabular-nums");
+    expect(time.className).toContain("clamp");
+    expect(time.className).not.toContain("text-6xl");
   });
 });

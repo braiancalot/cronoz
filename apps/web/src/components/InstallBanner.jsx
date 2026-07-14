@@ -1,4 +1,4 @@
-import { XIcon } from "lucide-react";
+import { XIcon } from "@phosphor-icons/react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { Button } from "@/components/ui/button.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";

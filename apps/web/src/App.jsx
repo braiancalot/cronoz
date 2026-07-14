@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router";
+import { IconContext } from "@phosphor-icons/react";
 import { InstallBanner } from "@/components/InstallBanner.jsx";
 import { ReloadPrompt } from "@/components/ReloadPrompt.jsx";
 import { Toaster } from "@/components/ui/sonner.jsx";
@@ -20,12 +21,19 @@ export default function App() {
   return (
     <SettingsProvider>
       <SyncStatusProvider>
-        <div className="antialiased h-full">
-          <Outlet />
-          <InstallBanner />
-          <ReloadPrompt />
-          <Toaster />
-        </div>
+        <IconContext.Provider value={{ weight: "bold" }}>
+          <div className="antialiased h-full">
+            <Outlet />
+            <InstallBanner />
+            <ReloadPrompt />
+            {/* top offset clears the ProjectHeader (h-16) so toasts don't cover it */}
+            <Toaster
+              position="top-center"
+              offset={{ top: "4.5rem" }}
+              mobileOffset={{ top: "4.5rem" }}
+            />
+          </div>
+        </IconContext.Provider>
       </SyncStatusProvider>
     </SettingsProvider>
   );

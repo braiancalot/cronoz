@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button.jsx";
+import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
+import { roundDownToMinute, roundUpToMinute } from "@/lib/stopwatch.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
@@ -42,6 +44,50 @@ function Section({ title, children }) {
   );
 }
 
+// 2h30 já registrado em voltas salvas; o ajuste mexe só no segmento atual.
+const ADJUST_LAPS_TOTAL = 2 * 3_600_000 + 30 * 60_000;
+
+function AdjustDemo({ size, layout = "flank", showPrice = true }) {
+  const [current, setCurrent] = useState(47 * 60_000);
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <TimerAdjuster
+        time={current}
+        totalTime={ADJUST_LAPS_TOTAL + current}
+        hourlyPrice={20}
+        showPrice={showPrice}
+        size={size}
+        layout={layout}
+        onStep={(ms) => setCurrent((c) => Math.max(0, c + ms))}
+        onSnap={(dir) =>
+          setCurrent((c) =>
+            dir === "up" ? roundUpToMinute(c) : roundDownToMinute(c),
+          )
+        }
+      />
+      <AdjustActions
+        size={size}
+        onCancel={() => setCurrent(47 * 60_000)}
+        onConfirm={() => {}}
+      />
+    </div>
+  );
+}
+
+function Frame({ label, width, children }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div
+        className="flex items-center justify-center rounded-xl bg-card p-5"
+        style={{ width }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function DesignPage() {
   const [inputValue, setInputValue] = useState("");
   const [textareaValue, setTextareaValue] = useState("");
@@ -76,6 +122,48 @@ export default function DesignPage() {
             <Button variant="outline" className="border-primary">
               Outline Primary
             </Button>
+          </div>
+        </Section>
+
+        <Section title="Ajuste de tempo">
+          <p className="text-sm text-muted-foreground">
+            Modo de correção do segmento atual (<code>TimerAdjuster</code> +{" "}
+            <code>AdjustActions</code>). Os steppers clicam de verdade —
+            esquerda diminui, direita aumenta (1m / 10s / 1s). O número grande é
+            a volta atual; abaixo, o total (2h30 de voltas + atual) e o preço a
+            R$20/h atualizam ao vivo. Piso em 0. Edita em rascunho: "Pronto"
+            confirma, "Cancelar" descarta. No PiP o preço fica oculto.
+          </p>
+
+          <h3 className="text-sm font-medium">
+            Flanqueado (telas largas / desktop)
+          </h3>
+          <div className="flex flex-wrap items-start gap-6">
+            <Frame label="PC — default" width={520}>
+              <AdjustDemo size="default" />
+            </Frame>
+            <Frame label="Split — compact" width={420}>
+              <AdjustDemo size="compact" />
+            </Frame>
+          </div>
+
+          <h3 className="text-sm font-medium">
+            Linha única (celular estreito, ≤480px)
+          </h3>
+          <div className="flex flex-wrap items-start gap-6">
+            <Frame label="Celular — default" width={360}>
+              <AdjustDemo size="default" layout="row" />
+            </Frame>
+          </div>
+
+          <h3 className="text-sm font-medium">PiP (flanqueado)</h3>
+          <div className="flex flex-wrap items-start gap-6">
+            <Frame label="PiP — mini (sem preço)" width={280}>
+              <AdjustDemo size="mini" showPrice={false} />
+            </Frame>
+            <Frame label="PiP — compact (sem preço)" width={320}>
+              <AdjustDemo size="compact" showPrice={false} />
+            </Frame>
           </div>
         </Section>
 

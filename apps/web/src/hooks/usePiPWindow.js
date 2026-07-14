@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 const isSupported =
@@ -32,13 +32,15 @@ function copyStyles(pipWindow) {
 
 export function usePiPWindow() {
   const [pipWindow, setPipWindow] = useState(null);
+  const pipWindowRef = useRef(null);
+  const onPageHideRef = useRef(null);
 
   const openPiP = useCallback(async () => {
-    if (!isSupported || pipWindow) return;
+    if (!isSupported || pipWindowRef.current) return;
 
     const win = await window.documentPictureInPicture.requestWindow({
-      width: 320,
-      height: 220,
+      width: 200,
+      height: 170,
     });
 
     copyStyles(win);
@@ -46,17 +48,39 @@ export function usePiPWindow() {
     // the portal synchronously here, before the window is destroyed — otherwise
     // React commits the removal against a dead document and crashes the main
     // tree (start/pause stop working in the opener window).
-    win.addEventListener("pagehide", () => {
+    const onPageHide = () => {
+      pipWindowRef.current = null;
+      onPageHideRef.current = null;
       flushSync(() => setPipWindow(null));
-    });
+    };
+    win.addEventListener("pagehide", onPageHide);
+    pipWindowRef.current = win;
+    onPageHideRef.current = onPageHide;
     setPipWindow(win);
-  }, [pipWindow]);
+  }, []);
 
   const closePiP = useCallback(() => {
-    if (!pipWindow) return;
+    const win = pipWindowRef.current;
+    if (!win) return;
+    win.removeEventListener("pagehide", onPageHideRef.current);
+    pipWindowRef.current = null;
+    onPageHideRef.current = null;
     flushSync(() => setPipWindow(null));
-    pipWindow.close();
-  }, [pipWindow]);
+    win.close();
+  }, []);
+
+  // The browser's PiP window outlives the React component that fills it. When
+  // the owner unmounts (e.g. navigating away from the project), close it so it
+  // doesn't linger as an empty/black floating window. Drop the pagehide
+  // listener first so its flushSync doesn't run against the torn-down tree.
+  useEffect(() => {
+    return () => {
+      const win = pipWindowRef.current;
+      if (!win) return;
+      win.removeEventListener("pagehide", onPageHideRef.current);
+      win.close();
+    };
+  }, []);
 
   return { isSupported, pipWindow, openPiP, closePiP };
 }
