@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
-import { useShortViewport } from "@/hooks/useShortViewport.js";
+import { useControlsLayout } from "@/hooks/useControlsLayout.js";
 import { useNarrowViewport } from "@/hooks/useNarrowViewport.js";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
@@ -13,9 +13,7 @@ import { adjustPreview } from "@/lib/stopwatch.js";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 import { usePiPWindow } from "@/hooks/usePiPWindow.js";
-import { TimerControls } from "@/components/TimerControls.jsx";
-import { TimerDisplay } from "@/components/TimerDisplay.jsx";
-import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
+import { TimerStage } from "@/components/TimerStage.jsx";
 import { PiPTimer } from "@/components/PiPTimer.jsx";
 import { PiPContent } from "@/components/PiPContent.jsx";
 import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
@@ -27,7 +25,6 @@ import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { showUndoToast } from "@/lib/undoToast.js";
-import { cn } from "@/lib/utils.js";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -70,10 +67,13 @@ export default function ProjectPage() {
 
   useKeyboardShortcuts({ onToggle: toggle, pipWindow, enabled: !isAdjusting });
 
-  const isShort = useShortViewport();
   const isNarrow = useNarrowViewport();
   const ignoreMs = useIgnoreMilliseconds();
   const draft = useAdjustDraft();
+
+  const hasLaps = project?.stopwatch?.laps?.length > 0;
+  const hasLapsSection = hasLaps || isAddingLap;
+  const controlsLayout = useControlsLayout();
 
   if (isLoading || isDeleting) return null;
 
@@ -185,7 +185,6 @@ export default function ProjectPage() {
     );
   }
 
-  const hasLaps = project.stopwatch.laps?.length > 0;
   const canDiscardCurrentTime =
     project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
   const canReset = canDiscardCurrentTime || hasLaps;
@@ -208,7 +207,13 @@ export default function ProjectPage() {
     onConfirmAddLap: handleConfirmAddLap,
     onCancelAddLap: handleCancelAddLap,
   };
-  const hasLapsSection = hasLaps || isAddingLap;
+
+  const timeProps = {
+    time: hasLaps ? splitDisplayTime : displayTime,
+    totalTime: hasLaps ? displayTime : null,
+    isRunning: project.stopwatch.isRunning,
+    hourlyPrice,
+  };
 
   return (
     <PageContainer className="items-center">
@@ -227,121 +232,37 @@ export default function ProjectPage() {
       />
 
       {isPiPActive ? (
+        // Mirrors the stacked TimerStage (mt-8 section + a spacer matching the
+        // controls' footprint) so nothing shifts when the timer swaps to this
+        // placeholder on PiP toggle.
         <div className="flex flex-1 flex-col w-full items-center min-h-0">
-          <section className="flex flex-1 items-center justify-center w-full">
+          <section className="flex flex-1 items-center justify-center w-full mt-8">
             <PiPPlaceholder onClose={closePiP} />
           </section>
 
-          {hasLapsSection && <Laps {...lapsProps} reserve />}
+          {hasLapsSection && <Laps {...lapsProps} />}
 
-          {/* Mirror the bottom TimerControls footprint (size-14 + pb-8) so the
-              laps list doesn't shift when toggling PiP. */}
           <div aria-hidden className="h-22 shrink-0" />
         </div>
-      ) : isShort ? (
-        <div
-          onClick={project.stopwatch.isRunning ? pause : undefined}
-          className="flex flex-1 flex-col w-full min-h-0 items-center"
-        >
-          {isAdjusting ? (
-            <div
-              className={cn(
-                "flex flex-col items-center gap-3 shrink-0",
-                hasLaps || isAddingLap ? "pt-2" : "flex-1 justify-center",
-              )}
-            >
-              <TimerAdjuster
-                time={adjustSegment}
-                totalTime={adjustTotal}
-                hourlyPrice={hourlyPrice}
-                size="compact"
-                layout={isNarrow ? "row" : "flank"}
-                onStep={draft.step}
-                onSnap={draft.snap}
-              />
-              <AdjustActions
-                size="compact"
-                onCancel={handleCancelAdjust}
-                onConfirm={handleConfirmAdjust}
-              />
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "flex w-full items-center shrink-0",
-                hasLaps || isAddingLap ? "pt-2" : "flex-1",
-              )}
-            >
-              <div className="flex flex-1 justify-center">
-                <TimerDisplay
-                  time={hasLaps ? splitDisplayTime : displayTime}
-                  totalTime={hasLaps ? displayTime : null}
-                  isRunning={project.stopwatch.isRunning}
-                  hourlyPrice={hourlyPrice}
-                  size="compact"
-                />
-              </div>
-
-              <TimerControls
-                isRunning={project.stopwatch.isRunning}
-                hasLapTime={splitDisplayTime > 0}
-                onStart={start}
-                onPause={pause}
-                onAddLap={handleStartAddLap}
-                orientation="vertical"
-                size="compact"
-                className="shrink-0"
-              />
-            </div>
-          )}
-
-          {hasLapsSection && <Laps {...lapsProps} className="mt-4 mb-4" />}
-        </div>
       ) : (
-        <div
-          onClick={project.stopwatch.isRunning ? pause : undefined}
-          className="flex flex-1 flex-col w-full items-center min-h-0"
-        >
-          <section className="flex flex-1 items-center justify-center w-full mt-8">
-            {isAdjusting ? (
-              <TimerAdjuster
-                time={adjustSegment}
-                totalTime={adjustTotal}
-                hourlyPrice={hourlyPrice}
-                layout={isNarrow ? "row" : "flank"}
-                onStep={draft.step}
-                onSnap={draft.snap}
-              />
-            ) : (
-              <TimerDisplay
-                time={hasLaps ? splitDisplayTime : displayTime}
-                totalTime={hasLaps ? displayTime : null}
-                isRunning={project.stopwatch.isRunning}
-                hourlyPrice={hourlyPrice}
-              />
-            )}
-          </section>
-
-          {hasLapsSection && <Laps {...lapsProps} reserve />}
-
-          {isAdjusting ? (
-            <AdjustActions
-              onCancel={handleCancelAdjust}
-              onConfirm={handleConfirmAdjust}
-              className="pb-8"
-            />
-          ) : (
-            <TimerControls
-              isRunning={project.stopwatch.isRunning}
-              hasLapTime={splitDisplayTime > 0}
-              onStart={start}
-              onPause={pause}
-              onAddLap={handleStartAddLap}
-              orientation="horizontal"
-              className="pb-8"
-            />
-          )}
-        </div>
+        <TimerStage
+          layout={controlsLayout}
+          isAdjusting={isAdjusting}
+          {...timeProps}
+          adjustSegment={adjustSegment}
+          adjustTotal={adjustTotal}
+          adjustLayout={isNarrow ? "row" : "flank"}
+          onAdjustStep={draft.step}
+          onAdjustSnap={draft.snap}
+          onCancelAdjust={handleCancelAdjust}
+          onConfirmAdjust={handleConfirmAdjust}
+          hasLapTime={splitDisplayTime > 0}
+          onStart={start}
+          onPause={pause}
+          onAddLap={handleStartAddLap}
+          lapsProps={lapsProps}
+          hasLapsSection={hasLapsSection}
+        />
       )}
 
       <PiPTimer pipWindow={pipWindow}>
