@@ -224,7 +224,6 @@ export function Laps({
   onAddLapNameChange,
   onConfirmAddLap,
   onCancelAddLap,
-  reserve = false,
   className,
 }) {
   const ignoreMs = useIgnoreMilliseconds();
@@ -248,15 +247,11 @@ export function Laps({
   }
 
   const card = (
+    // Hugs its content up to a cap (max-h-54); beyond that — or when a short
+    // viewport shrinks it — the inner ScrollArea scrolls instead, so the laps
+    // never push the page into an outer scroll.
     <Card
-      className={cn(
-        "w-full max-w-125 py-0 min-h-12 max-h-54",
-        // The card hugs its content up to a fixed cap, then scrolls. In reserve
-        // mode a same-height region holds that cap so the card can grow down
-        // into it without pushing the timer (hence no outer margin here).
-        reserve ? "my-0" : "my-6",
-        className,
-      )}
+      className={cn("w-full max-w-125 py-0 min-h-12 max-h-54 my-6", className)}
     >
       <ScrollArea
         type="auto"
@@ -289,13 +284,7 @@ export function Laps({
 
   return (
     <>
-      {reserve ? (
-        <div className="flex w-full shrink-0 flex-col items-center h-54 my-6">
-          {card}
-        </div>
-      ) : (
-        card
-      )}
+      {card}
 
       <ConfirmDialog
         open={!!pendingDelete}
