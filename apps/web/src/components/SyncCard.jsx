@@ -17,14 +17,7 @@ import {
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog.jsx";
+import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { usePairing } from "@/hooks/usePairing.js";
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
 
@@ -254,26 +247,15 @@ export function SyncCard() {
         )}
       </CardContent>
 
-      <Dialog open={confirmUnpair} onOpenChange={setConfirmUnpair}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Desparear dispositivo?</DialogTitle>
-            <DialogDescription>
-              Os dados deste dispositivo continuam aqui, mas ele para de
-              sincronizar com os outros. Você pode parear novamente a qualquer
-              momento.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmUnpair(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleUnpair}>
-              Desparear
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={confirmUnpair}
+        title="Desparear dispositivo?"
+        description="Os dados deste dispositivo continuam aqui, mas ele para de sincronizar com os outros. Você pode parear novamente a qualquer momento."
+        confirmLabel="Desparear"
+        cancelLabel="Cancelar"
+        onConfirm={handleUnpair}
+        onCancel={() => setConfirmUnpair(false)}
+      />
     </Card>
   );
 }
