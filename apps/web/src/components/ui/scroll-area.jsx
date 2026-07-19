@@ -6,13 +6,16 @@ function ScrollArea({ className, viewportClassName, children, ...props }) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      className={cn("relative flex flex-col", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
+        // Sized by flex, not h-full: the root's height often comes from a
+        // max-height clamp upstream, which a percentage height can't resolve
+        // against — it would fall back to auto and never scroll.
         className={cn(
-          "size-full rounded-[inherit] outline-none",
+          "w-full flex-1 min-h-0 rounded-[inherit] outline-none",
           viewportClassName,
         )}
       >
