@@ -23,9 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu.jsx";
 import { useInlineEditForm } from "@/hooks/useInlineEditForm.js";
 import { useInlineRename } from "@/hooks/useInlineRename.js";
+import { cn } from "@/lib/utils.js";
 
 export function ProjectHeader({
   name,
+  compact = false,
   onRename,
   onDelete,
   onDiscardCurrentTime,
@@ -54,9 +56,15 @@ export function ProjectHeader({
   });
 
   return (
-    <header className="w-full h-16 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-4 justify-start">
-        <Link to="/" className="text-lg">
+    <header
+      className={cn(
+        "w-full flex items-center justify-between gap-4 shrink-0",
+        compact ? "h-12" : "h-16",
+      )}
+    >
+      <div className="flex items-center gap-1 justify-start">
+        {/* Padded to a 44px target, pulled back so it stays flush with the edge. */}
+        <Link to="/" className="-m-3 p-3">
           <ArrowLeftIcon className="size-5" />
         </Link>
 
