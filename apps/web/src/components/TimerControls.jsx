@@ -11,8 +11,7 @@ export const CONTROL_SIZES = {
 };
 
 // Goes on the icon, never as [&_svg]:size-* on the button: Button's own
-// [&_svg:not([class*='size-'])]:size-4 outranks a descendant rule, so sizing
-// there silently yields 16px.
+// [&_svg:not([class*='size-'])]:size-4 outranks that and silently wins.
 export const CONTROL_ICONS = {
   default: "size-5",
   compact: "size-4",
@@ -76,9 +75,8 @@ export function TimerControls({
   const first = playFirst ? playButton : lapButton;
   const second = playFirst ? lapButton : playButton;
 
-  // Splits the row in half and centres a button in each, putting the widest
-  // possible gap between them for the same total width. Needs both buttons —
-  // with one, a half-width cell would just park it off-centre.
+  // A button centred in each half is the widest gap a given width can give.
+  // Needs both — with one, a half-width cell just parks it off-centre.
   if (spread && showLap) {
     return (
       <div className={cn("grid grid-cols-2 w-full", className)}>

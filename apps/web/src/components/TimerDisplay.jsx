@@ -10,8 +10,7 @@ const SIZES = {
   default: {
     gap: "gap-4",
     // leading-none is required: an arbitrary text-[…] sets font-size alone,
-    // where the named steps carry a line-height of 1, and the inherited one
-    // pads the digits.
+    // unlike the named steps, and the inherited line-height pads the digits.
     time: "text-[clamp(3.75rem,7vw,5.5rem)] leading-none",
     milliseconds: "text-[0.62em]",
     meta: "text-lg",
@@ -28,9 +27,8 @@ const SIZES = {
     indicatorOffset: "-left-7",
     indicatorSize: "size-3.5",
   },
-  // For the split-screen sliver: no floor on the clamp, because a
-  // hundreds-of-hours total is ~12 glyphs and any size legible on a wide screen
-  // overflows a 320px one.
+  // Split-screen. The clamp floor is this low because a hundreds-of-hours
+  // total is ~12 glyphs and anything bigger overflows a 320px screen.
   sliver: {
     gap: "gap-1.5",
     time: "text-[clamp(2rem,11vw,3.75rem)] leading-none",
@@ -51,11 +49,9 @@ const SIZES = {
   },
 };
 
-// PiP-only: the timer text scales continuously with the window (vmin) instead
-// of stepping through the tiers, so a small resize nudges the font too. Bounded
-// by a legible floor and a ceiling that won't overflow. Milliseconds ride at
-// 0.62em off the digits, so a single clamp drives both. Only the timer text
-// goes fluid — the running indicator and surrounding controls stay on `size`.
+// PiP-only: the timer text scales continuously with the window (vmin) rather
+// than stepping through the tiers, so a small resize nudges the font too. Only
+// the text goes fluid — the indicator and controls stay on `size`.
 const FLUID = {
   gap: "gap-[clamp(0.35rem,2.5vmin,1rem)]",
   time: "text-[clamp(1.75rem,18vmin,4rem)]",

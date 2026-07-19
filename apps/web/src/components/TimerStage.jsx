@@ -4,25 +4,21 @@ import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
 import { Laps, LapNameForm } from "@/components/Laps.jsx";
 import { cn } from "@/lib/utils.js";
 
-// One column width for every band of the stage, so the timer, the laps and the
-// controls share a vertical axis instead of each finding its own. Sized to hold
-// a timer showing hundreds of hours at the top of its range.
+// One width for every band, so they share a vertical axis. Sized for a timer
+// showing hundreds of hours.
 const COLUMN = "w-full max-w-150";
 
-// Matches the footprint the controls leave in each layout, for the two places
-// that have to stand in for them: the PiP placeholder, and the empty side that
-// balances the inline row.
+// The controls' footprint per layout, for the two things that stand in for
+// them: the PiP placeholder and the inline row's balancing side.
 const CONTROLS_BOX = { inline: "w-14", minimal: "w-14", stacked: "h-24" };
 
-// The project's main interactive area — timer (or adjuster), controls and laps.
-// `layout` comes from useControlsLayout:
+// The project's main interactive area. `layout` comes from useControlsLayout:
 //   stacked  — controls under the laps, anchored to the bottom edge.
 //   inline   — controls beside the timer, for a phone on its side.
 //   minimal  — no room for laps at all; timer and controls only.
 //
-// `placeholder` takes the timer's slot while the stopwatch runs in the PiP
-// window; the controls become a spacer of the same footprint so toggling PiP
-// doesn't shift the laps.
+// `placeholder` takes the timer's slot during PiP; the controls become a spacer
+// of the same footprint so toggling PiP doesn't shift the laps.
 export function TimerStage({
   layout,
   placeholder,
@@ -61,13 +57,11 @@ export function TimerStage({
   );
 
   if (layout === "minimal") {
-    // The laps are gone, so naming one has nowhere to live — it takes over the
-    // timer's row for the moment it's open. Adding a lap pauses first, so the
-    // hidden timer isn't losing anything.
+    // The laps are gone, so naming one takes over the timer's row while it's
+    // open. Adding a lap pauses first, so the hidden timer loses nothing.
     return (
-      // overflow-hidden is a floor, not a plan: a full-size timer showing hours
-      // can just outgrow a sliver this narrow, and clipping a few pixels beats
-      // handing the page a scrollbar.
+      // A full-size timer showing hours can outgrow a sliver this narrow;
+      // clipping a few pixels beats handing the page a scrollbar.
       <div className="flex flex-1 flex-col w-full min-h-0 items-center justify-center overflow-hidden">
         {lapsProps.isAddingLap ? (
           <div className={COLUMN}>
@@ -80,7 +74,7 @@ export function TimerStage({
           </div>
         ) : (
           // No balancing spacer here, unlike the inline row: 56px of empty
-          // gutter is what pushes a long total past the edge of a sliver.
+          // gutter is what pushes a long total off the edge of a sliver.
           <div
             onClick={pauseOnClick}
             className={cn("flex items-center gap-4", COLUMN)}
@@ -123,8 +117,8 @@ export function TimerStage({
   }
 
   if (layout === "inline") {
-    // A spacer mirrors the controls on the empty side so the timer sits on the
-    // row's optical centre rather than being nudged left by their width.
+    // Mirrors the controls on the empty side so the timer sits on the row's
+    // optical centre instead of being nudged left by their width.
     const balance = <div aria-hidden className={CONTROLS_BOX.inline} />;
 
     return (
@@ -183,8 +177,8 @@ export function TimerStage({
         {hasLapsSection && (
           <>
             <Laps {...lapsProps} className="mt-6 mb-4" />
-            {/* Absorbs the space left under a short list so it pauses on tap
-                like the rest of the backdrop, instead of reading as dead. */}
+            {/* Absorbs the space under a short list, so it pauses on tap like
+                the rest of the backdrop. */}
             <div onClick={pauseOnClick} className="flex-1 w-full" />
           </>
         )}
@@ -195,12 +189,10 @@ export function TimerStage({
   // Stacked. The controls stay pinned to the bottom edge, within thumb reach.
   return (
     <div className="flex flex-1 flex-col w-full items-center min-h-0">
-      {/* Two equal bands: the timer centred in the top half, the laps hanging
-          from the midline of the bottom one, so the air between them comes from
-          the split and a short list can't creep up on the digits. */}
+      {/* Two equal bands, so the air between timer and laps comes from the
+          split and a short list can't creep up on the digits. Both carry
+          pause-on-click; the controls below stay out of it. */}
       <div className="flex flex-1 flex-col w-full items-center min-h-0">
-        {/* Pause-on-click covers both bands but not the controls, so the whole
-            backdrop is tappable while the buttons keep their own actions. */}
         <section
           onClick={pauseOnClick}
           className={cn(
@@ -223,9 +215,8 @@ export function TimerStage({
         </section>
 
         {/* items-start, or the card stretches to the band and a short list
-            renders with a hole under the rows. The 24rem arm caps it on a tall
-            screen; it shares a class with the 100% because a second max-h on
-            the Card would lose to this one in tailwind-merge. */}
+            renders with a hole under the rows. Both max-h arms share one class
+            because a second one on the Card would lose it in tailwind-merge. */}
         {hasLapsSection && (
           <div
             onClick={pauseOnClick}
