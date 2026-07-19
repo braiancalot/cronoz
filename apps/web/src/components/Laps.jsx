@@ -248,9 +248,9 @@ export function Laps({
 
   const card = (
     // Hugs its content; past the height the stage gives it the inner ScrollArea
-    // scrolls, so the laps never push the page into an outer scroll. Height and
-    // vertical spacing are the stage's call, not ours.
-    <Card className={cn("w-full max-w-lg py-0", className)}>
+    // scrolls, so the laps never push the page into an outer scroll. Width,
+    // height and vertical spacing are the stage's call, not ours.
+    <Card className={cn("w-full py-0", className)}>
       <ScrollArea
         type="auto"
         className="flex-1 min-h-0"

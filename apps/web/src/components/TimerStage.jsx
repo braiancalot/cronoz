@@ -176,7 +176,7 @@ export function TimerStage({
 
         {hasLapsSection && (
           <>
-            <Laps {...lapsProps} className="mt-6 mb-4" />
+            <Laps {...lapsProps} className={cn(COLUMN, "mt-6 mb-4")} />
             {/* Absorbs the space under a short list, so it pauses on tap like
                 the rest of the backdrop. */}
             <div onClick={pauseOnClick} className="flex-1 w-full" />
@@ -225,7 +225,10 @@ export function TimerStage({
             {/* display:contents so the card stays the band's flex item; the
                 wrapper is only here to keep lap clicks off the pause handler. */}
             <div onClick={(e) => e.stopPropagation()} className="contents">
-              <Laps {...lapsProps} className="max-h-[min(24rem,100%)]" />
+              <Laps
+                {...lapsProps}
+                className={cn(COLUMN, "max-h-[min(24rem,100%)]")}
+              />
             </div>
           </div>
         )}
