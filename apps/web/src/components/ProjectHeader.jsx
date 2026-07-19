@@ -1,5 +1,4 @@
 import {
-  ArrowCounterClockwiseIcon,
   ArrowLeftIcon,
   CheckIcon,
   ClockCountdownIcon,
@@ -34,8 +33,6 @@ export function ProjectHeader({
   canDiscardCurrentTime,
   onAdjust,
   canAdjust,
-  onReset,
-  canReset,
   onOpenPiP,
   onViewExactTime,
 }) {
@@ -125,6 +122,10 @@ export function ProjectHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem variant="edit" onSelect={handleStartRename}>
+                <PencilSimpleIcon />
+                Renomear
+              </DropdownMenuItem>
               <DropdownMenuItem
                 variant="edit"
                 onSelect={onAdjust}
@@ -133,33 +134,25 @@ export function ProjectHeader({
                 <ClockIcon />
                 Ajustar tempo
               </DropdownMenuItem>
+              {/* Separator inside the guard: without it, hiding the lone item
+                  in this group would leave two rules stacked together. */}
+              {onViewExactTime && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="info" onSelect={onViewExactTime}>
+                    <ClockCountdownIcon />
+                    Tempo exato
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
               <DropdownMenuItem
-                variant="edit"
+                variant="destructive"
                 onSelect={onDiscardCurrentTime}
                 disabled={!canDiscardCurrentTime}
               >
                 <EraserIcon />
                 Descartar tempo atual
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="edit" onSelect={handleStartRename}>
-                <PencilSimpleIcon />
-                Renomear
-              </DropdownMenuItem>
-              {onViewExactTime && (
-                <DropdownMenuItem variant="info" onSelect={onViewExactTime}>
-                  <ClockCountdownIcon />
-                  Tempo exato
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={onReset}
-                disabled={!canReset}
-              >
-                <ArrowCounterClockwiseIcon />
-                Resetar cronômetro
               </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onSelect={onDelete}>
                 <TrashIcon />

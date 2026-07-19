@@ -31,7 +31,6 @@ export default function ProjectPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isConfirmingDiscard, setIsConfirmingDiscard] = useState(false);
-  const [isConfirmingReset, setIsConfirmingReset] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [exactTimeSnapshot, setExactTimeSnapshot] = useState(null);
@@ -52,7 +51,6 @@ export default function ProjectPage() {
     deleteProject,
     discardCurrentTime,
     setCurrentTime,
-    reset,
     renameLap,
     deleteLap,
   } = useProject(id);
@@ -161,17 +159,6 @@ export default function ProjectPage() {
     showUndoToast("Tempo atual descartado", undo);
   }
 
-  function handleRequestReset() {
-    setIsConfirmingReset(true);
-  }
-
-  function handleConfirmReset() {
-    setIsConfirmingReset(false);
-    setIsAdjusting(false);
-    const { undo } = reset();
-    showUndoToast("Cronômetro resetado", undo);
-  }
-
   if (!project) {
     return (
       <PageContainer className="items-center justify-center">
@@ -186,7 +173,6 @@ export default function ProjectPage() {
 
   const canDiscardCurrentTime =
     project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
-  const canReset = canDiscardCurrentTime || hasLaps;
 
   const adjustPreviewTotals = adjustPreview(project.stopwatch, draft.value, {
     ignoreMs,
@@ -225,8 +211,6 @@ export default function ProjectPage() {
         canDiscardCurrentTime={canDiscardCurrentTime}
         onAdjust={handleStartAdjust}
         canAdjust={!isAdjusting && !isPiPActive}
-        onReset={handleRequestReset}
-        canReset={canReset}
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
         onViewExactTime={ignoreMs ? handleViewExactTime : null}
       />
@@ -294,16 +278,6 @@ export default function ProjectPage() {
         cancelLabel="Cancelar"
         onConfirm={handleConfirmDiscard}
         onCancel={() => setIsConfirmingDiscard(false)}
-      />
-
-      <ConfirmDialog
-        open={isConfirmingReset}
-        title="Resetar cronômetro?"
-        description="O tempo atual e todas as voltas serão apagados."
-        confirmLabel="Resetar"
-        cancelLabel="Cancelar"
-        onConfirm={handleConfirmReset}
-        onCancel={() => setIsConfirmingReset(false)}
       />
     </PageContainer>
   );

@@ -15,8 +15,6 @@ function renderHeader(props = {}) {
         canDiscardCurrentTime
         onAdjust={() => {}}
         canAdjust
-        onReset={() => {}}
-        canReset
         onOpenPiP={null}
         {...props}
       />
