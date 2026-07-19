@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 
-// Placement follows the viewport's proportion, not a height threshold: a short
-// but portrait popup window still stacks (controls below), where a threshold
-// would wrongly push them beside the timer. The laps list scrolls internally,
-// so there's no need to measure whether everything fits.
+const SHORT_HEIGHT = 600;
+// Below this the laps can't fit without an outer scroll — a split-screen sliver
+// lands here. Sits under a landscape phone (~390) so that case keeps its laps.
+const MINIMAL_HEIGHT = 360;
+
+// The proportion check keeps a short-but-portrait popup stacked, where a bare
+// height threshold would wrongly push its controls beside the timer.
 export function pickLayout(width, height) {
-  return width > height ? "inline" : "stacked";
+  if (height < MINIMAL_HEIGHT) return "minimal";
+  return width > height && height < SHORT_HEIGHT ? "inline" : "stacked";
 }
 
 function viewportLayout() {
