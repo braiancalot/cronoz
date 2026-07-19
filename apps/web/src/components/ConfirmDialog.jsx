@@ -25,11 +25,21 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
+        <DialogFooter className="flex-row justify-end">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={onCancel}
+          >
             {cancelLabel}
           </Button>
-          <Button variant={variant} size="sm" onClick={onConfirm}>
+          <Button
+            variant={variant}
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
         </DialogFooter>
