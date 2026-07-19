@@ -84,21 +84,20 @@ describe("TimerDisplay", () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 
-  it("uses the fixed tier text size by default", () => {
+  it("scales the default tier with viewport width, without a breakpoint step", () => {
     const { container } = render(<TimerDisplay time={61000} size="default" />);
 
     const time = container.querySelector(".tabular-nums");
-    expect(time.className).toContain("text-6xl");
-    expect(time.className).not.toContain("clamp");
+    expect(time.className).toContain("7vw");
+    expect(time.className).not.toContain("md:");
   });
 
-  it("uses a fluid clamp-based text size when fluid is set", () => {
+  it("scales against the shorter axis when fluid is set (PiP)", () => {
     const { container } = render(
       <TimerDisplay time={61000} size="default" fluid />,
     );
 
     const time = container.querySelector(".tabular-nums");
-    expect(time.className).toContain("clamp");
-    expect(time.className).not.toContain("text-6xl");
+    expect(time.className).toContain("vmin");
   });
 });

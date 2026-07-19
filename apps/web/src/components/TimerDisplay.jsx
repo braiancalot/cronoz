@@ -9,21 +9,36 @@ import { toast } from "sonner";
 const SIZES = {
   default: {
     gap: "gap-4",
-    time: "text-6xl md:text-8xl",
-    milliseconds: "text-4xl md:text-6xl",
+    // leading-none is required: an arbitrary text-[…] sets font-size alone,
+    // where the named steps carry a line-height of 1, and the inherited one
+    // pads the digits.
+    time: "text-[clamp(3.75rem,7vw,5.5rem)] leading-none",
+    milliseconds: "text-[0.62em]",
     meta: "text-lg",
-    price: "text-base md:text-lg",
+    price: "text-lg",
     indicatorOffset: "-left-8",
     indicatorSize: "size-4",
   },
   compact: {
     gap: "gap-2",
     time: "text-5xl",
-    milliseconds: "text-3xl",
+    milliseconds: "text-[0.62em]",
     meta: "text-base",
     price: "text-base",
     indicatorOffset: "-left-7",
     indicatorSize: "size-3.5",
+  },
+  // For the split-screen sliver: no floor on the clamp, because a
+  // hundreds-of-hours total is ~12 glyphs and any size legible on a wide screen
+  // overflows a 320px one.
+  sliver: {
+    gap: "gap-1.5",
+    time: "text-[clamp(2rem,11vw,3.75rem)] leading-none",
+    milliseconds: "text-[0.62em]",
+    meta: "text-sm",
+    price: "text-sm",
+    indicatorOffset: "-left-5",
+    indicatorSize: "size-2.5",
   },
   mini: {
     gap: "gap-1.5",
