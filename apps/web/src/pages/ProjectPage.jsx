@@ -17,7 +17,6 @@ import { TimerStage } from "@/components/TimerStage.jsx";
 import { PiPTimer } from "@/components/PiPTimer.jsx";
 import { PiPContent } from "@/components/PiPContent.jsx";
 import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
-import { Laps } from "@/components/Laps.jsx";
 import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
@@ -219,6 +218,7 @@ export default function ProjectPage() {
     <PageContainer className="items-center">
       <ProjectHeader
         name={project.name}
+        compact={controlsLayout === "minimal"}
         onRename={rename}
         onDelete={handleRequestDeleteProject}
         onDiscardCurrentTime={handleRequestDiscard}
@@ -231,39 +231,25 @@ export default function ProjectPage() {
         onViewExactTime={ignoreMs ? handleViewExactTime : null}
       />
 
-      {isPiPActive ? (
-        // Mirrors the stacked TimerStage (mt-8 section + a spacer matching the
-        // controls' footprint) so nothing shifts when the timer swaps to this
-        // placeholder on PiP toggle.
-        <div className="flex flex-1 flex-col w-full items-center min-h-0">
-          <section className="flex flex-1 items-center justify-center w-full mt-8">
-            <PiPPlaceholder onClose={closePiP} />
-          </section>
-
-          {hasLapsSection && <Laps {...lapsProps} />}
-
-          <div aria-hidden className="h-22 shrink-0" />
-        </div>
-      ) : (
-        <TimerStage
-          layout={controlsLayout}
-          isAdjusting={isAdjusting}
-          {...timeProps}
-          adjustSegment={adjustSegment}
-          adjustTotal={adjustTotal}
-          adjustLayout={isNarrow ? "row" : "flank"}
-          onAdjustStep={draft.step}
-          onAdjustSnap={draft.snap}
-          onCancelAdjust={handleCancelAdjust}
-          onConfirmAdjust={handleConfirmAdjust}
-          hasLapTime={splitDisplayTime > 0}
-          onStart={start}
-          onPause={pause}
-          onAddLap={handleStartAddLap}
-          lapsProps={lapsProps}
-          hasLapsSection={hasLapsSection}
-        />
-      )}
+      <TimerStage
+        layout={controlsLayout}
+        placeholder={isPiPActive ? <PiPPlaceholder onClose={closePiP} /> : null}
+        isAdjusting={isAdjusting}
+        {...timeProps}
+        adjustSegment={adjustSegment}
+        adjustTotal={adjustTotal}
+        adjustLayout={isNarrow ? "row" : "flank"}
+        onAdjustStep={draft.step}
+        onAdjustSnap={draft.snap}
+        onCancelAdjust={handleCancelAdjust}
+        onConfirmAdjust={handleConfirmAdjust}
+        hasLapTime={splitDisplayTime > 0}
+        onStart={start}
+        onPause={pause}
+        onAddLap={handleStartAddLap}
+        lapsProps={lapsProps}
+        hasLapsSection={hasLapsSection}
+      />
 
       <PiPTimer pipWindow={pipWindow}>
         <PiPContent
