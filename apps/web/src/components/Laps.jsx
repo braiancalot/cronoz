@@ -37,7 +37,7 @@ import { toast } from "sonner";
 // Inline name editor for a lap row (rename or add). Explicit ✕/✓ buttons let it
 // be saved with the mouse alone, not just Enter. Behavior lives in
 // useInlineEditForm; this owns only the compact-row layout.
-function LapNameForm({ value, onChange, onSubmit, onCancel }) {
+export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
   const { formProps, fieldProps, keepFocus } = useInlineEditForm({
     value,
     onSubmit,
@@ -47,7 +47,7 @@ function LapNameForm({ value, onChange, onSubmit, onCancel }) {
   return (
     <form
       {...formProps}
-      className="col-span-full flex items-center gap-2 min-h-9"
+      className="col-span-full flex items-center gap-2 min-h-11"
     >
       <Input
         value={value}
@@ -129,7 +129,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
 
   return (
     <>
-      <div className="min-h-9 min-w-0 flex items-center overflow-hidden">
+      <div className="min-h-11 min-w-0 flex items-center overflow-hidden">
         <Tooltip
           open={tooltipOpen}
           onOpenChange={(open) => setTooltipOpen(open && isTruncated())}
@@ -152,7 +152,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
           e.stopPropagation();
           copyToClipboard(formatTimeCompact(cumulativeTime), "Tempo acumulado");
         }}
-        className="cursor-pointer flex items-center min-h-9 justify-end"
+        className="cursor-pointer flex items-center min-h-11 justify-end"
       >
         <FormattedTime
           time={cumulativeTime}
@@ -164,7 +164,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
           e.stopPropagation();
           copyToClipboard(formatTimeCompact(lapTime), "Tempo da volta");
         }}
-        className="cursor-pointer flex items-center min-h-9 justify-end"
+        className="cursor-pointer flex items-center min-h-11 justify-end"
       >
         <FormattedTime time={lapTime} />
       </div>
@@ -247,12 +247,10 @@ export function Laps({
   }
 
   const card = (
-    // Hugs its content up to a cap (max-h-54); beyond that — or when a short
-    // viewport shrinks it — the inner ScrollArea scrolls instead, so the laps
-    // never push the page into an outer scroll.
-    <Card
-      className={cn("w-full max-w-125 py-0 min-h-12 max-h-54 my-6", className)}
-    >
+    // Hugs its content; past the height the stage gives it the inner ScrollArea
+    // scrolls, so the laps never push the page into an outer scroll. Height and
+    // vertical spacing are the stage's call, not ours.
+    <Card className={cn("w-full max-w-lg py-0", className)}>
       <ScrollArea
         type="auto"
         className="flex-1 min-h-0"
