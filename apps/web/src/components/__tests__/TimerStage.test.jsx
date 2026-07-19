@@ -57,13 +57,13 @@ describe("TimerStage", () => {
     expect(screen.getByTitle("Volta")).toBeInTheDocument();
   });
 
-  it("spreads the stacked controls across half-width cells", () => {
+  it("keeps the stacked controls together on a fixed gap", () => {
     renderStage();
 
-    // Each button centred in its own half, which is what puts the maximum gap
-    // between them; the adjuster's actions have to match or they'd slide.
-    const row = screen.getByTitle("Iniciar").parentElement.parentElement;
-    expect(row).toHaveClass("grid", "grid-cols-2");
+    // Centred as a pair, not one per half of the column: at the column's full
+    // width the halves pushed them to opposite edges.
+    const row = screen.getByTitle("Iniciar").parentElement;
+    expect(row).toHaveClass("flex", "justify-center", "gap-12");
   });
 
   it("caps the laps at half the group so they can't crowd out the timer", () => {

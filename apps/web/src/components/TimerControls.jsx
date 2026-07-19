@@ -21,7 +21,7 @@ export const CONTROL_ICONS = {
 // Wide enough that a thumb aiming at one can't clip the other — play and lap
 // sit next to each other and one of them is destructive to a running timer.
 export const CONTROL_GAPS = {
-  default: "gap-8",
+  default: "gap-12",
   compact: "gap-6",
   mini: "gap-2.5",
 };
@@ -36,7 +36,6 @@ export function TimerControls({
   playFirst = false,
   size = "default",
   orientation = "horizontal",
-  spread = false,
   className,
 }) {
   const sizeClass = CONTROL_SIZES[size];
@@ -74,17 +73,6 @@ export function TimerControls({
 
   const first = playFirst ? playButton : lapButton;
   const second = playFirst ? lapButton : playButton;
-
-  // A button centred in each half is the widest gap a given width can give.
-  // Needs both — with one, a half-width cell just parks it off-centre.
-  if (spread && showLap) {
-    return (
-      <div className={cn("grid grid-cols-2 w-full", className)}>
-        <div className="flex justify-center">{first}</div>
-        <div className="flex justify-center">{second}</div>
-      </div>
-    );
-  }
 
   return (
     <div

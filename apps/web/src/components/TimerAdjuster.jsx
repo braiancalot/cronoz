@@ -107,7 +107,6 @@ export function AdjustActions({
   size = "default",
   onCancel,
   onConfirm,
-  spread = false,
   className,
 }) {
   const sizeClass = CONTROL_SIZES[size];
@@ -139,22 +138,15 @@ export function AdjustActions({
   // Mirrors the TimerControls arrangement it stands in for, so entering adjust
   // mode doesn't slide the buttons sideways.
   return (
-    <div className={className}>
-      {spread ? (
-        <div className="grid grid-cols-2 w-full">
-          <div className="flex items-center justify-center">{cancelButton}</div>
-          <div className="flex items-center justify-center">
-            {confirmButton}
-          </div>
-        </div>
-      ) : (
-        <div
-          className={cn("flex items-center justify-center", CONTROL_GAPS[size])}
-        >
-          {cancelButton}
-          {confirmButton}
-        </div>
+    <div
+      className={cn(
+        "flex items-center justify-center",
+        CONTROL_GAPS[size],
+        className,
       )}
+    >
+      {cancelButton}
+      {confirmButton}
     </div>
   );
 }

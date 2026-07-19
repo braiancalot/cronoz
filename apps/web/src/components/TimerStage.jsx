@@ -238,7 +238,6 @@ export function TimerStage({
         <div aria-hidden className={cn("shrink-0", CONTROLS_BOX.stacked)} />
       ) : isAdjusting ? (
         <AdjustActions
-          spread
           onCancel={onCancelAdjust}
           onConfirm={onConfirmAdjust}
           className={cn("shrink-0 pb-8", COLUMN)}
@@ -250,7 +249,6 @@ export function TimerStage({
           onStart={onStart}
           onPause={onPause}
           onAddLap={onAddLap}
-          spread
           className={cn("shrink-0 pb-8", COLUMN)}
         />
       )}
