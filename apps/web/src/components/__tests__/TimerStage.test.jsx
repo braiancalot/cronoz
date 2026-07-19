@@ -73,7 +73,10 @@ describe("TimerStage", () => {
     expect(card).toHaveClass("max-h-[min(24rem,100%)]");
     // Without items-start the card stretched to the whole band and a short list
     // rendered with a hole under its rows.
-    expect(card.parentElement).toHaveClass("basis-1/2", "items-start");
+    expect(card.parentElement.parentElement).toHaveClass(
+      "basis-1/2",
+      "items-start",
+    );
   });
 
   it("keeps the minimal controls at the compact size, not the mini one", () => {
@@ -157,6 +160,28 @@ describe("TimerStage", () => {
     // The buttons are what set the row's height, so a different size here
     // resizes the band above and the stage jumps on entering adjust mode.
     expect(screen.getByTitle("Pronto")).toHaveClass(CONTROL_SIZES.default);
+  });
+
+  it("pauses on a click in the bare space of the laps band", () => {
+    const onPause = vi.fn();
+    const { container } = renderStage({ isRunning: true, onPause });
+
+    // The band is half the stage; with a short list most of it is backdrop, and
+    // it read as dead to the touch while the timer's own half paused fine.
+    container.querySelector("section").nextElementSibling.click();
+    expect(onPause).toHaveBeenCalledOnce();
+  });
+
+  it("pauses on a click below the inline laps", () => {
+    const onPause = vi.fn();
+    const { container } = renderStage({
+      layout: "inline",
+      isRunning: true,
+      onPause,
+    });
+
+    container.firstChild.lastElementChild.click();
+    expect(onPause).toHaveBeenCalledOnce();
   });
 
   it("does not pause when a lap row is clicked", () => {

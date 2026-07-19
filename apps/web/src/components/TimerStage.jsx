@@ -180,7 +180,14 @@ export function TimerStage({
           </div>
         )}
 
-        {hasLapsSection && <Laps {...lapsProps} className="mt-6 mb-4" />}
+        {hasLapsSection && (
+          <>
+            <Laps {...lapsProps} className="mt-6 mb-4" />
+            {/* Absorbs the space left under a short list so it pauses on tap
+                like the rest of the backdrop, instead of reading as dead. */}
+            <div onClick={pauseOnClick} className="flex-1 w-full" />
+          </>
+        )}
       </div>
     );
   }
@@ -192,8 +199,8 @@ export function TimerStage({
           from the midline of the bottom one, so the air between them comes from
           the split and a short list can't creep up on the digits. */}
       <div className="flex flex-1 flex-col w-full items-center min-h-0">
-        {/* The pause-on-click sits here rather than on the stage, so it doesn't
-            cover the laps: their times stop propagation, the name doesn't. */}
+        {/* Pause-on-click covers both bands but not the controls, so the whole
+            backdrop is tappable while the buttons keep their own actions. */}
         <section
           onClick={pauseOnClick}
           className={cn(
@@ -220,8 +227,15 @@ export function TimerStage({
             screen; it shares a class with the 100% because a second max-h on
             the Card would lose to this one in tailwind-merge. */}
         {hasLapsSection && (
-          <div className="flex flex-1 basis-1/2 min-h-0 w-full justify-center items-start pb-8">
-            <Laps {...lapsProps} className="max-h-[min(24rem,100%)]" />
+          <div
+            onClick={pauseOnClick}
+            className="flex flex-1 basis-1/2 min-h-0 w-full justify-center items-start pb-8"
+          >
+            {/* display:contents so the card stays the band's flex item; the
+                wrapper is only here to keep lap clicks off the pause handler. */}
+            <div onClick={(e) => e.stopPropagation()} className="contents">
+              <Laps {...lapsProps} className="max-h-[min(24rem,100%)]" />
+            </div>
           </div>
         )}
       </div>
