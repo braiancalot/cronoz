@@ -5,14 +5,25 @@ import { cn } from "@/lib/utils.js";
 // Shared with AdjustActions so the adjust-mode ✕/✓ buttons keep the exact same
 // round footprint as the play/lap controls they replace.
 export const CONTROL_SIZES = {
-  default: "size-14 [&_svg]:size-7",
-  compact: "size-12 [&_svg]:size-7",
-  mini: "size-10 [&_svg]:size-5",
+  default: "size-16",
+  compact: "size-14",
+  mini: "size-10",
 };
 
+// Goes on the icon, never as [&_svg]:size-* on the button: Button's own
+// [&_svg:not([class*='size-'])]:size-4 outranks a descendant rule, so sizing
+// there silently yields 16px.
+export const CONTROL_ICONS = {
+  default: "size-5",
+  compact: "size-4",
+  mini: "size-3",
+};
+
+// Wide enough that a thumb aiming at one can't clip the other — play and lap
+// sit next to each other and one of them is destructive to a running timer.
 export const CONTROL_GAPS = {
-  default: "gap-4",
-  compact: "gap-4",
+  default: "gap-8",
+  compact: "gap-6",
   mini: "gap-2.5",
 };
 
@@ -26,9 +37,11 @@ export function TimerControls({
   playFirst = false,
   size = "default",
   orientation = "horizontal",
+  spread = false,
   className,
 }) {
   const sizeClass = CONTROL_SIZES[size];
+  const iconClass = CONTROL_ICONS[size];
 
   const lapButton = showLap && (
     <Button
@@ -39,7 +52,9 @@ export function TimerControls({
       aria-label="Volta"
       title="Volta"
     >
-      <PlusIcon />
+      {/* Not fill: Phosphor's fill Plus is a solid tile with the glyph knocked
+          out, a different mark rather than a heavier one. */}
+      <PlusIcon weight="regular" className={iconClass} />
     </Button>
   );
 
@@ -50,9 +65,28 @@ export function TimerControls({
       aria-label={isRunning ? "Pausar" : "Iniciar"}
       title={isRunning ? "Pausar" : "Iniciar"}
     >
-      {isRunning ? <PauseIcon weight="fill" /> : <PlayIcon weight="fill" />}
+      {isRunning ? (
+        <PauseIcon weight="fill" className={iconClass} />
+      ) : (
+        <PlayIcon weight="fill" className={iconClass} />
+      )}
     </Button>
   );
+
+  const first = playFirst ? playButton : lapButton;
+  const second = playFirst ? lapButton : playButton;
+
+  // Splits the row in half and centres a button in each, putting the widest
+  // possible gap between them for the same total width. Needs both buttons —
+  // with one, a half-width cell would just park it off-centre.
+  if (spread && showLap) {
+    return (
+      <div className={cn("grid grid-cols-2 w-full", className)}>
+        <div className="flex justify-center">{first}</div>
+        <div className="flex justify-center">{second}</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -63,17 +97,8 @@ export function TimerControls({
         className,
       )}
     >
-      {playFirst ? (
-        <>
-          {playButton}
-          {lapButton}
-        </>
-      ) : (
-        <>
-          {lapButton}
-          {playButton}
-        </>
-      )}
+      {first}
+      {second}
     </div>
   );
 }

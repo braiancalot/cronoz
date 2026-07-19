@@ -5,7 +5,11 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { TimerDisplay } from "@/components/TimerDisplay.jsx";
-import { CONTROL_SIZES, CONTROL_GAPS } from "@/components/TimerControls.jsx";
+import {
+  CONTROL_SIZES,
+  CONTROL_GAPS,
+  CONTROL_ICONS,
+} from "@/components/TimerControls.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { cn } from "@/lib/utils.js";
@@ -26,9 +30,9 @@ const STEP_BTN = {
 // The round button shares the stepper footprint so every control is the same
 // size, with a larger icon so it fills the button and reads as one.
 const ROUND_ICON = {
-  default: "[&_svg]:size-7",
-  compact: "[&_svg]:size-6",
-  mini: "[&_svg]:size-5",
+  default: "size-5",
+  compact: "size-5",
+  mini: "size-4",
 };
 
 // Snaps the segment to a whole minute — down (floor) or up (ceil).
@@ -38,12 +42,12 @@ function RoundButton({ direction, size, onSnap }) {
     <Button
       variant="outline"
       onClick={() => onSnap(direction)}
-      className={cn("rounded-full px-0", STEP_BTN[size], ROUND_ICON[size])}
+      className={cn("rounded-full px-0", STEP_BTN[size])}
       aria-label={
         direction === "down" ? "Arredondar para baixo" : "Arredondar para cima"
       }
     >
-      <Icon />
+      <Icon className={ROUND_ICON[size]} />
     </Button>
   );
 }
@@ -99,50 +103,58 @@ function StepGroup({
   );
 }
 
-// The inner row reserves the height of the TimerControls buttons it replaces
-// (size-14/12/10), so swapping controls ↔ actions in the same slot doesn't
-// change its height and the timer above stays put. The padding (e.g. pb-8)
-// rides on the outer wrapper so it isn't eaten by the min-height.
-const ACTIONS_MIN_H = {
-  default: "min-h-14",
-  compact: "min-h-12",
-  mini: "min-h-10",
-};
-
 export function AdjustActions({
   size = "default",
   onCancel,
   onConfirm,
+  spread = false,
   className,
 }) {
   const sizeClass = CONTROL_SIZES[size];
+  const iconClass = CONTROL_ICONS[size];
+
+  const cancelButton = (
+    <Button
+      variant="ghost"
+      className={cn("rounded-full bg-muted", sizeClass)}
+      onClick={onCancel}
+      aria-label="Cancelar"
+      title="Cancelar"
+    >
+      <XIcon weight="regular" className={iconClass} />
+    </Button>
+  );
+
+  const confirmButton = (
+    <Button
+      className={cn("rounded-full", sizeClass)}
+      onClick={onConfirm}
+      aria-label="Pronto"
+      title="Pronto"
+    >
+      <CheckIcon weight="regular" className={iconClass} />
+    </Button>
+  );
+
+  // Mirrors the TimerControls arrangement it stands in for, so entering adjust
+  // mode doesn't slide the buttons sideways.
   return (
     <div className={className}>
-      <div
-        className={cn(
-          "flex items-center justify-center",
-          CONTROL_GAPS[size],
-          ACTIONS_MIN_H[size],
-        )}
-      >
-        <Button
-          variant="ghost"
-          className={cn("rounded-full bg-muted", sizeClass)}
-          onClick={onCancel}
-          aria-label="Cancelar"
-          title="Cancelar"
+      {spread ? (
+        <div className="grid grid-cols-2 w-full">
+          <div className="flex items-center justify-center">{cancelButton}</div>
+          <div className="flex items-center justify-center">
+            {confirmButton}
+          </div>
+        </div>
+      ) : (
+        <div
+          className={cn("flex items-center justify-center", CONTROL_GAPS[size])}
         >
-          <XIcon weight="bold" />
-        </Button>
-        <Button
-          className={cn("rounded-full", sizeClass)}
-          onClick={onConfirm}
-          aria-label="Pronto"
-          title="Pronto"
-        >
-          <CheckIcon weight="bold" />
-        </Button>
-      </div>
+          {cancelButton}
+          {confirmButton}
+        </div>
+      )}
     </div>
   );
 }
@@ -161,8 +173,6 @@ export function TimerAdjuster({
   onStep,
   onSnap,
 }) {
-  const steps = STEPS;
-
   const display = (
     <TimerDisplay
       time={time}
@@ -184,7 +194,7 @@ export function TimerAdjuster({
         <div className="flex items-center gap-1">
           <StepGroup
             sign={-1}
-            steps={steps}
+            steps={STEPS}
             onStep={onStep}
             onSnap={onSnap}
             size="mini"
@@ -194,7 +204,7 @@ export function TimerAdjuster({
           <Separator orientation="vertical" className="h-8" />
           <StepGroup
             sign={1}
-            steps={steps}
+            steps={STEPS}
             onStep={onStep}
             onSnap={onSnap}
             size="mini"
@@ -210,7 +220,7 @@ export function TimerAdjuster({
     <div className="flex items-center justify-center gap-3 sm:gap-4">
       <StepGroup
         sign={-1}
-        steps={steps}
+        steps={STEPS}
         onStep={onStep}
         onSnap={onSnap}
         size={size}
@@ -219,7 +229,7 @@ export function TimerAdjuster({
       {display}
       <StepGroup
         sign={1}
-        steps={steps}
+        steps={STEPS}
         onStep={onStep}
         onSnap={onSnap}
         size={size}

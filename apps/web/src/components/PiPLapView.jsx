@@ -1,7 +1,11 @@
 import { CheckIcon, XIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
-import { CONTROL_SIZES, CONTROL_GAPS } from "@/components/TimerControls.jsx";
+import {
+  CONTROL_SIZES,
+  CONTROL_GAPS,
+  CONTROL_ICONS,
+} from "@/components/TimerControls.jsx";
 import { cn } from "@/lib/utils.js";
 
 const TEXT = { default: "text-lg", compact: "text-base", mini: "text-sm" };
@@ -19,6 +23,7 @@ export function PiPLapView({
   onCancel,
 }) {
   const sizeClass = CONTROL_SIZES[size];
+  const iconClass = CONTROL_ICONS[size];
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -49,7 +54,7 @@ export function PiPLapView({
           aria-label="Cancelar"
           title="Cancelar"
         >
-          <XIcon weight="bold" />
+          <XIcon weight="bold" className={iconClass} />
         </Button>
         <Button
           type="submit"
@@ -57,7 +62,7 @@ export function PiPLapView({
           aria-label="Salvar"
           title="Salvar"
         >
-          <CheckIcon weight="bold" />
+          <CheckIcon weight="bold" className={iconClass} />
         </Button>
       </div>
     </form>
