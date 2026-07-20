@@ -63,7 +63,7 @@ describe("TimerStage", () => {
     // Centred as a pair, not one per half of the column: at the column's full
     // width the halves pushed them to opposite edges.
     const row = screen.getByTitle("Iniciar").parentElement;
-    expect(row).toHaveClass("flex", "justify-center", "gap-12");
+    expect(row).toHaveClass("flex", "justify-center", "gap-20");
   });
 
   it("caps the laps at half the group so they can't crowd out the timer", () => {
