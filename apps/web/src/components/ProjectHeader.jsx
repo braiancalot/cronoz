@@ -60,8 +60,8 @@ export function ProjectHeader({
       )}
     >
       <div className="flex items-center gap-1 justify-start">
-        {/* Padded to a 44px target, pulled back so it stays flush with the edge. */}
-        <Link to="/" className="-m-3 p-3">
+        {/* Padded to a 44px target, pulled left so it stays flush with the edge. */}
+        <Link to="/" className="-ml-3 p-3">
           <ArrowLeftIcon className="size-5" />
         </Link>
 
