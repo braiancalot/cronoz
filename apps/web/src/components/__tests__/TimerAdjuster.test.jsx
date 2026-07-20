@@ -118,4 +118,13 @@ describe("AdjustActions", () => {
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(onCancel).toHaveBeenCalledOnce();
   });
+
+  it("styles Cancelar as destructive so it reads apart from Pronto", () => {
+    render(<AdjustActions onCancel={vi.fn()} onConfirm={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Cancelar" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
+  });
 });

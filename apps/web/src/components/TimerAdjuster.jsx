@@ -114,8 +114,8 @@ export function AdjustActions({
 
   const cancelButton = (
     <Button
-      variant="ghost"
-      className={cn("rounded-full bg-muted", sizeClass)}
+      variant="destructive"
+      className={cn("rounded-full", sizeClass)}
       onClick={onCancel}
       aria-label="Cancelar"
       title="Cancelar"
