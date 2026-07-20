@@ -66,17 +66,23 @@ describe("TimerStage", () => {
     expect(row).toHaveClass("flex", "justify-center", "gap-20");
   });
 
-  it("caps the laps at half the group so they can't crowd out the timer", () => {
+  it("caps the laps card so a long list scrolls instead of shoving the timer", () => {
     const { container } = renderStage();
 
     const card = container.querySelector("[data-slot='card']");
-    expect(card).toHaveClass("max-h-[min(24rem,100%)]");
-    // Without items-start the card stretched to the whole band and a short list
-    // rendered with a hole under its rows.
-    expect(card.parentElement.parentElement).toHaveClass(
-      "basis-1/2",
-      "items-start",
-    );
+    // The card hugs a short list and caps here, scrolling past it, so the
+    // centred group never grows unbounded.
+    expect(card).toHaveClass("max-h-[32rem]");
+  });
+
+  it("rides the timer and laps as one centred group, timer held at its height", () => {
+    const { container } = renderStage();
+
+    // shrink-0 keeps a short viewport from squeezing the timer's total line
+    // onto the laps; the group centres the pair with the leftover height.
+    const section = container.querySelector("section");
+    expect(section).toHaveClass("shrink-0");
+    expect(section.parentElement).toHaveClass("justify-center", "gap-6");
   });
 
   it("keeps the minimal controls at the compact size, not the mini one", () => {

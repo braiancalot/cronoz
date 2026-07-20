@@ -189,17 +189,18 @@ export function TimerStage({
   // Stacked. The controls stay pinned to the bottom edge, within thumb reach.
   return (
     <div className="flex flex-1 flex-col w-full items-center min-h-0">
-      {/* Two equal bands, so the air between timer and laps comes from the
-          split and a short list can't creep up on the digits. Both carry
-          pause-on-click; the controls below stay out of it. */}
-      <div className="flex flex-1 flex-col w-full items-center min-h-0">
-        <section
-          onClick={pauseOnClick}
-          className={cn(
-            "flex flex-1 basis-1/2 min-h-0 items-center justify-center",
-            COLUMN,
-          )}
-        >
+      {/* Timer and laps ride as one centred group: the gap between them holds
+          them apart and grows on wider screens (a phone wants them close, a
+          desktop wants room), while the leftover height splits evenly above and
+          below. py keeps the group off the header and controls when the content
+          is tall enough to fill the height. The timer never shrinks; the laps
+          take the slack, capping at max-h and scrolling past it. The group
+          carries pause-on-click for its margins; the laps card opts out. */}
+      <div
+        onClick={pauseOnClick}
+        className="flex flex-1 flex-col w-full items-center justify-center min-h-0 gap-6 md:gap-16 lg:gap-24 py-8"
+      >
+        <section className={cn("flex shrink-0 justify-center", COLUMN)}>
           {isAdjusting && !placeholder ? (
             <TimerAdjuster
               time={adjustSegment}
@@ -214,21 +215,12 @@ export function TimerStage({
           )}
         </section>
 
-        {/* items-start, or the card stretches to the band and a short list
-            renders with a hole under the rows. Both max-h arms share one class
-            because a second one on the Card would lose it in tailwind-merge. */}
         {hasLapsSection && (
-          <div
-            onClick={pauseOnClick}
-            className="flex flex-1 basis-1/2 min-h-0 w-full justify-center items-start pb-8"
-          >
-            {/* display:contents so the card stays the band's flex item; the
-                wrapper is only here to keep lap clicks off the pause handler. */}
+          <div className="flex min-h-0 w-full justify-center">
+            {/* display:contents so the card stays the group's flex item; the
+                wrapper only keeps lap clicks off the pause handler. */}
             <div onClick={(e) => e.stopPropagation()} className="contents">
-              <Laps
-                {...lapsProps}
-                className={cn(COLUMN, "max-h-[min(24rem,100%)]")}
-              />
+              <Laps {...lapsProps} className={cn(COLUMN, "max-h-[32rem]")} />
             </div>
           </div>
         )}
