@@ -4,7 +4,10 @@ import { useNavigate, useParams } from "react-router";
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useControlsLayout } from "@/hooks/useControlsLayout.js";
-import { useNarrowViewport } from "@/hooks/useNarrowViewport.js";
+import {
+  useNarrowViewport,
+  useSliverViewport,
+} from "@/hooks/useNarrowViewport.js";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
@@ -65,6 +68,7 @@ export default function ProjectPage() {
   useKeyboardShortcuts({ onToggle: toggle, pipWindow, enabled: !isAdjusting });
 
   const isNarrow = useNarrowViewport();
+  const isSliver = useSliverViewport();
   const ignoreMs = useIgnoreMilliseconds();
   const draft = useAdjustDraft();
 
@@ -217,6 +221,7 @@ export default function ProjectPage() {
 
       <TimerStage
         layout={controlsLayout}
+        isSliver={isSliver}
         placeholder={isPiPActive ? <PiPPlaceholder onClose={closePiP} /> : null}
         isAdjusting={isAdjusting}
         {...timeProps}

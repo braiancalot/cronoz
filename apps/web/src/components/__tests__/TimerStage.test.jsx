@@ -72,7 +72,7 @@ describe("TimerStage", () => {
     const card = container.querySelector("[data-slot='card']");
     // The card hugs a short list and caps here, scrolling past it, so the
     // centred group never grows unbounded.
-    expect(card).toHaveClass("max-h-[32rem]");
+    expect(card).toHaveClass("max-h-128");
   });
 
   it("rides the timer and laps as one centred group, timer held at its height", () => {
@@ -83,6 +83,22 @@ describe("TimerStage", () => {
     const section = container.querySelector("section");
     expect(section).toHaveClass("shrink-0");
     expect(section.parentElement).toHaveClass("justify-center", "gap-6");
+  });
+
+  it("keeps the full-size timer on a wide-but-short minimal layout", () => {
+    // Only a genuine sliver shrinks the timer; a wide viewport that merely lost
+    // its laps keeps inline's size, so the inline→minimal step doesn't jump.
+    const { container } = renderStage({ layout: "minimal", isSliver: false });
+
+    const time = container.querySelector(".tabular-nums");
+    expect(time).toHaveClass("text-[clamp(3.75rem,7vw,5.5rem)]");
+  });
+
+  it("shrinks the timer to the sliver size on a real split-screen", () => {
+    const { container } = renderStage({ layout: "minimal", isSliver: true });
+
+    const time = container.querySelector(".tabular-nums");
+    expect(time).toHaveClass("text-[clamp(2rem,11vw,3.75rem)]");
   });
 
   it("keeps the minimal controls at the compact size, not the mini one", () => {

@@ -21,6 +21,7 @@ const CONTROLS_BOX = { inline: "w-14", minimal: "w-14", stacked: "h-24" };
 // of the same footprint so toggling PiP doesn't shift the laps.
 export function TimerStage({
   layout,
+  isSliver,
   placeholder,
   isAdjusting,
   // timer
@@ -57,8 +58,11 @@ export function TimerStage({
   );
 
   if (layout === "minimal") {
-    // The laps are gone, so naming one takes over the timer's row while it's
-    // open. Adding a lap pauses first, so the hidden timer loses nothing.
+    // Stands in for the controls during PiP, so the laps below don't shift.
+    const balance = (
+      <div aria-hidden className={cn("shrink-0", CONTROLS_BOX.minimal)} />
+    );
+
     return (
       // A full-size timer showing hours can outgrow a sliver this narrow;
       // clipping a few pixels beats handing the page a scrollbar.
@@ -73,8 +77,6 @@ export function TimerStage({
             />
           </div>
         ) : (
-          // No balancing spacer here, unlike the inline row: 56px of empty
-          // gutter is what pushes a long total off the edge of a sliver.
           <div
             onClick={pauseOnClick}
             className={cn("flex items-center gap-4", COLUMN)}
@@ -86,16 +88,13 @@ export function TimerStage({
                   totalTime={totalTime}
                   isRunning={isRunning}
                   hourlyPrice={hourlyPrice}
-                  size="sliver"
+                  size={isSliver ? "sliver" : "default"}
                 />
               )}
             </div>
 
             {placeholder ? (
-              <div
-                aria-hidden
-                className={cn("shrink-0", CONTROLS_BOX.minimal)}
-              />
+              balance
             ) : (
               // gap-3 overrides the roomier default: two stacked 56px buttons
               // plus the standard gap would outgrow the height this tier has.
@@ -189,13 +188,6 @@ export function TimerStage({
   // Stacked. The controls stay pinned to the bottom edge, within thumb reach.
   return (
     <div className="flex flex-1 flex-col w-full items-center min-h-0">
-      {/* Timer and laps ride as one centred group: the gap between them holds
-          them apart and grows on wider screens (a phone wants them close, a
-          desktop wants room), while the leftover height splits evenly above and
-          below. py keeps the group off the header and controls when the content
-          is tall enough to fill the height. The timer never shrinks; the laps
-          take the slack, capping at max-h and scrolling past it. The group
-          carries pause-on-click for its margins; the laps card opts out. */}
       <div
         onClick={pauseOnClick}
         className="flex flex-1 flex-col w-full items-center justify-center min-h-0 gap-6 md:gap-16 lg:gap-24 py-8"
@@ -220,7 +212,7 @@ export function TimerStage({
             {/* display:contents so the card stays the group's flex item; the
                 wrapper only keeps lap clicks off the pause handler. */}
             <div onClick={(e) => e.stopPropagation()} className="contents">
-              <Laps {...lapsProps} className={cn(COLUMN, "max-h-[32rem]")} />
+              <Laps {...lapsProps} className={cn(COLUMN, "max-h-128")} />
             </div>
           </div>
         )}
