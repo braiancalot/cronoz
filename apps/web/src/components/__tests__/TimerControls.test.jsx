@@ -88,6 +88,35 @@ describe("TimerControls", () => {
     expect(onAddLap).toHaveBeenCalledOnce();
   });
 
+  it("tints the play button teal while running and fills primary while paused", () => {
+    const { rerender } = render(
+      <TimerControls
+        isRunning={false}
+        hasLapTime={false}
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+    const start = screen.getByRole("button", { name: "Iniciar" });
+    expect(start).toHaveClass("bg-primary");
+    expect(start).not.toHaveClass("text-primary");
+
+    rerender(
+      <TimerControls
+        isRunning={true}
+        hasLapTime={false}
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+    const pause = screen.getByRole("button", { name: "Pausar" });
+    expect(pause).toHaveClass("bg-primary/15");
+    expect(pause).toHaveClass("text-primary");
+    expect(pause).not.toHaveClass("bg-primary");
+  });
+
   it("hides Volta when showLap is false", () => {
     render(
       <TimerControls

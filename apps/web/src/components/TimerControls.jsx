@@ -58,7 +58,11 @@ export function TimerControls({
 
   const playButton = (
     <Button
-      className={cn("rounded-full", sizeClass)}
+      className={cn(
+        "rounded-full",
+        sizeClass,
+        isRunning && "bg-primary/15 text-primary hover:bg-primary/25",
+      )}
       onClick={isRunning ? onPause : onStart}
       aria-label={isRunning ? "Pausar" : "Iniciar"}
       title={isRunning ? "Pausar" : "Iniciar"}
