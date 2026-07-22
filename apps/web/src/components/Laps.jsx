@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
-import { Card } from "@/components/ui/card.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
 import {
   Tooltip,
   TooltipContent,
@@ -45,10 +45,7 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
   });
 
   return (
-    <form
-      {...formProps}
-      className="col-span-full flex items-center gap-2 min-h-11"
-    >
+    <form {...formProps} className="flex items-center gap-2 min-h-11 w-full">
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -80,6 +77,18 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
         <CheckIcon weight="bold" />
       </Button>
     </form>
+  );
+}
+
+// One lap = one card, matching the project cards on the home screen but with a
+// tighter vertical padding, since the list can get long.
+function LapCard({ className, children }) {
+  return (
+    <Card className={cn("gap-0 rounded-xl py-1.5", className)}>
+      <CardContent className="flex items-center gap-3 px-4">
+        {children}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -118,18 +127,20 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
 
   if (isRenaming) {
     return (
-      <LapNameForm
-        value={draft}
-        onChange={setDraft}
-        onSubmit={submit}
-        onCancel={handleCancel}
-      />
+      <LapCard>
+        <LapNameForm
+          value={draft}
+          onChange={setDraft}
+          onSubmit={submit}
+          onCancel={handleCancel}
+        />
+      </LapCard>
     );
   }
 
   return (
-    <>
-      <div className="min-h-11 min-w-0 flex items-center overflow-hidden">
+    <LapCard>
+      <div className="min-w-0 flex-1 flex items-center overflow-hidden">
         <Tooltip
           open={tooltipOpen}
           onOpenChange={(open) => setTooltipOpen(open && isTruncated())}
@@ -152,7 +163,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
           e.stopPropagation();
           copyToClipboard(formatTimeCompact(cumulativeTime), "Tempo acumulado");
         }}
-        className="cursor-pointer flex items-center min-h-11 justify-end"
+        className="cursor-pointer flex items-center justify-end w-20"
       >
         <FormattedTime
           time={cumulativeTime}
@@ -164,7 +175,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
           e.stopPropagation();
           copyToClipboard(formatTimeCompact(lapTime), "Tempo da volta");
         }}
-        className="cursor-pointer flex items-center min-h-11 justify-end"
+        className="cursor-pointer flex items-center justify-end w-20"
       >
         <FormattedTime time={lapTime} />
       </div>
@@ -172,7 +183,7 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             title="Mais opções"
             onClick={(e) => e.stopPropagation()}
           >
@@ -206,14 +217,9 @@ function LapItem({ lap, lapTime, cumulativeTime, onRename, onRequestDelete }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </>
+    </LapCard>
   );
 }
-
-// Fades the top/bottom edges so a clipped row hints "there's more", reinforcing
-// the scrollbar as a scroll cue.
-const SCROLL_FADE =
-  "[mask-image:linear-gradient(to_bottom,transparent,black_12px,black_calc(100%_-_12px),transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_12px,black_calc(100%_-_12px),transparent)]";
 
 export function Laps({
   laps,
@@ -246,24 +252,23 @@ export function Laps({
     showUndoToast(`Volta "${name}" excluída`, undo);
   }
 
-  const card = (
-    // Hugs its content; past the height the stage gives it the inner ScrollArea
-    // scrolls, so the laps never push the page into an outer scroll. Width,
-    // height and vertical spacing are the stage's call, not ours.
-    <Card className={cn("w-full py-0", className)}>
-      <ScrollArea
-        type="auto"
-        className="flex-1 min-h-0"
-        viewportClassName={SCROLL_FADE}
-      >
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2 w-full">
+  const list = (
+    // Each lap is its own card, matching the project cards on the home screen.
+    // Past the height the stage gives it the ScrollArea scrolls, so the laps
+    // never push the page into an outer scroll. Width, height and vertical
+    // spacing are the stage's call, not ours.
+    <div className={cn("flex flex-col min-h-0 w-full", className)}>
+      <ScrollArea type="auto" className="flex-1 min-h-0">
+        <div className="flex flex-col gap-1 py-0.5 w-full">
           {isAddingLap && (
-            <LapNameForm
-              value={addLapName}
-              onChange={onAddLapNameChange}
-              onSubmit={onConfirmAddLap}
-              onCancel={onCancelAddLap}
-            />
+            <LapCard>
+              <LapNameForm
+                value={addLapName}
+                onChange={onAddLapNameChange}
+                onSubmit={onConfirmAddLap}
+                onCancel={onCancelAddLap}
+              />
+            </LapCard>
           )}
           {activeLaps?.map((lap) => (
             <LapItem
@@ -277,12 +282,12 @@ export function Laps({
           ))}
         </div>
       </ScrollArea>
-    </Card>
+    </div>
   );
 
   return (
     <>
-      {card}
+      {list}
 
       <ConfirmDialog
         open={!!pendingDelete}

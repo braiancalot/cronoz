@@ -30,6 +30,35 @@ describe("Laps", () => {
     expect(screen.getByText("Lap #2")).toBeInTheDocument();
   });
 
+  it("renders each lap as its own card", () => {
+    const { container } = render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    expect(container.querySelectorAll("[data-slot='card']")).toHaveLength(
+      mockLaps.length,
+    );
+  });
+
+  it("renders the add-lap form as an extra card", () => {
+    const { container } = render(
+      <Laps
+        laps={mockLaps}
+        onRenameLap={vi.fn()}
+        onDeleteLap={vi.fn()}
+        isAddingLap
+        addLapName="3º Corte"
+        onAddLapNameChange={vi.fn()}
+        onConfirmAddLap={vi.fn()}
+        onCancelAddLap={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelectorAll("[data-slot='card']")).toHaveLength(
+      mockLaps.length + 1,
+    );
+  });
+
   it("renders empty when laps is empty", () => {
     const { container } = render(
       <Laps laps={[]} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,

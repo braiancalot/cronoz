@@ -66,13 +66,13 @@ describe("TimerStage", () => {
     expect(row).toHaveClass("flex", "justify-center", "gap-20");
   });
 
-  it("caps the laps card so a long list scrolls instead of shoving the timer", () => {
+  it("caps the laps list so a long list scrolls instead of shoving the timer", () => {
     const { container } = renderStage();
 
-    const card = container.querySelector("[data-slot='card']");
-    // The card hugs a short list and caps here, scrolling past it, so the
-    // centred group never grows unbounded.
-    expect(card).toHaveClass("max-h-128");
+    // The laps wrap the scroll area; that wrapper hugs a short list and caps
+    // here, scrolling past it, so the centred group never grows unbounded.
+    const scrollArea = container.querySelector("[data-slot='scroll-area']");
+    expect(scrollArea.parentElement).toHaveClass("max-h-128");
   });
 
   it("rides the timer and laps as one centred group, timer held at its height", () => {
