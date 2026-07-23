@@ -133,6 +133,30 @@ describe("TimerControls", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("lifts each button above the running overlay, but not the row", () => {
+    const { container } = render(
+      <TimerControls
+        isRunning
+        hasLapTime
+        onStart={noop}
+        onPause={noop}
+        onAddLap={noop}
+      />,
+    );
+
+    // On the row, the wide gap between the buttons would sit above the overlay
+    // with nothing to handle the tap, and tapping there would do nothing.
+    expect(screen.getByRole("button", { name: "Pausar" })).toHaveClass(
+      "relative",
+      "z-30",
+    );
+    expect(screen.getByRole("button", { name: "Volta" })).toHaveClass(
+      "relative",
+      "z-30",
+    );
+    expect(container.firstChild).not.toHaveClass("z-30");
+  });
+
   it("applies vertical orientation", () => {
     const { container } = render(
       <TimerControls

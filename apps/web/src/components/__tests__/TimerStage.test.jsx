@@ -34,6 +34,11 @@ function renderStage(props = {}) {
   );
 }
 
+// The element the stage styles: the laps' own wrapper around the scroll area.
+function lapsWrapper(container) {
+  return container.querySelector("[data-slot='scroll-area']").parentElement;
+}
+
 describe("TimerStage", () => {
   it("shows the laps and the controls in the stacked layout", () => {
     renderStage();
@@ -146,33 +151,6 @@ describe("TimerStage", () => {
     expect(screen.queryByTitle("Confirmar")).not.toBeInTheDocument();
   });
 
-  it("pauses on a background click only while running", () => {
-    const onPause = vi.fn();
-    const { container, rerender } = renderStage({ isRunning: true, onPause });
-
-    container.querySelector("section").click();
-    expect(onPause).toHaveBeenCalledOnce();
-
-    rerender(
-      <TimerStage
-        layout="stacked"
-        isAdjusting={false}
-        time={5000}
-        totalTime={null}
-        isRunning={false}
-        hourlyPrice={10}
-        hasLapTime
-        onStart={vi.fn()}
-        onPause={onPause}
-        onAddLap={vi.fn()}
-        lapsProps={lapsProps}
-        hasLapsSection
-      />,
-    );
-    container.querySelector("section").click();
-    expect(onPause).toHaveBeenCalledOnce();
-  });
-
   it("gives the adjust actions the same footprint as the controls", () => {
     renderStage();
     expect(screen.getByTitle("Iniciar")).toHaveClass(CONTROL_SIZES.default);
@@ -184,35 +162,38 @@ describe("TimerStage", () => {
     expect(screen.getByTitle("Pronto")).toHaveClass(CONTROL_SIZES.default);
   });
 
-  it("pauses on a click in the bare space of the laps band", () => {
-    const onPause = vi.fn();
-    const { container } = renderStage({ isRunning: true, onPause });
+  it("dims the laps while running, since the overlay covers them", () => {
+    const { container } = renderStage({ isRunning: true });
 
-    // The band is half the stage; with a short list most of it is backdrop, and
-    // it read as dead to the touch while the timer's own half paused fine.
-    container.querySelector("section").nextElementSibling.click();
-    expect(onPause).toHaveBeenCalledOnce();
+    expect(lapsWrapper(container)).toHaveClass("opacity-40");
   });
 
-  it("pauses on a click below the inline laps", () => {
-    const onPause = vi.fn();
+  it("brings the laps back to full opacity once paused", () => {
+    const { container } = renderStage({ isRunning: false });
+
+    expect(lapsWrapper(container)).not.toHaveClass("opacity-40");
+  });
+
+  it("keeps the laps lit while the PiP window holds the timer", () => {
+    // No overlay on this page during PiP, so nothing is covered — dimming there
+    // would just read as broken.
     const { container } = renderStage({
-      layout: "inline",
       isRunning: true,
-      onPause,
+      placeholder: <div>na janela flutuante</div>,
     });
 
-    container.firstChild.lastElementChild.click();
-    expect(onPause).toHaveBeenCalledOnce();
+    expect(lapsWrapper(container)).not.toHaveClass("opacity-40");
   });
 
-  it("does not pause when a lap row is clicked", () => {
-    const onPause = vi.fn();
-    renderStage({ isRunning: true, onPause });
+  it.each(["stacked", "inline", "minimal"])(
+    "leaves the %s controls row to the running overlay",
+    (layout) => {
+      // Only the buttons clear the overlay (TimerControls does that). Lifting
+      // the row too would cover the column's width and its gap with an element
+      // that has no handler, and a tap between the buttons would do nothing.
+      renderStage({ layout, isRunning: true });
 
-    // The lap times stop propagation; the name doesn't, so a handler on the
-    // stage's outer container caught it and tapping a name paused the timer.
-    screen.getByText("Primeira volta").click();
-    expect(onPause).not.toHaveBeenCalled();
-  });
+      expect(screen.getByTitle("Pausar").parentElement).not.toHaveClass("z-30");
+    },
+  );
 });

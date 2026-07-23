@@ -61,7 +61,9 @@ export function ProjectHeader({
     >
       <div className="flex items-center gap-1 justify-start">
         {/* Padded to a 44px target, pulled left so it stays flush with the edge. */}
-        <Link to="/" className="-ml-3 p-3">
+        {/* z-30 clears the RunningOverlay: leaving the page auto-pauses on
+            unmount, so this needs to navigate on the first tap, not pause. */}
+        <Link to="/" className="-ml-3 p-3 relative z-30">
           <ArrowLeftIcon className="size-5" />
         </Link>
 
@@ -110,6 +112,9 @@ export function ProjectHeader({
               size="icon"
               title="Abrir em janela flutuante"
               onClick={onOpenPiP}
+              // z-30 clears the RunningOverlay: popping the timer out is not
+              // meant to pause it.
+              className="relative z-30"
             >
               <PictureInPictureIcon />
             </Button>

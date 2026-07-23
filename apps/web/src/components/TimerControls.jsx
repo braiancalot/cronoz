@@ -26,6 +26,11 @@ export const CONTROL_GAPS = {
   mini: "gap-2.5",
 };
 
+// On the buttons, never on the row: the row spans the full column and its gap
+// is wide, so lifting it would hand the RunningOverlay's dead space to an
+// element with no handler and a tap there would do nothing.
+const LIFT = "relative z-30";
+
 export function TimerControls({
   isRunning,
   hasLapTime,
@@ -44,7 +49,7 @@ export function TimerControls({
   const lapButton = showLap && (
     <Button
       variant="ghost"
-      className={cn("rounded-full bg-muted", sizeClass)}
+      className={cn("rounded-full bg-muted", sizeClass, LIFT)}
       onClick={hasLapTime ? onAddLap : undefined}
       disabled={!hasLapTime}
       aria-label="Volta"
@@ -61,6 +66,7 @@ export function TimerControls({
       className={cn(
         "rounded-full",
         sizeClass,
+        LIFT,
         isRunning && "bg-primary/15 text-primary hover:bg-primary/25",
       )}
       onClick={isRunning ? onPause : onStart}

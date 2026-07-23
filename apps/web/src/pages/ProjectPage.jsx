@@ -22,6 +22,7 @@ import { PiPContent } from "@/components/PiPContent.jsx";
 import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
 import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
 import { ProjectHeader } from "@/components/ProjectHeader.jsx";
+import { RunningOverlay } from "@/components/RunningOverlay.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
@@ -186,6 +187,11 @@ export default function ProjectPage() {
 
   const isPiPActive = !!pipWindow;
 
+  // Not during PiP: the timer lives in the other window then, and this page is
+  // only a placeholder. Adjust mode pauses on entry, so it never overlaps.
+  const showRunningOverlay =
+    project.stopwatch.isRunning && !isPiPActive && !isAdjusting;
+
   const lapsProps = {
     laps: project.stopwatch.laps,
     onRenameLap: renameLap,
@@ -239,6 +245,8 @@ export default function ProjectPage() {
         lapsProps={lapsProps}
         hasLapsSection={hasLapsSection}
       />
+
+      {showRunningOverlay && <RunningOverlay onClick={pause} />}
 
       <PiPTimer pipWindow={pipWindow}>
         <PiPContent
