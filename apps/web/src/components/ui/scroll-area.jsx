@@ -11,11 +11,13 @@ function ScrollArea({ className, viewportClassName, children, ...props }) {
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        // Sized by flex, not h-full: the root's height often comes from a
-        // max-height clamp upstream, which a percentage height can't resolve
-        // against — it would fall back to auto and never scroll.
+        // flex, not h-full: the height usually comes from a max-height clamp
+        // upstream, which a percentage can't resolve against.
+        // [&>div]:block! overrides the inline display:table Radix puts on its
+        // wrapper — table boxes size to max-content, so nothing inside can
+        // truncate. Assumes vertical-only scrolling.
         className={cn(
-          "w-full flex-1 min-h-0 rounded-[inherit] outline-none",
+          "w-full flex-1 min-h-0 rounded-[inherit] outline-none [&>div]:block!",
           viewportClassName,
         )}
       >
