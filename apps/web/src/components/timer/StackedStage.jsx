@@ -1,8 +1,6 @@
 import { TimerControls } from "@/components/timer/TimerControls.jsx";
-import {
-  TimerAdjuster,
-  AdjustActions,
-} from "@/components/timer/TimerAdjuster.jsx";
+import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
+import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { Laps } from "@/components/laps/Laps.jsx";
 import { cn } from "@/lib/utils.js";
 import { COLUMN, CONTROLS_BOX } from "./stageLayout.js";

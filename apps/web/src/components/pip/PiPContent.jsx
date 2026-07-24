@@ -2,10 +2,8 @@ import { useState } from "react";
 import { PiPIdleView } from "@/components/pip/PiPIdleView.jsx";
 import { PiPDiscardView } from "@/components/pip/PiPDiscardView.jsx";
 import { PiPLapView } from "@/components/pip/PiPLapView.jsx";
-import {
-  TimerAdjuster,
-  AdjustActions,
-} from "@/components/timer/TimerAdjuster.jsx";
+import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
+import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { usePiPSize } from "@/hooks/usePiPSize.js";
 
