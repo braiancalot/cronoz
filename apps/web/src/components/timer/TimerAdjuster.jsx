@@ -4,12 +4,12 @@ import {
   PlusCircleIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { TimerDisplay } from "@/components/TimerDisplay.jsx";
+import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
 import {
   CONTROL_SIZES,
   CONTROL_GAPS,
   CONTROL_ICONS,
-} from "@/components/TimerControls.jsx";
+} from "@/components/timer/TimerControls.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import { cn } from "@/lib/utils.js";

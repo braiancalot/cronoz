@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { ProjectCard } from "@/components/ProjectCard.jsx";
+import { ProjectCard } from "@/components/project/ProjectCard.jsx";
 
 function makeProject(stopwatch) {
   return {

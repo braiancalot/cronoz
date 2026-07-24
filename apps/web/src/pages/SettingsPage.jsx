@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
-import { SyncCard } from "@/components/SyncCard.jsx";
+import { SyncCard } from "@/components/sync/SyncCard.jsx";
 import { BackupCard } from "@/components/BackupCard.jsx";
 import { FEATURES } from "@/lib/featureFlags.js";
 

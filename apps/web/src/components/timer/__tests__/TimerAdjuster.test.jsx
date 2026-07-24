@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
+import {
+  TimerAdjuster,
+  AdjustActions,
+} from "@/components/timer/TimerAdjuster.jsx";
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
 

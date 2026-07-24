@@ -10,8 +10,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu.jsx";
-import { TimerDisplay } from "@/components/TimerDisplay.jsx";
-import { TimerControls } from "@/components/TimerControls.jsx";
+import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
+import { TimerControls } from "@/components/timer/TimerControls.jsx";
 import { cn } from "@/lib/utils.js";
 
 const HEADER_TEXT = {

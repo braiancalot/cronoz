@@ -3,7 +3,10 @@ import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button.jsx";
-import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
+import {
+  TimerAdjuster,
+  AdjustActions,
+} from "@/components/timer/TimerAdjuster.jsx";
 import { roundDownToMinute, roundUpToMinute } from "@/lib/stopwatch.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";

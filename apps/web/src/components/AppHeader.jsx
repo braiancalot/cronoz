@@ -1,7 +1,7 @@
 import { GearIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
-import { SyncIndicator } from "@/components/SyncIndicator.jsx";
+import { SyncIndicator } from "@/components/sync/SyncIndicator.jsx";
 import { FEATURES } from "@/lib/featureFlags.js";
 
 export function AppHeader() {

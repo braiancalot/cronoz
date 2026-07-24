@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { PiPDiscardView } from "@/components/PiPDiscardView.jsx";
+import { PiPDiscardView } from "@/components/pip/PiPDiscardView.jsx";
 
 describe("PiPDiscardView", () => {
   it("asks for confirmation", () => {

@@ -1,7 +1,11 @@
-import { TimerControls } from "@/components/TimerControls.jsx";
-import { TimerDisplay } from "@/components/TimerDisplay.jsx";
-import { TimerAdjuster, AdjustActions } from "@/components/TimerAdjuster.jsx";
-import { Laps, LapNameForm } from "@/components/Laps.jsx";
+import { TimerControls } from "@/components/timer/TimerControls.jsx";
+import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
+import {
+  TimerAdjuster,
+  AdjustActions,
+} from "@/components/timer/TimerAdjuster.jsx";
+import { Laps } from "@/components/laps/Laps.jsx";
+import { LapNameForm } from "@/components/laps/LapNameForm.jsx";
 import { cn } from "@/lib/utils.js";
 
 // One width for every band, so they share a vertical axis. Sized for a timer

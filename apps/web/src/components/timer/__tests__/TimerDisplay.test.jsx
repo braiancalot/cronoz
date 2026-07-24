@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { toast } from "sonner";
-import { TimerDisplay } from "@/components/TimerDisplay.jsx";
+import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
 

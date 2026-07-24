@@ -5,7 +5,7 @@ import {
   CONTROL_SIZES,
   CONTROL_GAPS,
   CONTROL_ICONS,
-} from "@/components/TimerControls.jsx";
+} from "@/components/timer/TimerControls.jsx";
 import { cn } from "@/lib/utils.js";
 
 const TEXT = { default: "text-lg", compact: "text-base", mini: "text-sm" };

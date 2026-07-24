@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
+import { PiPPlaceholder } from "@/components/pip/PiPPlaceholder.jsx";
 
 describe("PiPPlaceholder", () => {
   it("explains that the timer is in the floating window", () => {

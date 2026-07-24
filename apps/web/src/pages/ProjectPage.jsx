@@ -16,12 +16,12 @@ import { adjustPreview } from "@/lib/stopwatch.js";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 import { usePiPWindow } from "@/hooks/usePiPWindow.js";
-import { TimerStage } from "@/components/TimerStage.jsx";
-import { PiPTimer } from "@/components/PiPTimer.jsx";
-import { PiPContent } from "@/components/PiPContent.jsx";
-import { PiPPlaceholder } from "@/components/PiPPlaceholder.jsx";
+import { TimerStage } from "@/components/timer/TimerStage.jsx";
+import { PiPTimer } from "@/components/pip/PiPTimer.jsx";
+import { PiPContent } from "@/components/pip/PiPContent.jsx";
+import { PiPPlaceholder } from "@/components/pip/PiPPlaceholder.jsx";
 import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
-import { ProjectHeader } from "@/components/ProjectHeader.jsx";
+import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
 import { RunningOverlay } from "@/components/RunningOverlay.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";

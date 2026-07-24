@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
-import { ProjectHeader } from "@/components/ProjectHeader.jsx";
+import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
 
 function renderHeader(props = {}) {
   return render(

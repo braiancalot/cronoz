@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { TimerStage } from "@/components/TimerStage.jsx";
-import { CONTROL_SIZES, CONTROL_ICONS } from "@/components/TimerControls.jsx";
+import { TimerStage } from "@/components/timer/TimerStage.jsx";
+import {
+  CONTROL_SIZES,
+  CONTROL_ICONS,
+} from "@/components/timer/TimerControls.jsx";
 
 const lapsProps = {
   laps: [{ id: "lap-1", name: "Primeira volta", lapTime: 3000 }],

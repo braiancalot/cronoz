@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Laps } from "@/components/Laps.jsx";
+import { Laps } from "@/components/laps/Laps.jsx";
 
 async function startRename(lapIndex = 0) {
   const menuTriggers = screen.getAllByTitle("Mais opções");
@@ -37,6 +37,58 @@ describe("Laps", () => {
 
     expect(container.querySelectorAll("[data-slot='card']")).toHaveLength(
       mockLaps.length,
+    );
+  });
+
+  it("fades the scroll edges over the list's own vertical padding", () => {
+    const { container } = render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    // Matched distances: unscrolled the fade covers only the empty strip, so a
+    // list too short to scroll never looks like it's dissolving at the top.
+    const viewport = container.querySelector(
+      "[data-slot='scroll-area-viewport']",
+    );
+    expect(viewport).toHaveClass(
+      "mask-y-from-[calc(100%-8px)]",
+      "mask-y-to-black/35",
+    );
+
+    // Not viewport.firstChild: Radix wraps the children in a table-display div.
+    const list = container.querySelector("[data-slot='card']").parentElement;
+    expect(list).toHaveClass("py-2");
+  });
+
+  it("constrains the rows to the viewport width", () => {
+    const { container } = render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    // Radix wraps the children in a div styled inline as a table, which sizes
+    // to max-content: rows stretch to fit the longest name instead of the name
+    // truncating. Guard both halves — if Radix ever drops the table, the
+    // override below is dead weight and this fails loudly.
+    const viewport = container.querySelector(
+      "[data-slot='scroll-area-viewport']",
+    );
+    expect(viewport.firstChild).toHaveStyle({ display: "table" });
+    expect(viewport).toHaveClass("[&>div]:block!");
+  });
+
+  it("makes the name the only part of the row that gives", () => {
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    // jsdom has no layout, so the ellipsis can't be observed directly — assert
+    // the rule that produces it. `truncate` is inert on a flex item without
+    // min-w-0: the span then refuses to shrink past its longest word, spilling
+    // over the card and shoving the times off-screen on a narrow phone.
+    expect(screen.getByText("Lap #1")).toHaveClass(
+      "truncate",
+      "min-w-0",
+      "flex-1",
     );
   });
 

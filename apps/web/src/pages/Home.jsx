@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import projectRepository from "@/services/projectRepository.js";
-import { ProjectCard } from "@/components/ProjectCard.jsx";
+import { ProjectCard } from "@/components/project/ProjectCard.jsx";
 import { AppHeader } from "@/components/AppHeader.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { PiPLapView } from "@/components/PiPLapView.jsx";
+import { PiPLapView } from "@/components/pip/PiPLapView.jsx";
 
 describe("PiPLapView", () => {
   it("renders the controlled value", () => {

@@ -7,7 +7,7 @@ vi.mock("@/hooks/useSyncStatus.js", () => ({
 }));
 
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
-import { SyncIndicator } from "@/components/SyncIndicator.jsx";
+import { SyncIndicator } from "@/components/sync/SyncIndicator.jsx";
 
 const base = {
   isPaired: false,

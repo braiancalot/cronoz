@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { usePairing } from "@/hooks/usePairing.js";
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
 import syncManager from "@/services/syncManager.js";
-import { SyncCard } from "@/components/SyncCard.jsx";
+import { SyncCard } from "@/components/sync/SyncCard.jsx";
 
 const baseStatus = {
   isPaired: false,
