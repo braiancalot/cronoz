@@ -1,28 +1,12 @@
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  ClockCountdownIcon,
-  ClockIcon,
-  DotsThreeVerticalIcon,
-  EraserIcon,
-  PencilSimpleIcon,
-  PictureInPictureIcon,
-  TrashIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { ArrowLeftIcon, PictureInPictureIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button.jsx";
-import { Input } from "@/components/ui/input.jsx";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu.jsx";
 import { useInlineEditForm } from "@/hooks/useInlineEditForm.js";
 import { useInlineRename } from "@/hooks/useInlineRename.js";
 import { cn } from "@/lib/utils.js";
+import { ProjectMenu } from "./ProjectMenu.jsx";
+import { ProjectRenameActions } from "./ProjectRenameActions.jsx";
+import { ProjectTitle } from "./ProjectTitle.jsx";
 
 export function ProjectHeader({
   name,
@@ -60,113 +44,58 @@ export function ProjectHeader({
       )}
     >
       <div className="flex items-center gap-1 justify-start">
-        {/* Padded to a 44px target, pulled left so it stays flush with the edge. */}
-        {/* z-30 clears the RunningOverlay: leaving the page auto-pauses on
+        {/* Padded to a 44px target, pulled left so it stays flush with the edge.
+            z-30 clears the RunningOverlay: leaving the page auto-pauses on
             unmount, so this needs to navigate on the first tap, not pause. */}
         <Link to="/" className="-ml-3 p-3 relative z-30">
           <ArrowLeftIcon className="size-5" />
         </Link>
 
-        {isRenaming ? (
-          <form {...formProps} className="w-auto">
-            <Input
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onFocus={(event) => event.target.select()}
-              {...fieldProps}
-              autoFocus
-            />
-          </form>
-        ) : (
-          <h1 className="text-lg font-medium">{displayName}</h1>
-        )}
+        <ProjectTitle
+          isRenaming={isRenaming}
+          name={displayName}
+          draft={draft}
+          onDraftChange={setDraft}
+          formProps={formProps}
+          fieldProps={fieldProps}
+        />
       </div>
 
-      {isRenaming ? (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Cancelar"
-            aria-label="Cancelar"
-            {...keepFocus}
-            onClick={handleCancel}
-          >
-            <XIcon />
-          </Button>
-          <Button
-            size="icon"
-            title="Salvar"
-            aria-label="Salvar"
-            {...keepFocus}
-            onClick={submit}
-          >
-            <CheckIcon />
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1">
-          {onOpenPiP && (
-            <Button
-              variant="ghost"
-              size="icon"
-              title="Abrir em janela flutuante"
-              onClick={onOpenPiP}
-              // z-30 clears the RunningOverlay: popping the timer out is not
-              // meant to pause it.
-              className="relative z-30"
-            >
-              <PictureInPictureIcon />
-            </Button>
-          )}
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="Mais opções">
-                <DotsThreeVerticalIcon />
+      <div className="flex items-center gap-1">
+        {isRenaming ? (
+          <ProjectRenameActions
+            keepFocus={keepFocus}
+            onCancel={handleCancel}
+            onSubmit={submit}
+          />
+        ) : (
+          <>
+            {onOpenPiP && (
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Abrir em janela flutuante"
+                onClick={onOpenPiP}
+                // z-30 clears the RunningOverlay: popping the timer out is not
+                // meant to pause it.
+                className="relative z-30"
+              >
+                <PictureInPictureIcon />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem variant="edit" onSelect={handleStartRename}>
-                <PencilSimpleIcon />
-                Renomear
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="edit"
-                onSelect={onAdjust}
-                disabled={!canAdjust}
-              >
-                <ClockIcon />
-                Ajustar tempo
-              </DropdownMenuItem>
-              {/* Separator inside the guard: without it, hiding the lone item
-                  in this group would leave two rules stacked together. */}
-              {onViewExactTime && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="info" onSelect={onViewExactTime}>
-                    <ClockCountdownIcon />
-                    Tempo exato
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={onDiscardCurrentTime}
-                disabled={!canDiscardCurrentTime}
-              >
-                <EraserIcon />
-                Descartar tempo atual
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-                <TrashIcon />
-                Deletar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+            )}
+
+            <ProjectMenu
+              onRename={handleStartRename}
+              onAdjust={onAdjust}
+              canAdjust={canAdjust}
+              onViewExactTime={onViewExactTime}
+              onDiscardCurrentTime={onDiscardCurrentTime}
+              canDiscardCurrentTime={canDiscardCurrentTime}
+              onDelete={onDelete}
+            />
+          </>
+        )}
+      </div>
     </header>
   );
 }

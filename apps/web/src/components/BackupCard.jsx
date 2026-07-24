@@ -11,31 +11,7 @@ import {
 } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
-
-function formatDateForFilename(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-
-  return `${y}-${m}-${d}_${hh}-${mm}-${ss}`;
-}
-
-function downloadJson(data, filename) {
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+import { downloadJson, fileTimestamp } from "@/lib/download.js";
 
 export function BackupCard() {
   const fileInputRef = useRef(null);
@@ -44,7 +20,7 @@ export function BackupCard() {
   async function handleExport() {
     try {
       const data = await backupService.exportData();
-      const filename = `cronoz-backup-${formatDateForFilename(new Date())}.json`;
+      const filename = `cronoz-backup-${fileTimestamp(new Date())}.json`;
       downloadJson(data, filename);
       toast.success("Backup exportado");
     } catch {
