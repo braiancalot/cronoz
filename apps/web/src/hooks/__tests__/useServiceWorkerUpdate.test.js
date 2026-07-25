@@ -96,4 +96,46 @@ describe("useServiceWorkerUpdate", () => {
     expect(result.current.needRefresh).toBe(true);
     expect(result.current.updateServiceWorker).toBe(mockUpdateServiceWorker);
   });
+
+  describe("?swupdate simulation", () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      window.history.replaceState({}, "", "/");
+    });
+
+    it("forces the prompt on even when no update is waiting", () => {
+      window.history.replaceState({}, "", "/?swupdate");
+
+      const { result } = renderHook(() => useServiceWorkerUpdate());
+
+      expect(result.current.needRefresh).toBe(true);
+    });
+
+    it("keeps the real service worker out of the simulated update", () => {
+      window.history.replaceState({}, "", "/?swupdate");
+
+      const { result } = renderHook(() => useServiceWorkerUpdate());
+
+      expect(result.current.updateServiceWorker).not.toBe(
+        mockUpdateServiceWorker,
+      );
+    });
+
+    it("stays out of the way without the flag", () => {
+      const { result } = renderHook(() => useServiceWorkerUpdate());
+
+      expect(result.current.needRefresh).toBe(false);
+      expect(result.current.updateServiceWorker).toBe(mockUpdateServiceWorker);
+    });
+
+    it("is inert in a production build", () => {
+      vi.stubEnv("DEV", false);
+      window.history.replaceState({}, "", "/?swupdate");
+
+      const { result } = renderHook(() => useServiceWorkerUpdate());
+
+      expect(result.current.needRefresh).toBe(false);
+      expect(result.current.updateServiceWorker).toBe(mockUpdateServiceWorker);
+    });
+  });
 });

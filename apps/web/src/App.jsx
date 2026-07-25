@@ -22,10 +22,14 @@ export default function App() {
     <SettingsProvider>
       <SyncStatusProvider>
         <IconContext.Provider value={{ weight: "bold" }}>
-          <div className="antialiased h-full">
-            <Outlet />
-            <InstallBanner />
+          <div className="antialiased h-full flex flex-col">
+            {/* Above the outlet so it pushes the page down instead of covering
+                a tap target sitting at the top of it. */}
             <ReloadPrompt />
+            <div className="flex-1 min-h-0">
+              <Outlet />
+            </div>
+            <InstallBanner />
             {/* top offset clears the ProjectHeader (h-16) so toasts don't cover it */}
             <Toaster
               position="top-center"

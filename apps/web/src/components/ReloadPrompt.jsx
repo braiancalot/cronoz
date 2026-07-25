@@ -1,24 +1,18 @@
-import { useEffect } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { UpdateBanner } from "@/components/UpdateBanner.jsx";
 import { useServiceWorkerUpdate } from "@/hooks/useServiceWorkerUpdate.js";
-
-const TOAST_ID = "sw-update";
 
 export function ReloadPrompt() {
   const { needRefresh, updateServiceWorker } = useServiceWorkerUpdate();
+  // Session-scoped: needRefresh stays true, so the banner returns on next load.
+  const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    if (!needRefresh) return;
+  if (!needRefresh || dismissed) return null;
 
-    toast("Nova versão disponível", {
-      id: TOAST_ID,
-      duration: Infinity,
-      action: {
-        label: "Atualizar",
-        onClick: () => updateServiceWorker(true),
-      },
-    });
-  }, [needRefresh, updateServiceWorker]);
-
-  return null;
+  return (
+    <UpdateBanner
+      onUpdate={() => updateServiceWorker(true)}
+      onDismiss={() => setDismissed(true)}
+    />
+  );
 }

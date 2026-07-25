@@ -34,6 +34,7 @@ import {
   TabsContent,
 } from "@/components/ui/tabs.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
+import { UpdateBanner } from "@/components/UpdateBanner.jsx";
 
 function Section({ title, children }) {
   return (
@@ -270,6 +271,12 @@ export default function DesignPage() {
             <span className="text-sm">Acima do separator</span>
             <Separator />
             <span className="text-sm">Abaixo do separator</span>
+          </div>
+        </Section>
+
+        <Section title="Update banner">
+          <div className="-mx-4 md:-mx-8">
+            <UpdateBanner onUpdate={() => {}} onDismiss={() => {}} />
           </div>
         </Section>
 
