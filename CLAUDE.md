@@ -39,12 +39,29 @@ PWA multi-project stopwatch built with Vite, React 19, and React Router. Users c
 ### Code Organization
 
 - `src/pages/` — Route components (Home, ProjectPage)
-- `src/components/` — Presentational React components (`TimerDisplay`, `TimerControls`, `Laps`, `FormattedTime`, `InstallBanner`)
+- `src/components/` — Presentational React components
 - `src/hooks/` — Custom React hooks (`useProject`, `useAutoPause`, `useKeyboardShortcuts`, `useInstallPrompt`)
 - `src/lib/` — Pure utility functions (`stopwatch.js`: time calculation and formatting)
 - `src/services/` — Data access layer (Dexie/IndexedDB wrappers)
 - `src/main.jsx` — Entry point with React Router setup
 - `src/App.jsx` — Root layout with `<Outlet />`
+
+Components are grouped by family in subfolders, each with its own `__tests__/`:
+
+```
+components/
+  laps/     Laps LapItem LapCard LapName LapNameForm LapTime LapMenu
+  timer/    TimerStage {Minimal,Inline,Stacked}Stage TimerDisplay TimerMeta
+            RunningIndicator TimerControls TimerAdjuster StepGroup AdjustActions
+  pip/      PiPContent PiPTimer PiPIdleView PiPLapView PiPDiscardView PiPPlaceholder
+  project/  ProjectCard ProjectHeader ProjectTitle ProjectMenu ProjectRenameActions
+  sync/     SyncCard SyncPairingCode SyncPairingStart SyncJoinForm SyncPairedPanel
+  ui/       shadcn primitives
+```
+
+Standalone components (`AppHeader`, `ConfirmDialog`, `FormattedTime`, …) stay at the root of `components/`. A family gets a folder once it has more than one file. Keep the name prefix inside the folder — `laps/LapItem.jsx`, not `laps/Item.jsx`.
+
+**Sizing rule:** when a component passes ~150 lines, split it. Branches on mutually exclusive states (one per layout, one per pairing step) become one file each; state and handlers move to a `use*` hook in `src/hooks/`; pure helpers move to `src/lib/`, where they become testable.
 
 ### Data Layer
 
@@ -59,6 +76,12 @@ Repository modules wrap all DB access:
 - `src/services/settingsRepository.js` — get/set with defaults
 
 Pages and hooks subscribe to live DB queries using `useLiveQuery` from `dexie-react-hooks`, so UI updates reactively when data changes.
+
+### Gotchas
+
+**Radix ScrollArea:** the viewport wraps its children in a div with an inline `display: table`, which sizes to max-content — `min-width: 100%` is only a floor. Anything inside then grows past the viewport instead of being clamped by it, so `truncate` never fires and content gets clipped at the edge. `src/components/ui/scroll-area.jsx` overrides it with `[&>div]:block!` (the `!important` is required to beat the inline style). This assumes vertical-only scrolling.
+
+**Truncating inside flex:** `truncate` is inert on a flex item without `min-w-0` — the item refuses to shrink past its longest word, pushing its siblings out of the row instead of ellipsising.
 
 ### Key Patterns
 
