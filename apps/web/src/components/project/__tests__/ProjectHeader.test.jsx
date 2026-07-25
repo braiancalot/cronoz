@@ -60,6 +60,18 @@ describe("ProjectHeader", () => {
     expect(onViewExactTime).toHaveBeenCalledOnce();
   });
 
+  it("truncates a long title instead of pushing the menu off the row", () => {
+    renderHeader({
+      name: "Tradução do manual técnico completo do equipamento",
+    });
+
+    // min-w-0 is half the fix: without it the h1 won't shrink past its longest
+    // word as a flex item, and truncate never fires.
+    const heading = screen.getByRole("heading");
+    expect(heading).toHaveClass("truncate", "min-w-0");
+    expect(heading.parentElement).toHaveClass("min-w-0");
+  });
+
   it("renames in place, keeping the title's own type", async () => {
     renderHeader();
 
