@@ -97,3 +97,16 @@
   padding: 1rem;
   min-height: 3.5rem;
 }
+
+/* One line, ellipsised — a two-line toast would outgrow TOAST_BAND and cover
+   what the band exists to keep clear. min-width lets the flex child shrink;
+   without it the text pushes the action button out instead of truncating. */
+.cn-toast [data-content] {
+  min-width: 0;
+}
+
+.cn-toast [data-title] {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
