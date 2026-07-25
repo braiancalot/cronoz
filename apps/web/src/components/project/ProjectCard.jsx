@@ -34,14 +34,16 @@ export function ProjectCard({
 
   return (
     <Link to={`/project/${project.id}`}>
+      {/* Roomier than a lap card, same family: one step of padding above it,
+          and the size="sm" preset is skipped so the padding is a plain class
+          instead of a data-[size] one the merge can't override. */}
       <Card
-        size="sm"
         className={cn(
-          "hover:bg-accent active:bg-accent/80 transition-colors",
+          "rounded-xl py-2 hover:bg-accent active:bg-accent/80 transition-colors",
           className,
         )}
       >
-        <CardContent className="flex justify-between items-center">
+        <CardContent className="flex justify-between items-center px-4">
           <span className="flex items-center gap-2 min-w-0">
             {isLive && (
               <span
