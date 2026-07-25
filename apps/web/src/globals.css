@@ -89,8 +89,11 @@
   }
 }
 
-/* Trims the toast down to TOAST_BAND. The extra attributes are needed to beat
-   Sonner's own padding rule, injected at runtime in unpredictable order. */
+/* Sizes the toast, and with it TOAST_BAND. The extra attributes are needed to
+   beat Sonner's own padding rule, injected at runtime in unpredictable order.
+   min-height is the h-6 action button plus this padding: without it a toast
+   with no button is a text line tall and reads as a different component. */
 [data-sonner-toast][data-styled="true"].cn-toast {
-  padding: 0.25rem 0.75rem;
+  padding: 1rem;
+  min-height: 3.5rem;
 }
