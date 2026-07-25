@@ -130,6 +130,12 @@ export function hasHours(hours) {
   return hours !== "00";
 }
 
+// Whether a list of durations needs the hours segment anywhere — lets a column
+// reserve room for it only when some row actually uses it.
+export function anyReachesAnHour(times) {
+  return times.some((ms) => ms >= 3600000);
+}
+
 export function formatTimeCompact(ms) {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms / 60000) % 60);

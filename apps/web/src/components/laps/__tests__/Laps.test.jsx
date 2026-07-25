@@ -56,6 +56,61 @@ describe("Laps", () => {
     expect(viewport).toHaveClass("[&>div]:block!");
   });
 
+  // The row is [name flex-1][times][menu], so the times block sits flush right
+  // and only the LAST cell's width is load-bearing: it fixes where the
+  // accumulated time ends, which is what keeps that column aligned across rows.
+  // Locking the accumulated cell instead would move only its left edge.
+  function lapTimeCells(container) {
+    return [...container.querySelectorAll(".cursor-pointer")].filter(
+      (_, i) => i % 2 === 1,
+    );
+  }
+
+  it("width-locks the lap time column, not the accumulated one", () => {
+    const { container } = render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    const accumulated = [...container.querySelectorAll(".cursor-pointer")]
+      .filter((_, i) => i % 2 === 0)
+      .map((cell) => cell.className);
+
+    expect(accumulated.every((c) => !/\bw-\[/.test(c))).toBe(true);
+    lapTimeCells(container).forEach((cell) =>
+      expect(cell).toHaveClass("w-[4.5ch]"),
+    );
+  });
+
+  it("reserves room for hours only when a lap actually runs that long", () => {
+    // FormattedTime omits the hours segment below 1h, so a list where one lap
+    // crosses over renders MM:SS on some rows and HH:MM:SS on others. The width
+    // has to cover the widest row, but a list of short laps shouldn't pay for
+    // digits nothing in it will ever render.
+    const { container, rerender } = render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    lapTimeCells(container).forEach((cell) =>
+      expect(cell).toHaveClass("w-[4.5ch]"),
+    );
+
+    rerender(
+      <Laps
+        laps={[
+          ...mockLaps,
+          { id: "lap-3", name: "Lap #3", lapTime: 3_600_000 },
+        ]}
+        onRenameLap={vi.fn()}
+        onDeleteLap={vi.fn()}
+      />,
+    );
+
+    // Every row widens, not just the long one — otherwise they stop aligning.
+    const widened = lapTimeCells(container);
+    expect(widened).toHaveLength(3);
+    widened.forEach((cell) => expect(cell).toHaveClass("w-[7ch]"));
+  });
+
   it("makes the name the only part of the row that gives", () => {
     render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,

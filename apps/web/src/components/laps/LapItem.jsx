@@ -12,6 +12,7 @@ export function LapItem({
   lap,
   lapTime,
   cumulativeTime,
+  lapTimeWidth,
   onRename,
   onRequestDelete,
 }) {
@@ -39,13 +40,20 @@ export function LapItem({
   return (
     <LapCard>
       <LapName>{displayName}</LapName>
-      <div className="flex items-center gap-5">
+      {/* Only the lap time is width-locked. The block sits flush right, so this
+          cell's width is what fixes where the accumulated one ends — that one
+          right-aligns against it and needs no width of its own. */}
+      <div className="flex items-center gap-5 shrink-0">
         <LapTime
           time={cumulativeTime}
           label="Tempo acumulado"
           className="text-muted-foreground"
         />
-        <LapTime time={lapTime} label="Tempo da volta" />
+        <LapTime
+          time={lapTime}
+          label="Tempo da volta"
+          widthClassName={lapTimeWidth}
+        />
       </div>
       <LapMenu
         onCopyTimes={() =>

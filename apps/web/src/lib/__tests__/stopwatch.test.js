@@ -8,6 +8,7 @@ import {
   adjustPreview,
   sumLapTimes,
   hasHours,
+  anyReachesAnHour,
   truncateToSecond,
   roundDownToMinute,
   roundUpToMinute,
@@ -370,6 +371,32 @@ describe("hasHours", () => {
 
   it('returns true for "10"', () => {
     expect(hasHours("10")).toBe(true);
+  });
+});
+
+describe("anyReachesAnHour", () => {
+  it("returns false for an empty list", () => {
+    expect(anyReachesAnHour([])).toBe(false);
+  });
+
+  it("returns false when every time is under an hour", () => {
+    expect(anyReachesAnHour([1000, 60_000, 3_599_999])).toBe(false);
+  });
+
+  it("returns true when any time reaches an hour", () => {
+    expect(anyReachesAnHour([1000, 3_600_000])).toBe(true);
+  });
+
+  it("agrees with hasHours at the boundary", () => {
+    // Both gates must flip on the same millisecond: hasHours decides whether
+    // FormattedTime renders the segment, this decides whether we reserve room
+    // for it. Disagreeing by 1ms clips a time on the row that crosses over.
+    expect(anyReachesAnHour([3_599_999])).toBe(
+      hasHours(formatTime(3_599_999).hours),
+    );
+    expect(anyReachesAnHour([3_600_000])).toBe(
+      hasHours(formatTime(3_600_000).hours),
+    );
   });
 });
 

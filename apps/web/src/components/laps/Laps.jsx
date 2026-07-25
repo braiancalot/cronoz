@@ -2,12 +2,17 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
-import { truncateToSecond } from "@/lib/stopwatch.js";
+import { anyReachesAnHour, truncateToSecond } from "@/lib/stopwatch.js";
 import { showUndoToast } from "@/lib/undoToast.js";
 import { cn } from "@/lib/utils.js";
 import { LapCard } from "./LapCard.jsx";
 import { LapItem } from "./LapItem.jsx";
 import { LapNameForm } from "./LapNameForm.jsx";
+
+// Room for MM:SS, widened to HH:MM:SS only when some lap actually runs that
+// long — one card per lap means no grid sizes this column to the widest row,
+// so the list picks one width and every row holds it.
+const LAP_TIME_WIDTH = { short: "w-[4.5ch]", withHours: "w-[7ch]" };
 
 function totalsByLapId(laps, ignoreMs) {
   const totals = new Map();
@@ -35,6 +40,9 @@ export function Laps({
 
   const activeLaps = laps?.filter((lap) => !lap.deletedAt) ?? [];
   const cumulative = totalsByLapId(activeLaps, ignoreMs);
+  const lapTimeWidth = anyReachesAnHour(activeLaps.map((lap) => lap.lapTime))
+    ? LAP_TIME_WIDTH.withHours
+    : LAP_TIME_WIDTH.short;
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
@@ -66,6 +74,7 @@ export function Laps({
                 lap={lap}
                 lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
                 cumulativeTime={cumulative.get(lap.id)}
+                lapTimeWidth={lapTimeWidth}
                 onRename={onRenameLap}
                 onRequestDelete={setPendingDelete}
               />
