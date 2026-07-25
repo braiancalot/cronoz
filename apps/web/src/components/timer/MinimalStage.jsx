@@ -1,5 +1,6 @@
 import { TimerControls } from "@/components/timer/TimerControls.jsx";
 import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
+import { TimerSlot } from "@/components/timer/TimerSlot.jsx";
 import { LapNameForm } from "@/components/laps/LapNameForm.jsx";
 import { cn } from "@/lib/utils.js";
 import { COLUMN, CONTROLS_BOX } from "./stageLayout.js";
@@ -22,6 +23,14 @@ export function MinimalStage({
     <div aria-hidden className={cn("shrink-0", CONTROLS_BOX.minimal)} />
   );
 
+  const displayProps = {
+    time,
+    totalTime,
+    isRunning,
+    hourlyPrice,
+    size: isSliver ? "sliver" : "default",
+  };
+
   return (
     // A full-size timer showing hours can outgrow a sliver this narrow;
     // clipping a few pixels beats handing the page a scrollbar.
@@ -38,14 +47,10 @@ export function MinimalStage({
       ) : (
         <div className={cn("flex items-center gap-4", COLUMN)}>
           <div className="flex flex-1 justify-center min-w-0">
-            {placeholder ?? (
-              <TimerDisplay
-                time={time}
-                totalTime={totalTime}
-                isRunning={isRunning}
-                hourlyPrice={hourlyPrice}
-                size={isSliver ? "sliver" : "default"}
-              />
+            {placeholder ? (
+              <TimerSlot {...displayProps}>{placeholder}</TimerSlot>
+            ) : (
+              <TimerDisplay {...displayProps} />
             )}
           </div>
 

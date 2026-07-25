@@ -147,6 +147,26 @@ describe("TimerStage", () => {
     expect(screen.getByText("Primeira volta")).toBeInTheDocument();
   });
 
+  it.each(["stacked", "inline", "minimal"])(
+    "keeps the timer's footprint under the %s PiP placeholder",
+    (layout) => {
+      const { container } = renderStage({
+        layout,
+        placeholder: <div>na janela flutuante</div>,
+      });
+
+      // A hidden timer sets the box and the placeholder floats over it: its
+      // own height can't match a timer that rides a clamp on the viewport.
+      const ghost = container.querySelector(".invisible");
+      expect(ghost.querySelector(".tabular-nums")).toBeInTheDocument();
+      expect(ghost).toHaveAttribute("aria-hidden");
+      expect(screen.getByText("na janela flutuante").parentElement).toHaveClass(
+        "absolute",
+        "inset-0",
+      );
+    },
+  );
+
   it("does not let the adjuster take over while the timer is in PiP", () => {
     renderStage({ isAdjusting: true, placeholder: <div>na janela</div> });
 

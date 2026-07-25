@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { toast } from "sonner";
 import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
+import { SIZES } from "@/components/timer/timerDisplaySizes.js";
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
 
@@ -30,13 +31,34 @@ describe("TimerDisplay", () => {
     expect(screen.getByText("R$ 100,00")).toBeInTheDocument();
   });
 
-  it("collapses the meta line when running", () => {
+  it("fades the meta line when running, without giving up its space", () => {
     render(<TimerDisplay time={3600000} hourlyPrice={100} isRunning />);
 
-    const price = screen.getByText("R$ 100,00");
-    const collapse = price.closest(".grid");
-    expect(collapse).toHaveClass("opacity-0");
-    expect(collapse).toHaveClass("grid-rows-[0fr]");
+    // Collapsing the row instead would shrink the timer, and everything under
+    // it on the stage — the laps — would slide up on every play.
+    const meta = screen.getByText("R$ 100,00").closest(".group");
+    expect(meta).toHaveClass("opacity-0");
+    expect(meta.className).not.toContain("grid-rows");
+  });
+
+  it("drifts the digits down while running, by transform only", () => {
+    const { container } = render(<TimerDisplay time={3600000} isRunning />);
+
+    // Transform is what keeps this off the layout: the digits take the space
+    // the fading total leaves behind without moving anything below them.
+    const digits = container.querySelector(".tabular-nums");
+    expect(digits.closest(".transition-transform")).toHaveClass(
+      SIZES.default.runningShift,
+    );
+  });
+
+  it("holds the digits in place while paused", () => {
+    const { container } = render(<TimerDisplay time={3600000} />);
+
+    const digits = container.querySelector(".tabular-nums");
+    expect(digits.closest(".transition-transform")).not.toHaveClass(
+      SIZES.default.runningShift,
+    );
   });
 
   it("shows totalTime separately when paused with totalTime prop", () => {
@@ -48,12 +70,11 @@ describe("TimerDisplay", () => {
     expect(container.textContent).toContain("•");
   });
 
-  it("collapses the totalTime block when running", () => {
+  it("fades the totalTime block when running", () => {
     render(<TimerDisplay time={5000} totalTime={10000} isRunning />);
 
     const separator = screen.getByText("•");
-    const collapse = separator.closest(".grid");
-    expect(collapse).toHaveClass("opacity-0");
+    expect(separator.closest(".group")).toHaveClass("opacity-0");
   });
 
   it("calculates price from totalTime when provided", () => {

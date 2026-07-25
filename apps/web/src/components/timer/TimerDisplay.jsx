@@ -30,7 +30,12 @@ export function TimerDisplay({
     <div
       className={cn("flex flex-col items-center", fluid ? FLUID.gap : s.gap)}
     >
-      <div className="relative">
+      <div
+        className={cn(
+          "relative transition-transform duration-300 ease-out",
+          isRunning && (fluid ? FLUID.runningShift : s.runningShift),
+        )}
+      >
         {isRunning && (
           <RunningIndicator
             offsetClass={s.indicatorOffset}

@@ -1,4 +1,5 @@
 import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
+import { TimerSlot } from "@/components/timer/TimerSlot.jsx";
 import { InlineStage } from "./InlineStage.jsx";
 import { MinimalStage } from "./MinimalStage.jsx";
 import { StackedStage } from "./StackedStage.jsx";
@@ -14,13 +15,12 @@ export function TimerStage({ layout, ...props }) {
   // job. The laps go dim to show they're covered; the controls clear it.
   const lapsDim = isRunning && !placeholder && "opacity-40";
 
-  const timer = placeholder ?? (
-    <TimerDisplay
-      time={time}
-      totalTime={totalTime}
-      isRunning={isRunning}
-      hourlyPrice={hourlyPrice}
-    />
+  const timerProps = { time, totalTime, isRunning, hourlyPrice };
+
+  const timer = placeholder ? (
+    <TimerSlot {...timerProps}>{placeholder}</TimerSlot>
+  ) : (
+    <TimerDisplay {...timerProps} />
   );
 
   const Stage = layout === "inline" ? InlineStage : StackedStage;
