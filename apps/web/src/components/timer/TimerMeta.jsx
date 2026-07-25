@@ -78,6 +78,7 @@ export function TimerMeta({
                     e,
                     `${formatTimeCompact(totalTime)} (${priceFormatted})`,
                     "Tempo e valor",
+                    { plural: true },
                   )
                 }
                 title="Copiar tempo e valor"

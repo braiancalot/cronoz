@@ -59,6 +59,7 @@ export function LapItem({
           copyWithToast(
             `${formatTimeCompact(cumulativeTime)} (${formatTimeCompact(lapTime)})`,
             "Tempos",
+            { plural: true },
           )
         }
         onRename={start}
