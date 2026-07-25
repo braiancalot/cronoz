@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { formatHms } from "@/lib/stopwatch.js";
 import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
@@ -69,20 +69,25 @@ describe("ExactTimeDialog", () => {
     expect(priceEl).toBeInTheDocument();
   });
 
-  it("copies the rounded line as time and value", () => {
+  it("copies the rounded line as time and value", async () => {
     renderOpen();
 
-    fireEvent.click(screen.getByTitle("Copiar Arredondado"));
+    fireEvent.click(screen.getByTitle("Copiar tempo arredondado"));
 
     const price = brl.format((2000 / 3600000) * 100);
     expect(writeText).toHaveBeenCalledWith(`${formatHms(2000)} (${price})`);
-    expect(toast).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        "Tempo arredondado copiado",
+        expect.anything(),
+      ),
+    );
   });
 
   it("copies the exact line with its fraction", () => {
     renderOpen();
 
-    fireEvent.click(screen.getByTitle("Copiar Exato"));
+    fireEvent.click(screen.getByTitle("Copiar tempo exato"));
 
     const price = brl.format((3998 / 3600000) * 100);
     expect(writeText).toHaveBeenCalledWith(
@@ -93,7 +98,7 @@ describe("ExactTimeDialog", () => {
   it("has no copy button on the difference row", () => {
     renderOpen();
 
-    expect(screen.queryByTitle("Copiar Diferença")).not.toBeInTheDocument();
+    expect(screen.getAllByTitle(/^Copiar /)).toHaveLength(2);
   });
 
   it("renders nothing while closed", () => {

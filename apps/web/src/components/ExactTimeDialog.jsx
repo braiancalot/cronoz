@@ -1,5 +1,4 @@
 import { CopyIcon } from "@phosphor-icons/react";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { copyWithToast } from "@/lib/clipboard.js";
 import { formatHms, summarizeExactTime } from "@/lib/stopwatch.js";
 import { cn } from "@/lib/utils.js";
 
@@ -24,7 +24,7 @@ function Row({
   fraction = false,
   prefix = "",
   emphasized = false,
-  copyable = false,
+  copyLabel,
 }) {
   const valueClass = emphasized ? "font-medium" : "text-muted-foreground";
 
@@ -43,17 +43,17 @@ function Row({
           {`${prefix}${brl.format(price)}`}
         </span>
 
-        {copyable ? (
+        {copyLabel ? (
           <Button
             variant="ghost"
             size="icon-xs"
-            title={`Copiar ${label}`}
-            onClick={() => {
-              navigator.clipboard.writeText(
+            title={`Copiar ${copyLabel.toLowerCase()}`}
+            onClick={() =>
+              copyWithToast(
                 `${formatHms(time, { fraction })} (${brl.format(price)})`,
-              );
-              toast(`${label} copiado`, { position: "top-center" });
-            }}
+                copyLabel,
+              )
+            }
           >
             <CopyIcon />
           </Button>
@@ -93,7 +93,7 @@ export function ExactTimeDialog({
             hint="em uso"
             time={rounded.time}
             price={rounded.price}
-            copyable
+            copyLabel="Tempo arredondado"
           />
           <Row
             label="Exato"
@@ -101,7 +101,7 @@ export function ExactTimeDialog({
             price={exact.price}
             fraction
             emphasized
-            copyable
+            copyLabel="Tempo exato"
           />
           <Row
             label="Diferença"
