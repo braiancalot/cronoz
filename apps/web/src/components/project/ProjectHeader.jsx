@@ -43,7 +43,7 @@ export function ProjectHeader({
         compact ? "h-12" : "h-16",
       )}
     >
-      <div className="flex items-center gap-1 justify-start">
+      <div className="flex flex-1 min-w-0 items-center gap-1 justify-start">
         {/* Padded to a 44px target, pulled left so it stays flush with the edge.
             z-30 clears the RunningOverlay: leaving the page auto-pauses on
             unmount, so this needs to navigate on the first tap, not pause. */}

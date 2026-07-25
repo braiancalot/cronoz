@@ -60,6 +60,23 @@ describe("ProjectHeader", () => {
     expect(onViewExactTime).toHaveBeenCalledOnce();
   });
 
+  it("renames in place, keeping the title's own type", async () => {
+    renderHeader();
+
+    const heading = screen.getByRole("heading", { name: "Projeto" });
+    expect(heading).toHaveClass("text-lg", "font-medium");
+
+    await startRename();
+    const field = screen.getByDisplayValue("Projeto");
+
+    // Same type as the h1 it replaces, so the title neither shrinks nor loses
+    // weight on edit. font: inherit only reaches the form, not the h1.
+    expect(field).toHaveClass("text-lg", "font-medium", "bg-transparent");
+    ["bg-input/30", "rounded-4xl", "px-3", "border"].forEach((boxed) =>
+      expect(field).not.toHaveClass(boxed),
+    );
+  });
+
   it("saves the rename when the ✓ button is clicked", async () => {
     const onRename = vi.fn();
     renderHeader({ onRename });

@@ -1,5 +1,3 @@
-import { Input } from "@/components/ui/input.jsx";
-
 export function ProjectTitle({
   isRenaming,
   name,
@@ -11,12 +9,13 @@ export function ProjectTitle({
   if (!isRenaming) return <h1 className="text-lg font-medium">{name}</h1>;
 
   return (
-    <form {...formProps} className="w-auto">
-      <Input
+    <form {...formProps} className="flex-1 min-w-0">
+      <input
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
         onFocus={(event) => event.target.select()}
         {...fieldProps}
+        className="w-full min-w-0 bg-transparent text-lg font-medium outline-none"
         autoFocus
       />
     </form>
