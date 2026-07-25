@@ -11,7 +11,8 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
   });
 
   return (
-    <form {...formProps} className="flex items-center gap-2 min-h-11 w-full">
+    // min-h-9 holds the row at the height it rests at.
+    <form {...formProps} className="flex items-center gap-2 min-h-9 w-full">
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}

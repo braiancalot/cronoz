@@ -160,6 +160,22 @@ describe("Laps", () => {
     expect(screen.getByDisplayValue("Lap #1")).toBeInTheDocument();
   });
 
+  it("keeps the card the same height while renaming", async () => {
+    const { container } = render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    // A resting row is as tall as the size-9 menu button; the form must floor
+    // at the same 9 or the card grows on edit.
+    const trigger = screen.getAllByTitle("Mais opções")[0];
+    expect(trigger).toHaveClass("size-9");
+
+    await startRename(0);
+
+    const form = container.querySelector("form");
+    expect(form).toHaveClass("min-h-9");
+  });
+
   it("calls onRenameLap on submit", async () => {
     const onRenameLap = vi.fn();
     render(
