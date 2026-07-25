@@ -9,9 +9,7 @@ import { LapCard } from "./LapCard.jsx";
 import { LapItem } from "./LapItem.jsx";
 import { LapNameForm } from "./LapNameForm.jsx";
 
-// Room for MM:SS, widened to HH:MM:SS only when some lap actually runs that
-// long — one card per lap means no grid sizes this column to the widest row,
-// so the list picks one width and every row holds it.
+// No grid spans the cards, so the list picks one width and every row holds it.
 const LAP_TIME_WIDTH = { short: "w-[4.5ch]", withHours: "w-[7ch]" };
 
 function totalsByLapId(laps, ignoreMs) {

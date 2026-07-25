@@ -40,9 +40,8 @@ export function LapItem({
   return (
     <LapCard>
       <LapName>{displayName}</LapName>
-      {/* Only the lap time is width-locked. The block sits flush right, so this
-          cell's width is what fixes where the accumulated one ends — that one
-          right-aligns against it and needs no width of its own. */}
+      {/* Flush right, so the lap time's width is what the accumulated one
+          right-aligns against — only that cell needs locking. */}
       <div className="flex items-center gap-5 shrink-0">
         <LapTime
           time={cumulativeTime}

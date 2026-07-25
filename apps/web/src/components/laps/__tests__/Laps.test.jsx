@@ -56,10 +56,6 @@ describe("Laps", () => {
     expect(viewport).toHaveClass("[&>div]:block!");
   });
 
-  // The row is [name flex-1][times][menu], so the times block sits flush right
-  // and only the LAST cell's width is load-bearing: it fixes where the
-  // accumulated time ends, which is what keeps that column aligned across rows.
-  // Locking the accumulated cell instead would move only its left edge.
   function lapTimeCells(container) {
     return [...container.querySelectorAll(".cursor-pointer")].filter(
       (_, i) => i % 2 === 1,
@@ -82,10 +78,6 @@ describe("Laps", () => {
   });
 
   it("reserves room for hours only when a lap actually runs that long", () => {
-    // FormattedTime omits the hours segment below 1h, so a list where one lap
-    // crosses over renders MM:SS on some rows and HH:MM:SS on others. The width
-    // has to cover the widest row, but a list of short laps shouldn't pay for
-    // digits nothing in it will ever render.
     const { container, rerender } = render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
