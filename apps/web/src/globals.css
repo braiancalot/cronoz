@@ -94,8 +94,8 @@
    min-height is the h-6 action button plus this padding: without it a toast
    with no button is a text line tall and reads as a different component. */
 [data-sonner-toast][data-styled="true"].cn-toast {
-  padding: 1rem;
-  min-height: 3.5rem;
+  padding: 0.625rem 0.875rem;
+  min-height: 2.75rem;
 }
 
 /* One line, ellipsised — a two-line toast would outgrow TOAST_BAND and cover

@@ -5,8 +5,8 @@ export const COLUMN = "w-full max-w-150";
 // Kept equal to TOAST_BAND so the timer sits in even space. Two spellings: the
 // stacked stage spaces with a container gap, the inline one with a margin.
 export const TIMER_GAP = {
-  stacked: "gap-16 lg:gap-24",
-  inline: "mt-16",
+  stacked: "gap-14 md:gap-16 lg:gap-24",
+  inline: "mt-14",
 };
 
 // The controls' footprint, for the two things that stand in for them: the PiP
