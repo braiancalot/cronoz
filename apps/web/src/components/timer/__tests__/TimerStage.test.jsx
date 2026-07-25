@@ -5,8 +5,7 @@ import {
   CONTROL_SIZES,
   CONTROL_ICONS,
 } from "@/components/timer/TimerControls.jsx";
-import { TIMER_GAP } from "@/components/timer/stageLayout.js";
-import { TOAST_BAND } from "@/lib/toastBand.js";
+import { TIMER_GAP, TOAST_BAND } from "@/components/timer/stageLayout.js";
 
 const lapsProps = {
   laps: [{ id: "lap-1", name: "Primeira volta", lapTime: 3000 }],

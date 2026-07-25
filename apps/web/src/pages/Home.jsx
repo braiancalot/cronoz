@@ -8,14 +8,12 @@ import { EmptyState } from "@/components/EmptyState.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
-import { showUndoToast } from "@/lib/undoToast.js";
-import { TOAST_BAND } from "@/lib/toastBand.js";
-import { cn } from "@/lib/utils.js";
+import { showUndoToast, UNDO_ON_LIST } from "@/lib/undoToast.js";
 import { useLiveQuery } from "dexie-react-hooks";
 
-function NewProjectButton({ onCreate, className }) {
+function NewProjectButton({ onCreate }) {
   return (
-    <Button onClick={onCreate} className={cn("w-full", className)}>
+    <Button onClick={onCreate} className="mt-8 w-full">
       + Novo projeto
     </Button>
   );
@@ -93,16 +91,20 @@ export default function Home() {
     setPendingDelete(null);
     setOptimisticDeletedIds((prev) => new Set(prev).add(id));
     await projectRepository.remove(id);
-    showUndoToast(`Projeto "${name}" excluído`, () => {
-      // Clear the override so Undo's restore shows even before the cleanup runs.
-      setOptimisticDeletedIds((prev) => {
-        if (!prev.has(id)) return prev;
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      return projectRepository.undeleteProject(id);
-    });
+    showUndoToast(
+      `Projeto "${name}" excluído`,
+      () => {
+        // Clear the override so Undo's restore shows even before the cleanup runs.
+        setOptimisticDeletedIds((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        return projectRepository.undeleteProject(id);
+      },
+      UNDO_ON_LIST,
+    );
   }
 
   if (projects === undefined) return null;
@@ -130,7 +132,7 @@ export default function Home() {
     <PageContainer className="max-w-300 mx-auto">
       <AppHeader />
 
-      <div className={cn("flex flex-col", TOAST_BAND)}>
+      <div className="flex flex-col">
         {!isEmpty && (
           <div className="md:self-end">
             <NewProjectButton onCreate={handleCreate} />
@@ -167,7 +169,7 @@ export default function Home() {
 
         {isEmpty && (
           <EmptyState message="Nenhum projeto criado.">
-            <NewProjectButton onCreate={handleCreate} className="mt-8" />
+            <NewProjectButton onCreate={handleCreate} />
           </EmptyState>
         )}
       </div>

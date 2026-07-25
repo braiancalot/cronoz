@@ -31,7 +31,9 @@ export default function App() {
             </div>
             <InstallBanner />
             {/* Flush under the h-16 header. This offset and the toast's padding
-                in globals.css size TOAST_BAND — change one, resize the band. */}
+                in globals.css size TOAST_BAND, the space the timer page keeps
+                clear — change one, resize the band. Undos on the list opt out
+                to the bottom instead, see UNDO_ON_LIST. */}
             <Toaster
               position="top-center"
               offset={{ top: "4rem" }}

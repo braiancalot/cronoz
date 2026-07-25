@@ -3,8 +3,7 @@ import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
 import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { Laps } from "@/components/laps/Laps.jsx";
 import { cn } from "@/lib/utils.js";
-import { COLUMN, CONTROLS_BOX, TIMER_GAP } from "./stageLayout.js";
-import { TOAST_BAND } from "@/lib/toastBand.js";
+import { COLUMN, CONTROLS_BOX, TIMER_GAP, TOAST_BAND } from "./stageLayout.js";
 
 // Controls under the laps, pinned to the bottom edge within thumb reach.
 export function StackedStage({

@@ -27,7 +27,7 @@ import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
 import { Button } from "@/components/ui/button.jsx";
-import { showUndoToast } from "@/lib/undoToast.js";
+import { showUndoToast, UNDO_ON_LIST } from "@/lib/undoToast.js";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -109,7 +109,8 @@ export default function ProjectPage() {
     const projectName = project.name;
     const { undo } = await deleteProject();
     navigate("/");
-    showUndoToast(`Projeto "${projectName}" excluído`, undo);
+    // Fires after the navigate, so this one lands on the list, not here.
+    showUndoToast(`Projeto "${projectName}" excluído`, undo, UNDO_ON_LIST);
   }
 
   function handleStartAdjust() {
