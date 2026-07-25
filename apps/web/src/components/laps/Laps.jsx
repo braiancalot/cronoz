@@ -9,10 +9,6 @@ import { LapCard } from "./LapCard.jsx";
 import { LapItem } from "./LapItem.jsx";
 import { LapNameForm } from "./LapNameForm.jsx";
 
-// The 8px matches the list's py-2, so unscrolled the fade lands on empty
-// padding and a short list never looks like it's dissolving.
-const SCROLL_FADE = "mask-y-from-[calc(100%-8px)] mask-y-to-black/35";
-
 function totalsByLapId(laps, ignoreMs) {
   const totals = new Map();
   let acc = 0;
@@ -52,11 +48,7 @@ export function Laps({
     <>
       {/* Width, height and vertical spacing are the stage's call, not ours. */}
       <div className={cn("flex flex-col min-h-0 w-full", className)}>
-        <ScrollArea
-          type="auto"
-          className="flex-1 min-h-0"
-          viewportClassName={SCROLL_FADE}
-        >
+        <ScrollArea type="auto" className="flex-1 min-h-0">
           <div className="flex flex-col gap-1 py-2 w-full">
             {isAddingLap && (
               <LapCard>

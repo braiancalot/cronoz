@@ -2,7 +2,7 @@ import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
-function ScrollArea({ className, viewportClassName, children, ...props }) {
+function ScrollArea({ className, children, ...props }) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -16,10 +16,7 @@ function ScrollArea({ className, viewportClassName, children, ...props }) {
         // [&>div]:block! overrides the inline display:table Radix puts on its
         // wrapper — table boxes size to max-content, so nothing inside can
         // truncate. Assumes vertical-only scrolling.
-        className={cn(
-          "w-full flex-1 min-h-0 rounded-[inherit] outline-none [&>div]:block!",
-          viewportClassName,
-        )}
+        className="w-full flex-1 min-h-0 rounded-[inherit] outline-none [&>div]:block!"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

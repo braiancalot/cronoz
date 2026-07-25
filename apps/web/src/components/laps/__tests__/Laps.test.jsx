@@ -40,26 +40,6 @@ describe("Laps", () => {
     );
   });
 
-  it("fades the scroll edges over the list's own vertical padding", () => {
-    const { container } = render(
-      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
-    );
-
-    // Matched distances: unscrolled the fade covers only the empty strip, so a
-    // list too short to scroll never looks like it's dissolving at the top.
-    const viewport = container.querySelector(
-      "[data-slot='scroll-area-viewport']",
-    );
-    expect(viewport).toHaveClass(
-      "mask-y-from-[calc(100%-8px)]",
-      "mask-y-to-black/35",
-    );
-
-    // Not viewport.firstChild: Radix wraps the children in a table-display div.
-    const list = container.querySelector("[data-slot='card']").parentElement;
-    expect(list).toHaveClass("py-2");
-  });
-
   it("constrains the rows to the viewport width", () => {
     const { container } = render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
