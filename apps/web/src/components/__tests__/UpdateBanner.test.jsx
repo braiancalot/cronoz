@@ -22,9 +22,9 @@ describe("UpdateBanner", () => {
     expect(onDismiss).toHaveBeenCalledOnce();
   });
 
-  // Regression: as a toast it overlapped "+ Novo projeto" on the home page, so a
-  // tap that dismissed it fell through to the button underneath. Asserted on the
-  // class because jsdom loads no stylesheet for getComputedStyle to resolve.
+  // Regression: as a toast it covered "+ Novo projeto", and a tap that dismissed
+  // it fell through to the button. On the class, since jsdom has no stylesheet
+  // for getComputedStyle to resolve.
   it("stays in the document flow instead of floating over the page", () => {
     const { container } = render(
       <UpdateBanner onUpdate={vi.fn()} onDismiss={vi.fn()} />,
