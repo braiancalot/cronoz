@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Laps } from "@/components/laps/Laps.jsx";
 
@@ -361,5 +361,40 @@ describe("Laps", () => {
     await userEvent.click(cancelButton);
 
     expect(onDeleteLap).not.toHaveBeenCalled();
+  });
+
+  // Radix opens on pointerdown, so a finger landing on the trigger to scroll
+  // used to open the menu mid-drag and freeze the list behind it.
+  it("closes the menu when the touch that opened it turns into a scroll", async () => {
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    const [trigger] = screen.getAllByTitle("Mais opções");
+    fireEvent.pointerDown(trigger);
+    expect(
+      await screen.findByRole("menuitem", { name: "Renomear" }),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerCancel(trigger);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("menuitem", { name: "Renomear" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("leaves the list scrollable while the menu is open", async () => {
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    await openLapMenu(0);
+    await screen.findByRole("menuitem", { name: "Renomear" });
+
+    // A modal menu blocks pointer events on everything outside it, which is
+    // what killed the scroll — the rows have to stay reachable.
+    expect(document.body).not.toHaveStyle({ pointerEvents: "none" });
   });
 });
