@@ -3,7 +3,8 @@ import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
 import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { Laps } from "@/components/laps/Laps.jsx";
 import { cn } from "@/lib/utils.js";
-import { COLUMN, CONTROLS_BOX } from "./stageLayout.js";
+import { COLUMN, CONTROLS_BOX, TIMER_GAP } from "./stageLayout.js";
+import { TOAST_BAND } from "@/lib/toastBand.js";
 
 // Controls under the laps, pinned to the bottom edge within thumb reach.
 export function StackedStage({
@@ -29,7 +30,13 @@ export function StackedStage({
 }) {
   return (
     <div className="flex flex-1 flex-col w-full items-center min-h-0">
-      <div className="flex flex-1 flex-col w-full items-center justify-center min-h-0 gap-6 md:gap-16 lg:gap-24 py-8">
+      <div
+        className={cn(
+          "flex flex-1 flex-col w-full items-center justify-center min-h-0 pb-8",
+          TIMER_GAP.stacked,
+          TOAST_BAND,
+        )}
+      >
         <section className={cn("flex shrink-0 justify-center", COLUMN)}>
           {isAdjusting && !placeholder ? (
             <TimerAdjuster

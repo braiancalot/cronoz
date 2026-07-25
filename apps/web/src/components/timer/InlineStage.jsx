@@ -3,7 +3,8 @@ import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
 import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { Laps } from "@/components/laps/Laps.jsx";
 import { cn } from "@/lib/utils.js";
-import { COLUMN, CONTROLS_BOX } from "./stageLayout.js";
+import { COLUMN, CONTROLS_BOX, TIMER_GAP } from "./stageLayout.js";
+import { TOAST_BAND } from "@/lib/toastBand.js";
 
 // Controls beside the timer, for a phone on its side.
 export function InlineStage({
@@ -37,7 +38,7 @@ export function InlineStage({
         <div
           className={cn(
             "flex flex-col items-center gap-3 shrink-0",
-            hasLapsSection ? "pt-2" : "flex-1 justify-center",
+            hasLapsSection ? TOAST_BAND : "flex-1 justify-center",
           )}
         >
           <TimerAdjuster
@@ -59,7 +60,7 @@ export function InlineStage({
         <div
           className={cn(
             "flex w-full items-center shrink-0",
-            hasLapsSection ? "pt-2" : "flex-1",
+            hasLapsSection ? TOAST_BAND : "flex-1",
           )}
         >
           {balance}
@@ -87,7 +88,12 @@ export function InlineStage({
         <>
           <Laps
             {...lapsProps}
-            className={cn(COLUMN, "mt-6 mb-4 transition-opacity", lapsDim)}
+            className={cn(
+              COLUMN,
+              TIMER_GAP.inline,
+              "mb-4 transition-opacity",
+              lapsDim,
+            )}
           />
           {/* Absorbs the space under a short list, so it hugs the laps
               instead of stretching to the bottom edge. */}

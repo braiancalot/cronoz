@@ -9,11 +9,13 @@ import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { showUndoToast } from "@/lib/undoToast.js";
+import { TOAST_BAND } from "@/lib/toastBand.js";
+import { cn } from "@/lib/utils.js";
 import { useLiveQuery } from "dexie-react-hooks";
 
-function NewProjectButton({ onCreate }) {
+function NewProjectButton({ onCreate, className }) {
   return (
-    <Button onClick={onCreate} className="mt-8 w-full">
+    <Button onClick={onCreate} className={cn("w-full", className)}>
       + Novo projeto
     </Button>
   );
@@ -128,7 +130,7 @@ export default function Home() {
     <PageContainer className="max-w-300 mx-auto">
       <AppHeader />
 
-      <div className="flex flex-col">
+      <div className={cn("flex flex-col", TOAST_BAND)}>
         {!isEmpty && (
           <div className="md:self-end">
             <NewProjectButton onCreate={handleCreate} />
@@ -165,7 +167,7 @@ export default function Home() {
 
         {isEmpty && (
           <EmptyState message="Nenhum projeto criado.">
-            <NewProjectButton onCreate={handleCreate} />
+            <NewProjectButton onCreate={handleCreate} className="mt-8" />
           </EmptyState>
         )}
       </div>

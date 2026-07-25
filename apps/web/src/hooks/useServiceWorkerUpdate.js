@@ -7,8 +7,8 @@ import {
 
 const UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 
-// Dev only: in production it would force the banner on without going through
-// useRegisterSW, which is the part actually worth trusting.
+// Dev only: it bypasses useRegisterSW, so in production it would show the
+// banner even with the real update plumbing broken.
 function readSimulateFlag() {
   if (!import.meta.env.DEV) return false;
   if (typeof window === "undefined") return false;
@@ -47,8 +47,7 @@ export function useServiceWorkerUpdate() {
     };
   }, []);
 
-  // Drops the flag and reloads, so the simulated banner ends the way the real
-  // one does: a full reload, and gone for good.
+  // Ends the way the real update does: a full reload, and gone for good.
   const leaveSimulation = useCallback(() => {
     window.location.replace(hrefWithoutSimulateFlag(window.location.href));
   }, []);

@@ -88,3 +88,9 @@
     cursor: pointer;
   }
 }
+
+/* Trims the toast down to TOAST_BAND. The extra attributes are needed to beat
+   Sonner's own padding rule, injected at runtime in unpredictable order. */
+[data-sonner-toast][data-styled="true"].cn-toast {
+  padding: 0.25rem 0.75rem;
+}

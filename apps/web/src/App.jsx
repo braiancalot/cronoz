@@ -30,11 +30,12 @@ export default function App() {
               <Outlet />
             </div>
             <InstallBanner />
-            {/* top offset clears the ProjectHeader (h-16) so toasts don't cover it */}
+            {/* Flush under the h-16 header. This offset and the toast's padding
+                in globals.css size TOAST_BAND — change one, resize the band. */}
             <Toaster
               position="top-center"
-              offset={{ top: "4.5rem" }}
-              mobileOffset={{ top: "4.5rem" }}
+              offset={{ top: "4rem" }}
+              mobileOffset={{ top: "4rem" }}
             />
           </div>
         </IconContext.Provider>

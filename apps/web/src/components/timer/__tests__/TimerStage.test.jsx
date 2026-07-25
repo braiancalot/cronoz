@@ -5,6 +5,8 @@ import {
   CONTROL_SIZES,
   CONTROL_ICONS,
 } from "@/components/timer/TimerControls.jsx";
+import { TIMER_GAP } from "@/components/timer/stageLayout.js";
+import { TOAST_BAND } from "@/lib/toastBand.js";
 
 const lapsProps = {
   laps: [{ id: "lap-1", name: "Primeira volta", lapTime: 3000 }],
@@ -90,7 +92,22 @@ describe("TimerStage", () => {
     // onto the laps; the group centres the pair with the leftover height.
     const section = container.querySelector("section");
     expect(section).toHaveClass("shrink-0");
-    expect(section.parentElement).toHaveClass("justify-center", "gap-6");
+    expect(section.parentElement).toHaveClass("justify-center");
+    expect(section.parentElement).toHaveClass(
+      ...TIMER_GAP.stacked.split(" "),
+      TOAST_BAND,
+    );
+  });
+
+  // Regression: a full laps list used to push the timer up under the toast,
+  // which covered it. Both layouts that show laps have to reserve the band.
+  it("reserves the toast's band above the timer in the inline layout", () => {
+    const { container } = renderStage({ layout: "inline" });
+
+    const timerRow = container.querySelector(`.${TOAST_BAND}`);
+    expect(timerRow).not.toBeNull();
+    const scrollArea = container.querySelector("[data-slot='scroll-area']");
+    expect(scrollArea.parentElement).toHaveClass(TIMER_GAP.inline);
   });
 
   it("keeps the full-size timer on a wide-but-short minimal layout", () => {
