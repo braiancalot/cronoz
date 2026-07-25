@@ -1,6 +1,5 @@
 import { CheckIcon, XIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
-import { Input } from "@/components/ui/input.jsx";
 import { useInlineEditForm } from "@/hooks/useInlineEditForm.js";
 
 export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
@@ -13,17 +12,17 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
   return (
     // min-h-9 holds the row at the height it rests at.
     <form {...formProps} className="flex items-center gap-2 min-h-9 w-full">
-      <Input
+      <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         {...fieldProps}
-        className="flex-1 h-8 text-sm"
+        className="flex-1 min-w-0 bg-transparent outline-none"
         autoFocus
       />
       <Button
         type="button"
         variant="ghost"
-        size="icon-sm"
+        size="icon-xs"
         className="rounded-full"
         {...keepFocus}
         onClick={onCancel}
@@ -34,7 +33,7 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
       </Button>
       <Button
         type="button"
-        size="icon-sm"
+        size="icon-xs"
         className="rounded-full"
         {...keepFocus}
         onClick={onSubmit}

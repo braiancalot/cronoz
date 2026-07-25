@@ -176,6 +176,20 @@ describe("Laps", () => {
     expect(form).toHaveClass("min-h-9");
   });
 
+  it("renames in place, with no box around the field", async () => {
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    await startRename(0);
+    const field = screen.getByDisplayValue("Lap #1");
+
+    expect(field).toHaveClass("bg-transparent");
+    ["bg-input/30", "rounded-4xl", "px-3", "border", "text-base"].forEach(
+      (boxed) => expect(field).not.toHaveClass(boxed),
+    );
+  });
+
   it("calls onRenameLap on submit", async () => {
     const onRenameLap = vi.fn();
     render(
