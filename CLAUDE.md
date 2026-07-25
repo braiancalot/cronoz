@@ -83,6 +83,12 @@ Pages and hooks subscribe to live DB queries using `useLiveQuery` from `dexie-re
 
 **Truncating inside flex:** `truncate` is inert on a flex item without `min-w-0` — the item refuses to shrink past its longest word, pushing its siblings out of the row instead of ellipsising.
 
+**Sonner toasts leak taps to whatever is under them.** A toast dismissed by swipe calls `deleteToast()` on `pointerup` — before the browser's synthetic `click`. The bar is `velocity > 0.11` px/ms (≈5px of finger drift in 40ms), and `touch-action: none` on the toast keeps the drift from becoming a scroll, so the click is never suppressed. The toast vanishes mid-gesture and the click lands on the element underneath. This shipped as a bug: the update prompt sat on top of `+ Novo projeto` on the home page and taps on it created projects. **Never place a toast over a tap target.** Persistent notices (`duration: Infinity`) belong in the document flow, not in a toast — see `UpdateBanner`.
+
+**jsdom resolves no stylesheet.** `getComputedStyle(el).position` returns `static` for `class="fixed"`, so layout assertions written that way pass unconditionally. Assert on `className`, or test the behaviour some other way. Same trap for any Tailwind-driven computed style.
+
+**`window.location` is `[Unforgeable]` in jsdom.** `vi.spyOn(window.location, "replace")` throws `Cannot redefine property`. Extract the URL logic into a pure helper in `src/lib/` and test that instead — `lib/updateSimulation.js` is the worked example.
+
 ### Key Patterns
 
 **Stopwatch state** is stored as a plain object inside each project record:
@@ -102,6 +108,8 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 **Path Alias:** Use `@/` to import from `src/` (e.g., `import { useProject } from "@/hooks/useProject"`).
 
 **Font:** IBM Plex Sans loaded via `@fontsource/ibm-plex-sans` (offline-first, no Google Fonts CDN).
+
+**Update prompt:** `registerType: "prompt"`, so `UpdateBanner` is the only path to a new version. It renders above the `<Outlet />` in `App.jsx` and pushes the page down — the shell is `flex flex-col` with the outlet in `flex-1 min-h-0` so `PageContainer`'s `h-full` does not overflow. Append `?swupdate` to any route to force it on **in dev only** (`src/lib/updateSimulation.js`); it bypasses `useRegisterSW`, so it proves nothing about the real service-worker plumbing — verify that with `build` + `preview` + a rebuild.
 
 ## apps/api
 
