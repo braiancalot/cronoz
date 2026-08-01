@@ -16,12 +16,7 @@ export function useTapOnlyDropdown() {
     menuProps: { open, onOpenChange: setOpen },
     triggerProps: {
       onPointerDown: (event) => event.preventDefault(),
-      onClick: (event) => {
-        // The trigger sits inside a Link on the project card.
-        event.preventDefault();
-        event.stopPropagation();
-        setOpen((prev) => !prev);
-      },
+      onClick: () => setOpen((prev) => !prev),
     },
   };
 }

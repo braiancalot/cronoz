@@ -3,10 +3,6 @@ import { renderHook, act } from "@testing-library/react";
 
 import { useTapOnlyDropdown } from "@/hooks/useTapOnlyDropdown.js";
 
-function pointerEvent() {
-  return { preventDefault: vi.fn(), stopPropagation: vi.fn() };
-}
-
 describe("useTapOnlyDropdown", () => {
   it("starts closed and modal", () => {
     const { result } = renderHook(() => useTapOnlyDropdown());
@@ -19,7 +15,7 @@ describe("useTapOnlyDropdown", () => {
 
   it("bars the pointer-down that Radix would open on", () => {
     const { result } = renderHook(() => useTapOnlyDropdown());
-    const event = pointerEvent();
+    const event = { preventDefault: vi.fn() };
 
     act(() => result.current.triggerProps.onPointerDown(event));
 
@@ -27,17 +23,14 @@ describe("useTapOnlyDropdown", () => {
     expect(result.current.menuProps.open).toBe(false);
   });
 
-  it("toggles on click without letting it reach the row behind", () => {
+  it("toggles open on each click", () => {
     const { result } = renderHook(() => useTapOnlyDropdown());
-    const event = pointerEvent();
 
-    act(() => result.current.triggerProps.onClick(event));
+    act(() => result.current.triggerProps.onClick());
 
     expect(result.current.menuProps.open).toBe(true);
-    expect(event.preventDefault).toHaveBeenCalled();
-    expect(event.stopPropagation).toHaveBeenCalled();
 
-    act(() => result.current.triggerProps.onClick(pointerEvent()));
+    act(() => result.current.triggerProps.onClick());
 
     expect(result.current.menuProps.open).toBe(false);
   });

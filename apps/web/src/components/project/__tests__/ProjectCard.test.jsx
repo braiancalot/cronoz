@@ -115,4 +115,24 @@ describe("ProjectCard menu", () => {
       ).not.toBeInTheDocument(),
     );
   });
+
+  // The menu trigger used to sit inside the row's Link, so pressing it also
+  // hit-tested as pressing the link — the whole card flashed :active.
+  it("sits outside the row link, not nested inside it", () => {
+    const { container } = renderCard(makeProject({ isRunning: false }));
+
+    const link = container.querySelector("a");
+    const trigger = screen.getByTitle("Mais opções");
+
+    expect(link).not.toBeNull();
+    expect(link.contains(trigger)).toBe(false);
+  });
+});
+
+describe("ProjectCard row link", () => {
+  it("names the link after the project instead of leaving it empty", () => {
+    renderCard(makeProject({ isRunning: false }));
+
+    expect(screen.getByRole("link", { name: "Projeto A" })).toBeInTheDocument();
+  });
 });
