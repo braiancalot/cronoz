@@ -127,6 +127,15 @@ describe("ProjectCard menu", () => {
     expect(link).not.toBeNull();
     expect(link.contains(trigger)).toBe(false);
   });
+
+  it("dims the menu trigger at rest and darkens it on touch", () => {
+    renderCard(makeProject({ isRunning: false }));
+
+    expect(screen.getByTitle("Mais opções")).toHaveClass(
+      "text-muted-foreground",
+      "active:text-foreground",
+    );
+  });
 });
 
 describe("ProjectCard row link", () => {

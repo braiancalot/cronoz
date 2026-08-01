@@ -68,7 +68,7 @@ export function ProjectCard({
                 variant="ghost"
                 size="icon-sm"
                 title="Mais opções"
-                className="pointer-events-auto"
+                className="pointer-events-auto text-muted-foreground active:text-foreground"
                 {...triggerProps}
               >
                 <DotsThreeVerticalIcon />

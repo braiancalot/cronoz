@@ -40,6 +40,19 @@ describe("Laps", () => {
     );
   });
 
+  it("dims the menu trigger at rest and darkens it on touch", () => {
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    const [trigger] = screen.getAllByTitle("Mais opções");
+
+    expect(trigger).toHaveClass(
+      "text-muted-foreground",
+      "active:text-foreground",
+    );
+  });
+
   it("constrains the rows to the viewport width", () => {
     const { container } = render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,

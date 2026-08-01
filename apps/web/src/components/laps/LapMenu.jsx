@@ -24,6 +24,7 @@ export function LapMenu({ onCopyTimes, onRename, onDelete }) {
           variant="ghost"
           size="icon-sm"
           title="Mais opções"
+          className="text-muted-foreground active:text-foreground"
           {...triggerProps}
         >
           <DotsThreeVerticalIcon />
