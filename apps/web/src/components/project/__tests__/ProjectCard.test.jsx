@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, useLocation } from "react-router";
 import { ProjectCard } from "@/components/project/ProjectCard.jsx";
 
 function makeProject(stopwatch) {
@@ -13,6 +14,10 @@ function makeProject(stopwatch) {
   };
 }
 
+function CurrentPath() {
+  return <span data-testid="path">{useLocation().pathname}</span>;
+}
+
 function renderCard(project) {
   return render(
     <MemoryRouter>
@@ -21,6 +26,7 @@ function renderCard(project) {
         onToggleComplete={() => {}}
         onDelete={() => {}}
       />
+      <CurrentPath />
     </MemoryRouter>,
   );
 }
@@ -83,5 +89,30 @@ describe("ProjectCard live indicator", () => {
     );
 
     expect(screen.queryByLabelText(LIVE_LABEL)).not.toBeInTheDocument();
+  });
+});
+
+describe("ProjectCard menu", () => {
+  it("opens on a tap without following the card's link", async () => {
+    renderCard(makeProject({ isRunning: false }));
+
+    await userEvent.click(screen.getByTitle("Mais opções"));
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Concluir" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("path")).toHaveTextContent(/^\/$/);
+  });
+
+  it("does not open on pointer-down alone", async () => {
+    renderCard(makeProject({ isRunning: false }));
+
+    fireEvent.pointerDown(screen.getByTitle("Mais opções"));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("menuitem", { name: "Concluir" }),
+      ).not.toBeInTheDocument(),
+    );
   });
 });

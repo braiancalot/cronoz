@@ -12,10 +12,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
-import { useScrollSafeDropdown } from "@/hooks/useScrollSafeDropdown.js";
+import { useTapOnlyDropdown } from "@/hooks/useTapOnlyDropdown.js";
 
 export function LapMenu({ onCopyTimes, onRename, onDelete }) {
-  const { menuProps, triggerProps } = useScrollSafeDropdown();
+  const { menuProps, triggerProps } = useTapOnlyDropdown();
 
   return (
     <DropdownMenu {...menuProps}>
@@ -24,7 +24,6 @@ export function LapMenu({ onCopyTimes, onRename, onDelete }) {
           variant="ghost"
           size="icon-sm"
           title="Mais opções"
-          onClick={(e) => e.stopPropagation()}
           {...triggerProps}
         >
           <DotsThreeVerticalIcon />

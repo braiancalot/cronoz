@@ -364,19 +364,15 @@ describe("Laps", () => {
   });
 
   // Radix opens on pointerdown, so a finger landing on the trigger to scroll
-  // used to open the menu mid-drag and freeze the list behind it.
-  it("closes the menu when the touch that opened it turns into a scroll", async () => {
+  // used to open the menu mid-drag and freeze the list behind it. The browser
+  // never fires the click once that gesture becomes a scroll.
+  it("does not open the menu on pointer-down alone", async () => {
     render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
 
     const [trigger] = screen.getAllByTitle("Mais opções");
     fireEvent.pointerDown(trigger);
-    expect(
-      await screen.findByRole("menuitem", { name: "Renomear" }),
-    ).toBeInTheDocument();
-
-    fireEvent.pointerCancel(trigger);
 
     await waitFor(() =>
       expect(
@@ -385,16 +381,15 @@ describe("Laps", () => {
     );
   });
 
-  it("leaves the list scrollable while the menu is open", async () => {
+  it("opens the menu on a tap", async () => {
     render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
 
     await openLapMenu(0);
-    await screen.findByRole("menuitem", { name: "Renomear" });
 
-    // A modal menu blocks pointer events on everything outside it, which is
-    // what killed the scroll — the rows have to stay reachable.
-    expect(document.body).not.toHaveStyle({ pointerEvents: "none" });
+    expect(
+      await screen.findByRole("menuitem", { name: "Renomear" }),
+    ).toBeInTheDocument();
   });
 });

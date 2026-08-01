@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu.jsx";
 import { calculateTotalTime, isStopwatchLive } from "@/lib/stopwatch.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
-import { useScrollSafeDropdown } from "@/hooks/useScrollSafeDropdown.js";
+import { useTapOnlyDropdown } from "@/hooks/useTapOnlyDropdown.js";
 import { cn } from "@/lib/utils.js";
 
 export function ProjectCard({
@@ -27,7 +27,7 @@ export function ProjectCard({
   className = "",
 }) {
   const ignoreMs = useIgnoreMilliseconds();
-  const { menuProps, triggerProps } = useScrollSafeDropdown();
+  const { menuProps, triggerProps } = useTapOnlyDropdown();
   const displayTime = calculateTotalTime(project.stopwatch, { ignoreMs });
   const isCompleted = project.completedAt !== null;
   // Running with a fresh heartbeat means it's ticking somewhere — almost always
@@ -64,10 +64,6 @@ export function ProjectCard({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
                   title="Mais opções"
                   {...triggerProps}
                 >
