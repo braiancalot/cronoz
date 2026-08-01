@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { SyncCard } from "@/components/sync/SyncCard.jsx";
 import { BackupCard } from "@/components/BackupCard.jsx";
-import { FEATURES } from "@/lib/featureFlags.js";
 
 export default function SettingsPage() {
   const hourlyPrice = useHourlyPrice();
@@ -46,7 +45,7 @@ export default function SettingsPage() {
       </header>
 
       <div className="flex flex-col gap-6 flex-1 pb-6">
-        {FEATURES.sync && <SyncCard />}
+        <SyncCard />
 
         <Card>
           <CardHeader>

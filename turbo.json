@@ -4,7 +4,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"],
-      "env": ["VITE_API_URL", "VITE_SYNC_ENABLED"]
+      "env": ["VITE_API_URL"]
     },
     "dev": {
       "cache": false,
