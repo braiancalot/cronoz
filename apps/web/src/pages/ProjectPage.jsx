@@ -64,7 +64,7 @@ export default function ProjectPage() {
     pipWindow,
     openPiP,
     closePiP,
-  } = usePiPWindow();
+  } = usePiPWindow(pause);
 
   useKeyboardShortcuts({ onToggle: toggle, pipWindow, enabled: !isAdjusting });
 

@@ -30,10 +30,17 @@ function copyStyles(pipWindow) {
   pipWindow.document.body.className = document.body.className;
 }
 
-export function usePiPWindow() {
+// onClose fires on every user-triggered close (the PiP's X, Ctrl+W, closePiP),
+// but not on unmount — the owner is tearing down and already handles it.
+export function usePiPWindow(onClose) {
   const [pipWindow, setPipWindow] = useState(null);
   const pipWindowRef = useRef(null);
   const onPageHideRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const openPiP = useCallback(async () => {
     if (!isSupported || pipWindowRef.current) return;
@@ -52,6 +59,7 @@ export function usePiPWindow() {
       pipWindowRef.current = null;
       onPageHideRef.current = null;
       flushSync(() => setPipWindow(null));
+      onCloseRef.current?.();
     };
     win.addEventListener("pagehide", onPageHide);
     pipWindowRef.current = win;
@@ -67,6 +75,7 @@ export function usePiPWindow() {
     onPageHideRef.current = null;
     flushSync(() => setPipWindow(null));
     win.close();
+    onCloseRef.current?.();
   }, []);
 
   // The browser's PiP window outlives the React component that fills it. When
