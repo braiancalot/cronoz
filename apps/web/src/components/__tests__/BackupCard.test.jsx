@@ -27,7 +27,6 @@ function makeFile(content, name = "backup.json", type = "application/json") {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Stub URL APIs used by the download flow.
   global.URL.createObjectURL = vi.fn(() => "blob:mock");
   global.URL.revokeObjectURL = vi.fn();
 });

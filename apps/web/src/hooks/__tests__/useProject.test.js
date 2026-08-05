@@ -30,7 +30,6 @@ vi.mock("@/services/projectRepository.js", async (importOriginal) => {
   };
 });
 
-// Stub requestAnimationFrame
 vi.stubGlobal(
   "requestAnimationFrame",
   vi.fn((cb) => setTimeout(cb, 0)),
@@ -709,7 +708,6 @@ describe("useProject", () => {
 
       renderHook(() => useProject("test-id"));
 
-      // Advance only 5 seconds (less than 10s interval)
       vi.setSystemTime(new Date(105000));
       vi.advanceTimersByTime(0);
 

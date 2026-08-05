@@ -109,7 +109,6 @@ describe("useWakeLock", () => {
 
     expect(request).toHaveBeenCalledTimes(1);
 
-    // Simulate browser releasing the lock when hidden
     await act(async () => {
       await sentinels[0].release();
     });
