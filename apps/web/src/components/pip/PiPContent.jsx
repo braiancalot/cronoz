@@ -20,6 +20,7 @@ export function PiPContent({
   onDiscardCurrentTime,
   canDiscardCurrentTime,
   onCommitAdjust,
+  onBack,
   pipWindow,
 }) {
   const size = usePiPSize(pipWindow);
@@ -113,6 +114,7 @@ export function PiPContent({
       onDiscard={() => setMode("discard")}
       canDiscardCurrentTime={canDiscardCurrentTime}
       onAdjust={handleStartAdjust}
+      onBack={onBack}
       menuContainer={pipWindow?.document?.body}
     />
   );

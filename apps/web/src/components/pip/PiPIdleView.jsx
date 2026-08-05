@@ -1,4 +1,5 @@
 import {
+  ArrowLeftIcon,
   ClockIcon,
   DotsThreeVerticalIcon,
   EraserIcon,
@@ -33,14 +34,27 @@ export function PiPIdleView({
   onDiscard,
   canDiscardCurrentTime,
   onAdjust,
+  onBack,
   menuContainer,
 }) {
   return (
     <div className="flex h-full w-full flex-col p-3">
-      <header className="flex items-center justify-between gap-2">
+      <header className="flex items-center justify-between gap-1">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Voltar para a tela inicial"
+            onClick={onBack}
+            className="text-muted-foreground"
+          >
+            <ArrowLeftIcon className="size-4" />
+          </Button>
+        )}
+
         <h1
           className={cn(
-            "truncate font-medium text-muted-foreground",
+            "flex-1 truncate font-medium text-muted-foreground",
             HEADER_TEXT[size],
           )}
         >

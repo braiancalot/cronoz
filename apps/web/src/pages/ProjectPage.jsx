@@ -263,6 +263,7 @@ export default function ProjectPage() {
           onDiscardCurrentTime={handlePiPDiscard}
           canDiscardCurrentTime={canDiscardCurrentTime}
           onCommitAdjust={setCurrentTime}
+          onBack={() => navigate("/")}
           pipWindow={pipWindow}
         />
       </PiPTimer>
