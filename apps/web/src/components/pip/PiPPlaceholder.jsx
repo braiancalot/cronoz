@@ -1,11 +1,9 @@
 import { PictureInPictureIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
 
-// Shown in place of the timer while the stopwatch lives in the PiP window, so
-// the running timer isn't duplicated on both screens at once. The whole block
-// is the button, so clicking anywhere on the message brings the timer back.
-// Kept within the timer's own height (its floor is ~6rem) so TimerSlot's box
-// holds it and the stage doesn't jump when the PiP opens.
+// Stands in for the timer while the stopwatch lives in the PiP window, so it
+// isn't duplicated on both screens. Kept within the timer's own height (floor
+// ~6rem) so TimerSlot's box holds it and the stage doesn't jump.
 export function PiPPlaceholder({ onClose }) {
   return (
     <Button

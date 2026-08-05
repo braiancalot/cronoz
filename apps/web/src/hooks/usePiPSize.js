@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 
-// Maps the PiP window's live dimensions onto the existing TimerDisplay tiers
-// (mini → compact → default). Both dimensions have to clear a threshold before
-// stepping up, so a window that only grows in one axis keeps the smaller,
-// better-fitting tier. The mini floor matches the window's initial 200×170.
+// Maps the PiP window's live dimensions onto the TimerDisplay tiers. Both axes
+// must clear a threshold to step up, so a window that grows in one direction
+// keeps the smaller tier. The mini floor matches the initial 200×170.
 const TIERS = [
   { size: "default", width: 420, height: 260 },
   { size: "compact", width: 300, height: 210 },

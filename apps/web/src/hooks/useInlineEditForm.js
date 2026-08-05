@@ -1,11 +1,7 @@
-// Shared behavior for an inline name editor with explicit save/cancel controls
-// (rename a lap, add a lap, rename a project). Layout stays with each consumer;
-// this only owns the interaction:
-//   - Enter or the save action commits; Escape or the cancel action discards.
-//   - Clicking away (blur) commits a non-empty value, or discards an empty one.
-//   - keepFocus keeps the input focused while a button is pressed so the
-//     blur-commit doesn't race the click — otherwise ✕ would commit before it
-//     could cancel, and ✓ could fire twice.
+// Interaction for an inline name editor with explicit save/cancel controls;
+// layout stays with each consumer. keepFocus holds focus while a button is
+// pressed so the blur-commit doesn't race the click — otherwise ✕ would commit
+// before it could cancel, and ✓ could fire twice.
 export function useInlineEditForm({ value, onSubmit, onCancel }) {
   function handleSubmit(event) {
     event?.preventDefault();

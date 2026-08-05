@@ -46,7 +46,7 @@ function Section({ title, children }) {
   );
 }
 
-// 2h30 já registrado em voltas salvas; o ajuste mexe só no segmento atual.
+// 2h30 already banked in saved laps; adjusting only moves the current segment.
 const ADJUST_LAPS_TOTAL = 2 * 3_600_000 + 30 * 60_000;
 
 function AdjustDemo({ size, layout = "flank", showPrice = true }) {

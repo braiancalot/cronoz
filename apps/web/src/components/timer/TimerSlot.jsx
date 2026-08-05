@@ -1,9 +1,8 @@
 import { TimerDisplay } from "./TimerDisplay.jsx";
 
-// Holds the timer's exact footprint while something stands in for it (the PiP
-// placeholder): a hidden timer sets the box, the stand-in floats centred on top.
-// Sizing the stand-in by hand can't work — the timer's height rides a clamp on
-// the viewport and on whether there's a total line.
+// Holds the timer's exact footprint for a stand-in (the PiP placeholder): a
+// hidden timer sets the box, the stand-in floats centred on top. Hand-sizing it
+// can't work — the height rides a clamp on the viewport and on the total line.
 export function TimerSlot({ children, ...timerProps }) {
   return (
     <div className="relative">

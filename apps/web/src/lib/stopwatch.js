@@ -1,8 +1,7 @@
-// A running stopwatch writes a heartbeat (lastActiveAt) every ~10s. If the
-// newest heartbeat is older than this, the run was abandoned (the device that
-// was ticking died) and its elapsed time should be capped at the last heartbeat
-// rather than kept growing. Single source of truth — also used by useProject's
-// recovery so the Home list and the project page agree on the displayed time.
+// A running stopwatch heartbeats (lastActiveAt) every ~10s. Older than this
+// means the ticking device died, so the elapsed time is capped at the last
+// heartbeat instead of growing. Shared with useProject's recovery, so the list
+// and the project page agree on what they show.
 export const RECOVERY_GRACE_PERIOD = 30_000;
 
 export function isStopwatchLive(stopwatch, now = Date.now()) {
@@ -149,11 +148,9 @@ export function formatTimeCompact(ms) {
   return parts.length > 0 ? parts.join("") : "0s";
 }
 
-// Labeled h/m/s format for readability (e.g. "1h 23m 47s"). Leading and
-// trailing zero segments are dropped, but interior zeros stay so place value
-// reads right ("1h 0m 5s", "1m"). With `fraction`, a separate two-digit
-// millisecond segment (centiseconds, matching the main timer) trails the
-// seconds so the "exact time" panel can show the sub-second rounding drops.
+// Labeled h/m/s format ("1h 23m 47s"). Outer zero segments are dropped, but
+// interior ones stay so place value reads right ("1h 0m 5s", "1m"). `fraction`
+// appends centiseconds, for the "exact time" panel's rounding drops.
 export function formatHms(ms, { fraction = false } = {}) {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms / 60000) % 60);

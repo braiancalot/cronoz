@@ -66,11 +66,9 @@ async function callAuthed(makeRequest) {
   }
 }
 
-// NOTE: lastPushedAt is a server timestamp, while a record's updatedAt is a
-// client timestamp. Significant clock skew between client and server can let
-// recent local edits slip past the (updatedAt > lastPushedAt) filter, or
-// cause already-pushed records to be re-pushed. Acceptable for personal use
-// (1–2 devices); revisit if it becomes a real problem.
+// lastPushedAt is a server timestamp, updatedAt a client one: clock skew can
+// let a local edit slip past the (updatedAt > lastPushedAt) filter, or re-push
+// a record. Acceptable for 1–2 personal devices; revisit if it bites.
 async function pushLocalChanges() {
   const lastPushedAt = (await internalRepository.get(LAST_PUSHED_AT_KEY)) ?? 0;
 

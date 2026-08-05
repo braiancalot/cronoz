@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
-// Inline rename with optimistic display: after submit the new value shows
-// immediately and is held until the live `currentName` catches up, avoiding the
-// one-frame flash of the old name (Dexie's useLiveQuery re-emits a tick later).
-// Released whenever `currentName` changes (not by equality) so a divergent
-// external/sync rename wins.
+// Optimistic display: the submitted name is held until the live `currentName`
+// catches up, hiding the one-frame flash of the old name while useLiveQuery
+// re-emits. Released on any `currentName` change, so a sync rename still wins.
 export function useInlineRename(currentName, onRename) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
