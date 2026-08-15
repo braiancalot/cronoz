@@ -30,6 +30,7 @@ describe("create", () => {
     expect(project.name).toBe(`Projeto #${project.id.substr(0, 4)}`);
     expect(project.completedAt).toBeNull();
     expect(project.createdAt).toBeTypeOf("number");
+    expect(project.tags).toEqual([]);
     expect(project.stopwatch).toEqual(DEFAULT_STOPWATCH);
   });
 
@@ -368,6 +369,78 @@ describe("setStopwatch", () => {
   });
 });
 
+describe("addTag / removeTag", () => {
+  it("adds the normalized tag to a project that has none", async () => {
+    const project = await projectRepository.create();
+
+    await projectRepository.addTag({ id: project.id, name: "  Crochê " });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual(["Crochê"]);
+  });
+
+  it("keeps insertion order for multiple tags", async () => {
+    const project = await projectRepository.create();
+
+    await projectRepository.addTag({ id: project.id, name: "crochê" });
+    await projectRepository.addTag({ id: project.id, name: "amigurumi" });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual(["crochê", "amigurumi"]);
+  });
+
+  it("ignores a duplicate that differs only in case", async () => {
+    const project = await projectRepository.create();
+
+    await projectRepository.addTag({ id: project.id, name: "Crochê" });
+    await projectRepository.addTag({ id: project.id, name: "crochê" });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual(["Crochê"]);
+  });
+
+  it("ignores a blank name", async () => {
+    const project = await projectRepository.create();
+
+    await projectRepository.addTag({ id: project.id, name: "   " });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual([]);
+  });
+
+  it("removes by key, ignoring case and accent", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addTag({ id: project.id, name: "Crochê" });
+    await projectRepository.addTag({ id: project.id, name: "amigurumi" });
+
+    await projectRepository.removeTag({ id: project.id, name: "croche" });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual(["amigurumi"]);
+  });
+
+  it("backfills tags on a project stored before the field existed", async () => {
+    const project = await projectRepository.create();
+    await db.projects.update(project.id, { tags: undefined });
+
+    await projectRepository.addTag({ id: project.id, name: "crochê" });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual(["crochê"]);
+  });
+
+  it("does nothing for a non-existent project", async () => {
+    await expect(
+      projectRepository.addTag({ id: "missing-id", name: "crochê" }),
+    ).resolves.toBeUndefined();
+    await expect(
+      projectRepository.removeTag({ id: "missing-id", name: "crochê" }),
+    ).resolves.toBeUndefined();
+
+    expect(await db.projects.get("missing-id")).toBeUndefined();
+  });
+});
+
 describe("updatedAt", () => {
   it("create sets updatedAt", async () => {
     const project = await projectRepository.create();
@@ -459,6 +532,39 @@ describe("updatedAt", () => {
     });
     const found = await projectRepository.getById(project.id);
     expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("addTag updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    const before = project.updatedAt;
+
+    await projectRepository.addTag({ id: project.id, name: "crochê" });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("removeTag updates updatedAt", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addTag({ id: project.id, name: "crochê" });
+    const before = (await db.projects.get(project.id)).updatedAt;
+
+    await projectRepository.removeTag({ id: project.id, name: "crochê" });
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it("leaves updatedAt alone when the tag list does not change", async () => {
+    const project = await projectRepository.create();
+    await projectRepository.addTag({ id: project.id, name: "crochê" });
+    const before = (await db.projects.get(project.id)).updatedAt;
+
+    await projectRepository.addTag({ id: project.id, name: "CROCHÊ" });
+    await projectRepository.removeTag({ id: project.id, name: "amigurumi" });
+
+    const found = await db.projects.get(project.id);
+    expect(found.updatedAt).toBe(before);
   });
 
   it("setStopwatch updates updatedAt", async () => {
