@@ -162,6 +162,10 @@ Consulte `docs/IDEA.md` para entender as ideias, requisitos e direção do proje
 
 This project enforces Conventional Commits via commitlint (husky hook). Use `git commit` directly with a properly formatted message (feat:, fix:, refactor:, etc.).
 
+## Comments
+
+Short sentences. RFC 2119 keywords for obligations. Commit = imperative subject; body only for a fact the diff cannot show. Comments only where code needs clarification — never narration.
+
 ## Metodologia de Trabalho (Senior Agile Vibe Coding)
 
 Este projeto segue a metodologia Senior Agile Vibe Coding — Engenharia de Software aplicada à IA, com foco em construir software de produção resiliente.

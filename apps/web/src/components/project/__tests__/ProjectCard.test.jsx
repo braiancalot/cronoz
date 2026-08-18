@@ -1,16 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router";
 import { ProjectCard } from "@/components/project/ProjectCard.jsx";
 
-function makeProject(stopwatch) {
+function makeProject(stopwatch, overrides = {}) {
   return {
     id: "p1",
     name: "Projeto A",
     completedAt: null,
     updatedAt: Date.now(),
     stopwatch: { currentLapTime: 0, laps: [], ...stopwatch },
+    tags: [],
+    ...overrides,
   };
 }
 
@@ -18,13 +20,15 @@ function CurrentPath() {
   return <span data-testid="path">{useLocation().pathname}</span>;
 }
 
-function renderCard(project) {
+function renderCard(project, props = {}) {
   return render(
     <MemoryRouter>
       <ProjectCard
         project={project}
+        onManageTags={() => {}}
         onToggleComplete={() => {}}
         onDelete={() => {}}
+        {...props}
       />
       <CurrentPath />
     </MemoryRouter>,
@@ -34,13 +38,11 @@ function renderCard(project) {
 const LIVE_LABEL = "Ativo em outro dispositivo";
 
 describe("ProjectCard box", () => {
-  it("stays one step above a lap card instead of towering over it", () => {
+  it("uses the approved container-driven shell", () => {
     const { container } = renderCard(makeProject({ isRunning: false }));
 
-    // Both rows carry the same content and the same size-9 menu; the card kept
-    // the size="sm" preset's py-4 and stood 70% taller than a lap.
     const card = container.querySelector("[data-slot='card']");
-    expect(card).toHaveClass("py-2", "rounded-xl");
+    expect(card).toHaveClass("@container", "py-0", "rounded-2xl");
   });
 
   it("keeps the padding on a class the merge can override", () => {
@@ -51,6 +53,41 @@ describe("ProjectCard box", () => {
     // ships in the base class list either way; only data-size keeps it inert.
     const card = container.querySelector("[data-slot='card']");
     expect(card).toHaveAttribute("data-size", "default");
+  });
+
+  it("lowers completed cards by surface instead of opacity", () => {
+    const { container } = renderCard(
+      makeProject({ isRunning: false }, { completedAt: Date.now() }),
+    );
+
+    expect(container.querySelector("[data-slot='card']")).toHaveClass(
+      "bg-card/50",
+    );
+  });
+
+  it("shows at least one tag and reserves the hidden count", () => {
+    const { container } = renderCard(
+      makeProject({ isRunning: false }, { tags: ["Crochê", "Encomenda"] }),
+    );
+    const visibleTags = container.querySelector("[data-slot='project-tags']");
+
+    expect(visibleTags.children[0]).toHaveTextContent("Crochê");
+    expect(visibleTags.children[0]).toHaveClass("min-w-0", "shrink");
+    expect(visibleTags.children[1]).toHaveTextContent("+1");
+  });
+
+  it("centers time and options beside the two-line tag content", () => {
+    const { container } = renderCard(
+      makeProject({ isRunning: false }, { tags: ["Crochê"] }),
+    );
+
+    expect(screen.getByTitle("Mais opções")).toHaveClass(
+      "inset-y-0",
+      "my-auto",
+    );
+    expect(
+      container.querySelector("[data-slot='project-tags']").parentElement,
+    ).toHaveClass("flex-col", "@min-[40rem]:contents");
   });
 });
 
@@ -93,6 +130,20 @@ describe("ProjectCard live indicator", () => {
 });
 
 describe("ProjectCard menu", () => {
+  it("opens the tag manager from the existing options menu", async () => {
+    const onManageTags = vi.fn();
+    const project = makeProject({ isRunning: false });
+    renderCard(project, { onManageTags });
+
+    await userEvent.click(screen.getByTitle("Mais opções"));
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "Tags" }),
+    );
+
+    expect(onManageTags).toHaveBeenCalledWith(project);
+    expect(screen.getByTestId("path")).toHaveTextContent(/^\/$/);
+  });
+
   it("opens on a tap without following the card's link", async () => {
     renderCard(makeProject({ isRunning: false }));
 

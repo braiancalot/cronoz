@@ -1,5 +1,6 @@
 import db from "./db.js";
 import { emitMutation } from "./repoEvents.js";
+import { addTagToList, removeTagFromList } from "@/lib/tags.js";
 
 export const DEFAULT_STOPWATCH = {
   startTimestamp: null,
@@ -17,6 +18,7 @@ function getDefaultProject(id) {
     completedAt: null,
     createdAt: now,
     updatedAt: now,
+    tags: [],
     stopwatch: { ...DEFAULT_STOPWATCH },
   };
 }
@@ -151,6 +153,35 @@ async function undeleteLap({ id, lapId }) {
   });
 }
 
+async function updateTags(id, transform) {
+  let didChange = false;
+
+  // Keep the read-modify-write inside one transaction. The tag manager can
+  // dispatch another change before the previous promise settles; serialized
+  // write transactions ensure the second transform sees the first result.
+  await db.transaction("rw", db.projects, async () => {
+    const project = await db.projects.get(id);
+    if (!project) return;
+
+    const tags = transform(project.tags);
+    // The same list back means nothing to push to the other devices.
+    if (tags === project.tags) return;
+
+    await db.projects.update(id, { tags, updatedAt: Date.now() });
+    didChange = true;
+  });
+
+  if (didChange) emitMutation();
+}
+
+async function addTag({ id, name }) {
+  await updateTags(id, (tags) => addTagToList(tags, name));
+}
+
+async function removeTag({ id, name }) {
+  await updateTags(id, (tags) => removeTagFromList(tags, name));
+}
+
 // User-final stopwatch transitions (start/pause/reset/recovery). Unlike
 // save(), this bumps updatedAt and emits a mutation event so the change
 // reaches other devices via push.
@@ -173,6 +204,8 @@ const projectRepository = {
   renameLap,
   removeLap,
   undeleteLap,
+  addTag,
+  removeTag,
   setStopwatch,
 };
 
