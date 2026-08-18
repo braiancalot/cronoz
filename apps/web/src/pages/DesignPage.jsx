@@ -8,8 +8,6 @@ import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { roundDownToMinute, roundUpToMinute } from "@/lib/stopwatch.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
-import { Textarea } from "@/components/ui/textarea.jsx";
-import { Badge } from "@/components/ui/badge.jsx";
 import { Separator } from "@/components/ui/separator.jsx";
 import {
   Card,
@@ -27,12 +25,6 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog.jsx";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { UpdateBanner } from "@/components/UpdateBanner.jsx";
 
@@ -92,7 +84,6 @@ function Frame({ label, width, children }) {
 
 export default function DesignPage() {
   const [inputValue, setInputValue] = useState("");
-  const [textareaValue, setTextareaValue] = useState("");
 
   return (
     <PageContainer className="max-w-300 mx-auto pb-12 overflow-auto">
@@ -184,27 +175,6 @@ export default function DesignPage() {
           </div>
         </Section>
 
-        <Section title="Textarea">
-          <div className="flex flex-col gap-2 max-w-sm">
-            <Label htmlFor="demo-textarea">Notas</Label>
-            <Textarea
-              id="demo-textarea"
-              placeholder="Tipo de linha, agulha, link de tutorial..."
-              value={textareaValue}
-              onChange={(e) => setTextareaValue(e.target.value)}
-            />
-          </div>
-        </Section>
-
-        <Section title="Badge">
-          <div className="flex flex-wrap gap-3">
-            <Badge>Default</Badge>
-            <Badge variant="secondary">Secondary</Badge>
-            <Badge variant="outline">Outline</Badge>
-            <Badge variant="destructive">Destructive</Badge>
-          </div>
-        </Section>
-
         <Section title="Card">
           <div className="flex flex-col gap-3 max-w-sm">
             <Card>
@@ -245,25 +215,6 @@ export default function DesignPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </Section>
-
-        <Section title="Tabs">
-          <Tabs defaultValue="voltas" className="max-w-sm">
-            <TabsList>
-              <TabsTrigger value="voltas">Voltas</TabsTrigger>
-              <TabsTrigger value="notas">Notas</TabsTrigger>
-            </TabsList>
-            <TabsContent value="voltas">
-              <p className="text-sm text-muted-foreground pt-2">
-                Lista de voltas do projeto apareceria aqui.
-              </p>
-            </TabsContent>
-            <TabsContent value="notas">
-              <p className="text-sm text-muted-foreground pt-2">
-                Notas do projeto apareceriam aqui.
-              </p>
-            </TabsContent>
-          </Tabs>
         </Section>
 
         <Section title="Separator">

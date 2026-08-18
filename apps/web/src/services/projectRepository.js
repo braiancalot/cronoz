@@ -154,14 +154,24 @@ async function undeleteLap({ id, lapId }) {
 }
 
 async function updateTags(id, transform) {
-  const project = await getRawById(id);
-  if (!project) return;
+  let didChange = false;
 
-  const tags = transform(project.tags);
-  // The same list back means nothing to push to the other devices.
-  if (tags === project.tags) return;
+  // Keep the read-modify-write inside one transaction. The tag manager can
+  // dispatch another change before the previous promise settles; serialized
+  // write transactions ensure the second transform sees the first result.
+  await db.transaction("rw", db.projects, async () => {
+    const project = await db.projects.get(id);
+    if (!project) return;
 
-  await mutateLocal(id, { tags });
+    const tags = transform(project.tags);
+    // The same list back means nothing to push to the other devices.
+    if (tags === project.tags) return;
+
+    await db.projects.update(id, { tags, updatedAt: Date.now() });
+    didChange = true;
+  });
+
+  if (didChange) emitMutation();
 }
 
 async function addTag({ id, name }) {

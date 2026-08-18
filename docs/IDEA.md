@@ -58,13 +58,14 @@ A versão 1.0 está entregue e em uso em produção.
 - Preferência "ignorar milissegundos"
 - Wake lock (mantém a tela acesa com o cronômetro rodando)
 - Atalhos de teclado e auto-pause ao sair/minimizar o app
+- Tags livres por projeto, com cores determinísticas, autocomplete e filtros
+  combináveis por tag e status de conclusão
 
 ## Ideias Futuras
 
 Coisas que podem ser úteis mas não são prioridade agora:
 
 - Notas por projeto (tipo de linha, agulha, link de tutorial)
-- Tags para organizar projetos — requisitos já validados com a cliente: tags livres (sem cadastro/model próprio), criadas pela pessoa na hora de marcar o projeto, com autocomplete das já usadas; cor determinística a partir do nome; múltiplas tags por projeto; "Concluído" participa do mesmo filtro que as tags, mas continua sendo cadastrado pelo fluxo de concluir/reabrir já existente, não pelo autocomplete
 - Templates de voltas reutilizáveis
 - Tempo do cronômetro no título da aba do browser
 - Foto por volta para registrar progresso visual

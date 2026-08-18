@@ -5,7 +5,7 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-4xl border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none active:not-aria-[haspopup]:scale-95 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-4xl border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -31,10 +31,15 @@ const buttonVariants = cva(
         "icon-sm": "size-9 [&_svg:not([class*='size-'])]:size-5",
         "icon-lg": "size-11 [&_svg:not([class*='size-'])]:size-6",
       },
+      pressEffect: {
+        scale: "active:not-aria-[haspopup]:scale-95",
+        none: "",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      pressEffect: "scale",
     },
   },
 );
@@ -43,6 +48,7 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  pressEffect = "scale",
   asChild = false,
   ...props
 }) {
@@ -53,7 +59,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, pressEffect, className }))}
       {...props}
     />
   );

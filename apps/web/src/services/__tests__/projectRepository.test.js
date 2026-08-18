@@ -389,6 +389,19 @@ describe("addTag / removeTag", () => {
     expect(found.tags).toEqual(["crochê", "amigurumi"]);
   });
 
+  it("preserves concurrent tag additions", async () => {
+    const project = await projectRepository.create();
+
+    await Promise.all([
+      projectRepository.addTag({ id: project.id, name: "crochê" }),
+      projectRepository.addTag({ id: project.id, name: "amigurumi" }),
+      projectRepository.addTag({ id: project.id, name: "presente" }),
+    ]);
+
+    const found = await projectRepository.getById(project.id);
+    expect(found.tags).toEqual(["crochê", "amigurumi", "presente"]);
+  });
+
   it("ignores a duplicate that differs only in case", async () => {
     const project = await projectRepository.create();
 
