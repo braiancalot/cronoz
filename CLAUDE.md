@@ -53,7 +53,8 @@ Components are grouped by family in subfolders, each with its own `__tests__/`:
 components/
   laps/     Laps LapItem LapCard LapName LapNameForm LapTime LapMenu
   timer/    TimerStage {Minimal,Inline,Stacked}Stage TimerDisplay TimerMeta TimerSlot
-            RunningIndicator TimerControls TimerAdjuster StepGroup AdjustActions
+            RunningIndicator TimerControls TimerAdjuster AdjusterFrame
+            TimerAdjustSlot StepGroup AdjustActions
   pip/      PiPContent PiPTimer PiPIdleView PiPLapView PiPDiscardView PiPPlaceholder
   project/  ProjectCard ProjectHeader ProjectTitle ProjectMenu ProjectRenameActions
   sync/     SyncCard SyncIndicator SyncPairingCode SyncPairingStart SyncJoinForm SyncPairedPanel
@@ -102,6 +103,10 @@ Keep `modal` at its default. An earlier fix used `modal: false` plus `onPointerC
 **`:active`/`:hover` hit-test geometrically and ignore `stopPropagation`.** `ProjectCard` used to wrap the whole row — including the menu button — in a `<Link>` carrying `hover:bg-accent active:bg-accent/80`. Any press inside that box put the anchor in `:active`, menu button included, since the browser matches the pseudo-class by pointer position, not by which JS handler ran. Deferring the open from `pointerdown` to `click` (above) made this worse, not better: the anchor now sits `:active` for the whole press-and-hold instead of for one frame, so the entire card visibly flashed on every menu tap.
 
 The fix is structural, not another `stopPropagation`: the `Link` is a _stretched link_ — an `absolute inset-0` sibling of `CardContent`, not its wrapper, so the menu button is never a descendant of it and can never trigger its `:active`. `CardContent` carries `pointer-events-none` so a tap on empty row space (name, time, padding) falls through to the link underneath and still navigates; the trigger button opts back in with `pointer-events-auto` so it keeps intercepting its own taps. Because the link no longer wraps any text, it needs an explicit `aria-label={project.name}` — a `<Link>` with no accessible name is silent to a screen reader. Any card that mixes a full-row link with an interior interactive control should use this shape, not `Link` as the wrapper. `src/lib/floatingMenuLayout.js` holds the floating button's shared classes (`FLOATING_MENU_BUTTON`, `FLOATING_MENU_MIN_HEIGHT`, `CLEARS_FLOATING_MENU`) — `ProjectCard` and `LapCard` both consume it, so the button's reach and the row's clearance can't drift out of sync between the two.
+
+**Content that swaps above the laps has to reserve the tallest state's footprint.** The timer stage swaps the plain timer for the adjuster in place; the adjuster is always taller (its steppers outgrow the digits), so the section grew on open and the laps below shifted down and lost height. The fix is a reservation, not a tweak: `AdjusterFrame` owns the arrangement, `TimerAdjuster` fills it with the steppers, and `TimerAdjustSlot` renders the same frame with the chrome veiled (`visibility: hidden` keeps the box while dropping it from the tab order and the a11y tree) around the plain timer. Because the real timer sits in the frame's own display slot, the digits land on the same pixel in both states — an `absolute`-centred overlay would have re-centred them.
+
+Hand-sizing the reservation can't work, the same reason `TimerSlot` gives: the `row` layout's height rides the display's viewport clamp and the `flank` one rides the stepper metrics. Reserve by rendering the real thing invisibly. The side controls follow the same rule from the other end — `AdjustActions` mirrors `TimerControls`' sizes, gaps and orientation so the column never resizes either.
 
 **jsdom resolves no stylesheet.** `getComputedStyle(el).position` returns `static` for `class="fixed"`, so layout assertions written that way pass unconditionally. Assert on `className`, or test the behaviour some other way. Same trap for any Tailwind-driven computed style.
 

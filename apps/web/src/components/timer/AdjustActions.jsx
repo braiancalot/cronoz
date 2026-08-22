@@ -7,10 +7,11 @@ import {
 import { Button } from "@/components/ui/button.jsx";
 import { cn } from "@/lib/utils.js";
 
-// Mirrors the TimerControls arrangement it stands in for, so entering adjust
-// mode doesn't slide the buttons sideways.
+// Mirrors the TimerControls arrangement it stands in for — same sizes, same
+// gaps, same orientation — so entering adjust mode doesn't move the buttons.
 export function AdjustActions({
   size = "default",
+  orientation = "horizontal",
   onCancel,
   onConfirm,
   className,
@@ -23,6 +24,7 @@ export function AdjustActions({
       className={cn(
         "flex items-center justify-center",
         CONTROL_GAPS[size],
+        orientation === "vertical" ? "flex-col" : "flex-row",
         className,
       )}
     >

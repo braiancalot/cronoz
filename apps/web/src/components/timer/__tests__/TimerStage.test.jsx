@@ -18,6 +18,13 @@ const lapsProps = {
   onCancelAddLap: vi.fn(),
 };
 
+// Only the adjuster's own buttons; the play/lap and ✕/✓ ones swap by design.
+function stepperShape(container) {
+  return [...container.querySelectorAll("button")]
+    .map((button) => button.getAttribute("aria-label") ?? "")
+    .filter((label) => /Diminuir|Aumentar|Arredondar/.test(label));
+}
+
 function renderStage(props = {}) {
   return render(
     <TimerStage
@@ -28,6 +35,12 @@ function renderStage(props = {}) {
       isRunning={false}
       hourlyPrice={10}
       hasLapTime
+      adjustSegment={5000}
+      adjustTotal={null}
+      onAdjustStep={vi.fn()}
+      onAdjustSnap={vi.fn()}
+      onCancelAdjust={vi.fn()}
+      onConfirmAdjust={vi.fn()}
       onStart={vi.fn()}
       onPause={vi.fn()}
       onAddLap={vi.fn()}
@@ -168,13 +181,15 @@ describe("TimerStage", () => {
 
       // A hidden timer sets the box and the placeholder floats over it: its
       // own height can't match a timer that rides a clamp on the viewport.
-      const ghost = container.querySelector(".invisible");
-      expect(ghost.querySelector(".tabular-nums")).toBeInTheDocument();
+      // Reached through the placeholder, not by querying `.invisible`, which
+      // also matches the veiled steppers the adjust slot reserves.
+      const floating = screen.getByText("na janela flutuante").parentElement;
+      expect(floating).toHaveClass("absolute", "inset-0");
+      const ghost = floating.previousElementSibling;
+      expect(ghost).toHaveClass("invisible");
       expect(ghost).toHaveAttribute("aria-hidden");
-      expect(screen.getByText("na janela flutuante").parentElement).toHaveClass(
-        "absolute",
-        "inset-0",
-      );
+      expect(ghost.querySelector(".tabular-nums")).toBeInTheDocument();
+      expect(container.querySelector("section, .flex")).toBeInTheDocument();
     },
   );
 
@@ -194,6 +209,30 @@ describe("TimerStage", () => {
     // The buttons are what set the row's height, so a different size here
     // resizes the band above and the stage jumps on entering adjust mode.
     expect(screen.getByTitle("Pronto")).toHaveClass(CONTROL_SIZES.default);
+  });
+
+  // Regression: the adjuster outgrows the timer it replaces, so opening adjust
+  // mode used to grow the section — pushing the laps down and squeezing the
+  // list. Both stages that show laps reserve the taller state up front.
+  it.each(["stacked", "inline"])(
+    "reserves the adjuster's footprint in the %s layout so the laps hold still",
+    (layout) => {
+      const closed = renderStage({ layout }).container;
+      const open = renderStage({ layout, isAdjusting: true }).container;
+
+      expect(stepperShape(closed)).toEqual(stepperShape(open));
+      expect(stepperShape(closed)).not.toHaveLength(0);
+    },
+  );
+
+  it("keeps the inline adjust actions in the controls' own column", () => {
+    renderStage({ layout: "inline", isAdjusting: true });
+
+    // They used to stack above the laps, which shoved the whole list down.
+    const actions = screen.getByTitle("Pronto").parentElement;
+    expect(actions).toHaveClass("flex-col");
+    expect(actions.parentElement).toHaveClass(TOAST_BAND);
+    expect(screen.getByTitle("Pronto")).toHaveClass(CONTROL_SIZES.compact);
   });
 
   it.each(["stacked", "inline", "minimal"])(

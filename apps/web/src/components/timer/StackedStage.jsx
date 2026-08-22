@@ -1,5 +1,6 @@
 import { TimerControls } from "@/components/timer/TimerControls.jsx";
 import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
+import { TimerAdjustSlot } from "@/components/timer/TimerAdjustSlot.jsx";
 import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { Laps } from "@/components/laps/Laps.jsx";
 import { cn } from "@/lib/utils.js";
@@ -47,7 +48,7 @@ export function StackedStage({
               onSnap={onAdjustSnap}
             />
           ) : (
-            timer
+            <TimerAdjustSlot layout={adjustLayout}>{timer}</TimerAdjustSlot>
           )}
         </section>
 

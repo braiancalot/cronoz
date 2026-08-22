@@ -1,5 +1,6 @@
 import { TimerControls } from "@/components/timer/TimerControls.jsx";
 import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
+import { TimerAdjustSlot } from "@/components/timer/TimerAdjustSlot.jsx";
 import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { Laps } from "@/components/laps/Laps.jsx";
 import { cn } from "@/lib/utils.js";
@@ -31,57 +32,61 @@ export function InlineStage({
   // optical centre instead of being nudged left by their width.
   const balance = <div aria-hidden className={CONTROLS_BOX.inline} />;
 
+  const isAdjustingHere = isAdjusting && !placeholder;
+
+  // Adjust mode keeps the row: its actions take the controls' column and its
+  // steppers the slot already held for them, so nothing below moves.
+  const side = isAdjustingHere ? (
+    <AdjustActions
+      size="compact"
+      orientation="vertical"
+      onCancel={onCancelAdjust}
+      onConfirm={onConfirmAdjust}
+      className="shrink-0"
+    />
+  ) : (
+    <TimerControls
+      isRunning={isRunning}
+      hasLapTime={hasLapTime}
+      onStart={onStart}
+      onPause={onPause}
+      onAddLap={onAddLap}
+      orientation="vertical"
+      size="compact"
+      className="shrink-0"
+    />
+  );
+
   return (
     <div className="flex flex-1 flex-col w-full min-h-0 items-center">
-      {isAdjusting && !placeholder ? (
-        <div
-          className={cn(
-            "flex flex-col items-center gap-3 shrink-0",
-            hasLapsSection ? TOAST_BAND : "flex-1 justify-center",
-          )}
-        >
-          <TimerAdjuster
-            time={adjustSegment}
-            totalTime={adjustTotal}
-            hourlyPrice={hourlyPrice}
-            size="compact"
-            layout={adjustLayout}
-            onStep={onAdjustStep}
-            onSnap={onAdjustSnap}
-          />
-          <AdjustActions
-            size="compact"
-            onCancel={onCancelAdjust}
-            onConfirm={onConfirmAdjust}
-          />
-        </div>
-      ) : (
-        <div
-          className={cn(
-            "flex w-full items-center shrink-0",
-            hasLapsSection ? TOAST_BAND : "flex-1",
-          )}
-        >
-          {balance}
+      <div
+        className={cn(
+          "flex w-full items-center shrink-0",
+          hasLapsSection ? TOAST_BAND : "flex-1",
+        )}
+      >
+        {balance}
 
-          <div className="flex flex-1 justify-center">{timer}</div>
-
-          {placeholder ? (
-            balance
-          ) : (
-            <TimerControls
-              isRunning={isRunning}
-              hasLapTime={hasLapTime}
-              onStart={onStart}
-              onPause={onPause}
-              onAddLap={onAddLap}
-              orientation="vertical"
+        <div className="flex flex-1 justify-center">
+          {isAdjustingHere ? (
+            <TimerAdjuster
+              time={adjustSegment}
+              totalTime={adjustTotal}
+              hourlyPrice={hourlyPrice}
               size="compact"
-              className="shrink-0"
+              layout={adjustLayout}
+              onStep={onAdjustStep}
+              onSnap={onAdjustSnap}
             />
+          ) : (
+            <TimerAdjustSlot layout={adjustLayout} size="compact">
+              {timer}
+            </TimerAdjustSlot>
           )}
         </div>
-      )}
+
+        {placeholder ? balance : side}
+      </div>
 
       {hasLapsSection && (
         <>
