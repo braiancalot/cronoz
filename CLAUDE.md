@@ -162,9 +162,40 @@ Consulte `docs/IDEA.md` para entender as ideias, requisitos e direção do proje
 
 This project enforces Conventional Commits via commitlint (husky hook). Use `git commit` directly with a properly formatted message (feat:, fix:, refactor:, etc.).
 
+## Code Style
+
+- Functions: 4-20 lines. Split if longer.
+- Files: under 500 lines as a hard ceiling. Components keep the tighter ~150-line rule from the apps/web Code Organization section above — split those earlier; hooks/services/lib files can run up to the 500-line ceiling.
+- One thing per function, one responsibility per module (SRP).
+- Names: specific and unique. Avoid `data`, `handler`, `Manager`. Prefer names that return <5 grep hits in the codebase.
+- Types: this codebase is plain JS (no TypeScript), so there's no compiler to enforce this — the equivalent is explicit, destructured signatures over vague `props`/`options` catch-alls; if TypeScript is ever adopted, no `any`, no untyped functions.
+- No code duplication. Extract shared logic into a function/module.
+- Early returns over nested ifs. Max 2 levels of indentation.
+- Exception messages must include the offending value and expected shape.
+
+### Dependencies
+
+- Inject dependencies through constructor/parameter, not global/import.
+- Wrap third-party libs behind a thin interface owned by this project.
+
+### Structure
+
+- Follow the framework's convention (Vite/React Router on the web, Hono on the API).
+- Prefer small focused modules over god files — see Code Organization above for how apps/web is actually laid out.
+- Predictable paths: `pages/` `components/` `hooks/` `lib/` `services/` on the web, `src/db` + routes on the API.
+
+### Formatting
+
+- Use the project's formatter/linter (`npm run lint`, `npm run lint:check`). Don't discuss style beyond that.
+
+### Logging
+
+- Structured JSON when logging for debugging/observability (relevant once apps/api grows beyond `/health`).
+- Plain text only for user-facing CLI output.
+
 ## Comments
 
-Short sentences. RFC 2119 keywords for obligations. Commit = imperative subject; body only for a fact the diff cannot show. Comments only where code needs clarification — never narration.
+Short sentences. RFC 2119 keywords for obligations. Commit = imperative subject; body only for a fact the diff cannot show. Comments only where code needs clarification — never narration; write WHY, not WHAT (skip `// increment counter` above `i++`). Keep existing comments on refactor — don't strip them, they carry intent and provenance the diff won't restate.
 
 ## Metodologia de Trabalho (Senior Agile Vibe Coding)
 
@@ -183,6 +214,8 @@ Claude é o piloto, o usuário é o navegador/arquiteto. Antes de executar mudan
 - Toda nova funcionalidade deve vir acompanhada de testes unitários
 - Toda correção de bug exige um teste de regressão para evitar reincidência
 - Escrever o teste antes da implementação quando possível (red → green → refactor)
+- Mockar I/O externo (API, DB, filesystem) com classes fake nomeadas, não stubs inline
+- Testes devem ser F.I.R.S.T: fast, independent, repeatable, self-validating, timely
 
 ### Small Releases (Commits Curtos)
 
