@@ -7,6 +7,15 @@ const STEPS = [
   { ms: 1_000, label: "1s" },
 ];
 
+// The display's tiers don't map 1:1 onto the buttons: the sliver has no stepper
+// size of its own and borrows the mini one.
+const STEPPER_SIZE = {
+  default: "default",
+  compact: "compact",
+  sliver: "mini",
+  mini: "mini",
+};
+
 // The adjuster's chrome around a display, in two layouts:
 //   - "flank" (default): steppers in columns on either side of the timer.
 //   - "row": timer above a single row (narrow phone, fits 360px).
@@ -33,7 +42,7 @@ export function AdjusterFrame({
       onSnap={onSnap}
       // The single row can't afford the widest metric on a 360px phone, so it
       // is pinned to the mini button size regardless of the display size.
-      size={horizontal ? "mini" : size}
+      size={horizontal ? "mini" : STEPPER_SIZE[size]}
       orientation={horizontal ? "horizontal" : "vertical"}
       mirror={horizontal}
     />

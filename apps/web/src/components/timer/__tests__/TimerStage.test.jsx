@@ -235,6 +235,38 @@ describe("TimerStage", () => {
     expect(screen.getByTitle("Pronto")).toHaveClass(CONTROL_SIZES.compact);
   });
 
+  // Regression: the minimal stage ignored isAdjusting, so on a split screen the
+  // mode switched on, nothing rendered, and there was no ✕ to get back out.
+  it("shows the adjuster on the minimal layout instead of swallowing it", () => {
+    renderStage({ layout: "minimal", isAdjusting: true });
+
+    expect(
+      screen.getByRole("button", { name: "Aumentar 10s" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTitle("Cancelar")).toBeInTheDocument();
+    expect(screen.queryByTitle("Iniciar")).not.toBeInTheDocument();
+  });
+
+  it("holds the minimal adjust actions to the controls' tightened gap", () => {
+    renderStage({ layout: "minimal", isAdjusting: true });
+
+    // Two 56px buttons plus the roomier default outgrow this tier's height.
+    expect(screen.getByTitle("Pronto").parentElement).toHaveClass(
+      "flex-col",
+      "gap-3",
+    );
+  });
+
+  it("skips the footprint reservation on the minimal layout", () => {
+    const { container } = renderStage({ layout: "minimal" });
+
+    // Nothing sits below the timer there, and a split screen has no height to
+    // spend on space that only stops a shift that can't happen.
+    expect(
+      container.querySelector("[aria-hidden='true'].invisible"),
+    ).toBeNull();
+  });
+
   it.each(["stacked", "inline", "minimal"])(
     "leaves the %s controls row to the running overlay",
     (layout) => {

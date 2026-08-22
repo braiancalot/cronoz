@@ -74,4 +74,11 @@ describe("TimerAdjustSlot", () => {
       screen.queryByRole("button", { name: "Aumentar 10s" }),
     ).not.toBeInTheDocument();
   });
+
+  it("borrows the mini stepper for the sliver, which has no size of its own", () => {
+    const { container } = renderSlot({ size: "sliver" });
+
+    // STEP_BTN has no sliver key: without the map the buttons render unsized.
+    expect(container.querySelector("button")).toHaveClass("h-8", "w-9");
+  });
 });
