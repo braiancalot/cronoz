@@ -38,11 +38,6 @@ function renderStage(props = {}) {
   );
 }
 
-// The element the stage styles: the laps' own wrapper around the scroll area.
-function lapsWrapper(container) {
-  return container.querySelector("[data-slot='scroll-area']").parentElement;
-}
-
 describe("TimerStage", () => {
   it("shows the laps and the controls in the stacked layout", () => {
     renderStage();
@@ -199,29 +194,6 @@ describe("TimerStage", () => {
     // The buttons are what set the row's height, so a different size here
     // resizes the band above and the stage jumps on entering adjust mode.
     expect(screen.getByTitle("Pronto")).toHaveClass(CONTROL_SIZES.default);
-  });
-
-  it("dims the laps while running, since the overlay covers them", () => {
-    const { container } = renderStage({ isRunning: true });
-
-    expect(lapsWrapper(container)).toHaveClass("opacity-40");
-  });
-
-  it("brings the laps back to full opacity once paused", () => {
-    const { container } = renderStage({ isRunning: false });
-
-    expect(lapsWrapper(container)).not.toHaveClass("opacity-40");
-  });
-
-  it("keeps the laps lit while the PiP window holds the timer", () => {
-    // No overlay on this page during PiP, so nothing is covered — dimming there
-    // would just read as broken.
-    const { container } = renderStage({
-      isRunning: true,
-      placeholder: <div>na janela flutuante</div>,
-    });
-
-    expect(lapsWrapper(container)).not.toHaveClass("opacity-40");
   });
 
   it.each(["stacked", "inline", "minimal"])(

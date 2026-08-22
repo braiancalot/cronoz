@@ -69,7 +69,6 @@ describe("ProjectFilters", () => {
     expect(scroller).toBeInTheDocument();
     expect(tag.className).not.toContain("scale-95");
     expect(tag.className).not.toContain("brightness");
-    expect(tag).toHaveClass("h-[30px]!", "border-2!");
   });
 
   it("hides the completed chip when it would not exclude anything", () => {

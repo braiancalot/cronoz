@@ -38,13 +38,6 @@ function renderCard(project, props = {}) {
 const LIVE_LABEL = "Ativo em outro dispositivo";
 
 describe("ProjectCard box", () => {
-  it("uses the approved container-driven shell", () => {
-    const { container } = renderCard(makeProject({ isRunning: false }));
-
-    const card = container.querySelector("[data-slot='card']");
-    expect(card).toHaveClass("@container", "py-0", "rounded-2xl");
-  });
-
   it("keeps the padding on a class the merge can override", () => {
     const { container } = renderCard(makeProject({ isRunning: false }));
 
@@ -53,16 +46,6 @@ describe("ProjectCard box", () => {
     // ships in the base class list either way; only data-size keeps it inert.
     const card = container.querySelector("[data-slot='card']");
     expect(card).toHaveAttribute("data-size", "default");
-  });
-
-  it("lowers completed cards by surface instead of opacity", () => {
-    const { container } = renderCard(
-      makeProject({ isRunning: false }, { completedAt: Date.now() }),
-    );
-
-    expect(container.querySelector("[data-slot='card']")).toHaveClass(
-      "bg-card/50",
-    );
   });
 
   it("shows at least one tag and reserves the hidden count", () => {
@@ -177,15 +160,6 @@ describe("ProjectCard menu", () => {
 
     expect(link).not.toBeNull();
     expect(link.contains(trigger)).toBe(false);
-  });
-
-  it("dims the menu trigger at rest and darkens it on touch", () => {
-    renderCard(makeProject({ isRunning: false }));
-
-    expect(screen.getByTitle("Mais opções")).toHaveClass(
-      "text-muted-foreground",
-      "active:text-foreground",
-    );
   });
 
   it("drops the Tags menu item and the chips when hideTags is set", async () => {

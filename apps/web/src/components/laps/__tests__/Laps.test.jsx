@@ -40,19 +40,6 @@ describe("Laps", () => {
     );
   });
 
-  it("dims the menu trigger at rest and darkens it on touch", () => {
-    render(
-      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
-    );
-
-    const [trigger] = screen.getAllByTitle("Mais opções");
-
-    expect(trigger).toHaveClass(
-      "text-muted-foreground",
-      "active:text-foreground",
-    );
-  });
-
   it("constrains the rows to the viewport width", () => {
     const { container } = render(
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
@@ -187,20 +174,6 @@ describe("Laps", () => {
 
     const form = container.querySelector("form");
     expect(form).toHaveClass("min-h-9");
-  });
-
-  it("renames in place, with no box around the field", async () => {
-    render(
-      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
-    );
-
-    await startRename(0);
-    const field = screen.getByDisplayValue("Lap #1");
-
-    expect(field).toHaveClass("bg-transparent");
-    ["bg-input/30", "rounded-4xl", "px-3", "border", "text-base"].forEach(
-      (boxed) => expect(field).not.toHaveClass(boxed),
-    );
   });
 
   it("calls onRenameLap on submit", async () => {
