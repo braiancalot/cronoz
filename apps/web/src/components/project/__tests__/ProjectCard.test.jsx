@@ -187,6 +187,22 @@ describe("ProjectCard menu", () => {
       "active:text-foreground",
     );
   });
+
+  it("drops the Tags menu item and the chips when hideTags is set", async () => {
+    const { container } = renderCard(
+      makeProject({ isRunning: false }, { tags: ["Crochê"] }),
+      { hideTags: true },
+    );
+
+    await userEvent.click(screen.getByTitle("Mais opções"));
+
+    expect(
+      screen.queryByRole("menuitem", { name: "Tags" }),
+    ).not.toBeInTheDocument();
+    expect(
+      container.querySelector("[data-slot='project-tags']"),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("ProjectCard row link", () => {

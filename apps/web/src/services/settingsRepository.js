@@ -4,6 +4,7 @@ import { emitMutation } from "./repoEvents.js";
 export const DEFAULTS = {
   hourlyPrice: 10,
   ignoreMilliseconds: false,
+  hideTags: false,
 };
 
 async function get(key) {

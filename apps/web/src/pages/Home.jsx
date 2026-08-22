@@ -14,6 +14,7 @@ import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { useHideTags } from "@/hooks/useHideTags.js";
 import {
   addTagToList,
   collectTags,
@@ -46,6 +47,7 @@ function sameTags(left = [], right = []) {
 function ProjectList({
   projects,
   timeWidth,
+  hideTags,
   onManageTags,
   onToggleComplete,
   onDelete,
@@ -58,6 +60,7 @@ function ProjectList({
             key={project.id}
             project={project}
             timeWidth={timeWidth}
+            hideTags={hideTags}
             onManageTags={onManageTags}
             onToggleComplete={onToggleComplete}
             onDelete={onDelete}
@@ -71,6 +74,7 @@ function ProjectList({
 export default function Home() {
   const navigate = useNavigate();
   const ignoreMs = useIgnoreMilliseconds();
+  const hideTags = useHideTags();
 
   // Hides the just-created project from the list until navigate unmounts Home,
   // preventing a flash of the card before the transition to /project/:id.
@@ -241,14 +245,16 @@ export default function Home() {
   const listProjects = sortedByUpdatedAt.filter(
     (project) => project.id !== creatingProjectId,
   );
-  const allTags = collectTags(listProjects);
+  const allTags = hideTags ? [] : collectTags(listProjects);
   // Only useful when it can exclude something: some completed, some not.
+  // Lives in the tags filter row, so it hides along with the rest of tags too.
   const showCompletedFilter =
+    !hideTags &&
     listProjects.some((project) => project.completedAt !== null) &&
     listProjects.some((project) => project.completedAt === null);
   const effectiveCompletedOnly = showCompletedFilter && completedOnly;
   const filteredProjects = filterProjects(listProjects, {
-    tagKeys: selectedTagKeys,
+    tagKeys: hideTags ? [] : selectedTagKeys,
     completed: effectiveCompletedOnly ? true : undefined,
   });
   const activeProjects = filteredProjects.filter(
@@ -258,7 +264,8 @@ export default function Home() {
     (p) => p.completedAt !== null,
   );
   const isEmpty = listProjects.length === 0;
-  const hasActiveFilters = selectedTagKeys.length > 0 || effectiveCompletedOnly;
+  const hasActiveFilters =
+    (!hideTags && selectedTagKeys.length > 0) || effectiveCompletedOnly;
   const hasFilterOptions = allTags.length > 0 || showCompletedFilter;
   const noFilteredProjects =
     !isEmpty && activeProjects.length === 0 && completedProjects.length === 0;
@@ -302,6 +309,7 @@ export default function Home() {
             <ProjectList
               projects={activeProjects}
               timeWidth={timeWidth}
+              hideTags={hideTags}
               onManageTags={(project) => setManagedProjectId(project.id)}
               onToggleComplete={handleToggleComplete}
               onDelete={handleRequestDelete}
@@ -326,6 +334,7 @@ export default function Home() {
             <ProjectList
               projects={completedProjects}
               timeWidth={timeWidth}
+              hideTags={hideTags}
               onManageTags={(project) => setManagedProjectId(project.id)}
               onToggleComplete={handleToggleComplete}
               onDelete={handleRequestDelete}

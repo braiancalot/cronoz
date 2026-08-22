@@ -26,13 +26,21 @@ describe("get", () => {
 describe("getResolved", () => {
   it("returns all defaults when nothing is stored", async () => {
     const resolved = await settingsRepository.getResolved();
-    expect(resolved).toEqual({ hourlyPrice: 10, ignoreMilliseconds: false });
+    expect(resolved).toEqual({
+      hourlyPrice: 10,
+      ignoreMilliseconds: false,
+      hideTags: false,
+    });
   });
 
   it("returns stored values merged over defaults", async () => {
     await settingsRepository.set("ignoreMilliseconds", true);
     const resolved = await settingsRepository.getResolved();
-    expect(resolved).toEqual({ hourlyPrice: 10, ignoreMilliseconds: true });
+    expect(resolved).toEqual({
+      hourlyPrice: 10,
+      ignoreMilliseconds: true,
+      hideTags: false,
+    });
   });
 
   it("preserves a stored falsy value instead of the default", async () => {

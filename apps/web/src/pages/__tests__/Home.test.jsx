@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router";
 
 import { useLiveQuery } from "dexie-react-hooks";
 import projectRepository from "@/services/projectRepository.js";
+import { useHideTags } from "@/hooks/useHideTags.js";
 import Home from "@/pages/Home.jsx";
 
 vi.mock("dexie-react-hooks", () => ({ useLiveQuery: vi.fn() }));
@@ -30,6 +31,8 @@ vi.mock("@/lib/undoToast.js", () => ({
   showUndoToast: vi.fn(),
   UNDO_ON_LIST: {},
 }));
+
+vi.mock("@/hooks/useHideTags.js", () => ({ useHideTags: vi.fn(() => false) }));
 
 function makeProject(id, name, tags, completedAt = null) {
   return {
@@ -67,6 +70,7 @@ describe("Home tags", () => {
     vi.clearAllMocks();
     vi.mocked(useLiveQuery).mockReturnValue(PROJECTS);
     vi.mocked(projectRepository.addTag).mockResolvedValue(undefined);
+    vi.mocked(useHideTags).mockReturnValue(false);
   });
 
   it("unions tag filters and intersects the completed filter", async () => {
@@ -120,5 +124,23 @@ describe("Home tags", () => {
     expect(
       screen.getByRole("button", { name: "Remover tag Urgente" }),
     ).toBeInTheDocument();
+  });
+
+  it("drops the whole filter bar, including Concluídos, when tags are hidden", async () => {
+    vi.mocked(useHideTags).mockReturnValue(true);
+    const user = userEvent.setup();
+    renderHome();
+
+    expect(
+      screen.queryByRole("button", { name: "Crochê" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Concluídos" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByTitle("Mais opções")[0]);
+    expect(
+      screen.queryByRole("menuitem", { name: "Tags" }),
+    ).not.toBeInTheDocument();
   });
 });

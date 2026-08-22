@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import settingsRepository from "@/services/settingsRepository.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { useHideTags } from "@/hooks/useHideTags.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Switch } from "@/components/ui/switch.jsx";
@@ -21,6 +22,7 @@ import { BackupCard } from "@/components/BackupCard.jsx";
 export default function SettingsPage() {
   const hourlyPrice = useHourlyPrice();
   const ignoreMilliseconds = useIgnoreMilliseconds();
+  const hideTags = useHideTags();
 
   async function handlePriceChange(e) {
     const value = parseFloat(e.target.value);
@@ -31,6 +33,10 @@ export default function SettingsPage() {
 
   async function handleIgnoreMillisecondsChange(checked) {
     await settingsRepository.set("ignoreMilliseconds", checked);
+  }
+
+  async function handleHideTagsChange(checked) {
+    await settingsRepository.set("hideTags", checked);
   }
 
   return (
@@ -85,6 +91,24 @@ export default function SettingsPage() {
                 id="ignore-milliseconds"
                 checked={ignoreMilliseconds}
                 onCheckedChange={handleIgnoreMillisecondsChange}
+              />
+            </div>
+
+            <div className="h-px bg-border" />
+
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="hide-tags">Esconder tags</Label>
+                <p className="text-xs text-muted-foreground">
+                  Oculta a funcionalidade de tags na tela inicial e nos
+                  projetos. As tags de cada projeto continuam salvas e voltam a
+                  aparecer se você desativar esta opção.
+                </p>
+              </div>
+              <Switch
+                id="hide-tags"
+                checked={hideTags}
+                onCheckedChange={handleHideTagsChange}
               />
             </div>
           </CardContent>

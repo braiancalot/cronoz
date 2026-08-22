@@ -30,6 +30,7 @@ export const PROJECT_TIME_WIDTH = {
 export function ProjectCard({
   project,
   timeWidth = PROJECT_TIME_WIDTH.withHours,
+  hideTags = false,
   onManageTags,
   onToggleComplete,
   onDelete,
@@ -39,7 +40,7 @@ export function ProjectCard({
   const { menuProps, triggerProps } = useTapOnlyDropdown();
   const displayTime = calculateTotalTime(project.stopwatch, { ignoreMs });
   const isCompleted = project.completedAt !== null;
-  const tags = project.tags ?? [];
+  const tags = hideTags ? [] : (project.tags ?? []);
   const hasTags = tags.length > 0;
   // Running with a fresh heartbeat means it's ticking somewhere — almost always
   // another device, since leaving for the Home screen pauses the local run.
@@ -72,10 +73,12 @@ export function ProjectCard({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => onManageTags?.(project)}>
-            <TagIcon className="size-4" />
-            Tags
-          </DropdownMenuItem>
+          {!hideTags && (
+            <DropdownMenuItem onSelect={() => onManageTags?.(project)}>
+              <TagIcon className="size-4" />
+              Tags
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             variant="complete"
             onSelect={() => onToggleComplete(project)}
