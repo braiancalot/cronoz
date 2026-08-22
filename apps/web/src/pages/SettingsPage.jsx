@@ -57,8 +57,8 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle>Preferências</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
+          <CardContent className="flex flex-col gap-8">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <Label htmlFor="hourly-price">Valor por hora</Label>
                 <p className="text-xs text-muted-foreground">
@@ -69,14 +69,14 @@ export default function SettingsPage() {
                 id="hourly-price"
                 type="number"
                 min="0"
+                max="9999"
                 step="0.5"
+                inputMode="decimal"
                 value={hourlyPrice}
                 onChange={handlePriceChange}
-                className="max-w-xs"
+                className="w-[calc(5ch+1.5rem)] shrink-0 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
             </div>
-
-            <div className="h-px bg-border" />
 
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
@@ -93,8 +93,6 @@ export default function SettingsPage() {
                 onCheckedChange={handleIgnoreMillisecondsChange}
               />
             </div>
-
-            <div className="h-px bg-border" />
 
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
