@@ -6,7 +6,9 @@ import { LapNameForm } from "./LapNameForm.jsx";
 import { LapTime } from "./LapTime.jsx";
 import { useInlineRename } from "@/hooks/useInlineRename.js";
 import { copyWithToast } from "@/lib/clipboard.js";
+import { CLEARS_FLOATING_MENU } from "@/lib/floatingMenuLayout.js";
 import { formatTimeCompact } from "@/lib/stopwatch.js";
+import { cn } from "@/lib/utils.js";
 
 export function LapItem({
   lap,
@@ -38,33 +40,38 @@ export function LapItem({
   }
 
   return (
-    <LapCard>
-      <LapName>{displayName}</LapName>
-      {/* Flush right, so the lap time's width is what the accumulated one
-          right-aligns against — only that cell needs locking. */}
-      <div className="flex items-center gap-5 shrink-0">
-        <LapTime
-          time={cumulativeTime}
-          label="Tempo acumulado"
-          className="text-muted-foreground"
+    <LapCard
+      menu={
+        <LapMenu
+          onCopyTimes={() =>
+            copyWithToast(
+              `${formatTimeCompact(cumulativeTime)} (${formatTimeCompact(lapTime)})`,
+              "Tempos",
+              { plural: true },
+            )
+          }
+          onRename={start}
+          onDelete={() => onRequestDelete(lap)}
         />
-        <LapTime
-          time={lapTime}
-          label="Tempo da volta"
-          widthClassName={lapTimeWidth}
-        />
+      }
+    >
+      <div className={cn("flex items-center gap-3", CLEARS_FLOATING_MENU)}>
+        <LapName>{displayName}</LapName>
+        {/* Flush right, so the lap time's width is what the accumulated one
+            right-aligns against — only that cell needs locking. */}
+        <div className="flex items-center gap-5 shrink-0">
+          <LapTime
+            time={cumulativeTime}
+            label="Tempo acumulado"
+            className="text-muted-foreground"
+          />
+          <LapTime
+            time={lapTime}
+            label="Tempo da volta"
+            widthClassName={lapTimeWidth}
+          />
+        </div>
       </div>
-      <LapMenu
-        onCopyTimes={() =>
-          copyWithToast(
-            `${formatTimeCompact(cumulativeTime)} (${formatTimeCompact(lapTime)})`,
-            "Tempos",
-            { plural: true },
-          )
-        }
-        onRename={start}
-        onDelete={() => onRequestDelete(lap)}
-      />
     </LapCard>
   );
 }

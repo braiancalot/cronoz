@@ -55,7 +55,11 @@ export function Laps({
       {/* Width, height and vertical spacing are the stage's call, not ours. */}
       <div className={cn("flex flex-col min-h-0 w-full", className)}>
         <ScrollArea type="auto" className="flex-1 min-h-0">
-          <div className="flex flex-col gap-1 py-2 w-full">
+          {/* pr-3 clears the overlay scrollbar (~10-12px), which floats flush
+              against the viewport's true right edge regardless of this div's
+              own padding — without it, the scrollbar sits on top of each
+              row's floating menu button. */}
+          <div className="flex flex-col gap-1.5 py-2 pr-3 w-full">
             {isAddingLap && (
               <LapCard>
                 <LapNameForm

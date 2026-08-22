@@ -27,7 +27,7 @@ import { showUndoToast, UNDO_ON_LIST } from "@/lib/undoToast.js";
 import { cn } from "@/lib/utils.js";
 import { useLiveQuery } from "dexie-react-hooks";
 
-const PROJECT_LIST_CLASS = "flex w-full flex-col gap-3 @min-[40rem]:gap-2";
+const PROJECT_LIST_CLASS = "flex w-full flex-col gap-2";
 
 function NewProjectButton({ onCreate }) {
   return (

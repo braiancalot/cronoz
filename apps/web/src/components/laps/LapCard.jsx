@@ -1,12 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card.jsx";
+import { FLOATING_MENU_MIN_HEIGHT } from "@/lib/floatingMenuLayout.js";
 import { cn } from "@/lib/utils.js";
 
-export function LapCard({ className, children }) {
+export function LapCard({ className, menu, children }) {
   return (
-    <Card className={cn("gap-0 rounded-xl py-0.5", className)}>
-      <CardContent className="flex items-center gap-3 px-4">
-        {children}
-      </CardContent>
+    <Card
+      className={cn(
+        "relative gap-0 rounded-xl py-0",
+        FLOATING_MENU_MIN_HEIGHT,
+        className,
+      )}
+    >
+      {menu}
+      <CardContent className="p-3">{children}</CardContent>
     </Card>
   );
 }

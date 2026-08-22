@@ -20,6 +20,11 @@ import {
 import { calculateTotalTime, isStopwatchLive } from "@/lib/stopwatch.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useTapOnlyDropdown } from "@/hooks/useTapOnlyDropdown.js";
+import {
+  CLEARS_FLOATING_MENU,
+  FLOATING_MENU_BUTTON,
+  FLOATING_MENU_MIN_HEIGHT,
+} from "@/lib/floatingMenuLayout.js";
 import { cn } from "@/lib/utils.js";
 
 export const PROJECT_TIME_WIDTH = {
@@ -49,7 +54,8 @@ export function ProjectCard({
   return (
     <Card
       className={cn(
-        "@container relative gap-0 rounded-2xl py-0",
+        "@container relative gap-0 rounded-xl py-0",
+        FLOATING_MENU_MIN_HEIGHT,
         isCompleted && "bg-card/50",
         className,
       )}
@@ -57,7 +63,7 @@ export function ProjectCard({
       <Link
         to={`/project/${project.id}`}
         aria-label={project.name}
-        className="absolute inset-0 rounded-2xl transition-colors hover:bg-accent active:bg-accent/80"
+        className="absolute inset-0 rounded-xl transition-colors hover:bg-accent active:bg-accent/80"
       />
 
       <DropdownMenu {...menuProps}>
@@ -66,7 +72,11 @@ export function ProjectCard({
             variant="ghost"
             size="icon-sm"
             title="Mais opções"
-            className="pointer-events-auto absolute inset-y-0 right-2 my-auto shrink-0 text-muted-foreground active:text-foreground"
+            className={cn(
+              "pointer-events-auto",
+              FLOATING_MENU_BUTTON,
+              "text-muted-foreground active:text-foreground",
+            )}
             {...triggerProps}
           >
             <DotsThreeVerticalIcon />
@@ -97,8 +107,8 @@ export function ProjectCard({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <CardContent className="pointer-events-none relative p-4">
-        <div className="flex items-center gap-3 pr-8">
+      <CardContent className="pointer-events-none relative p-3">
+        <div className={cn("flex items-center gap-3", CLEARS_FLOATING_MENU)}>
           <div
             className={cn(
               hasTags
@@ -108,7 +118,7 @@ export function ProjectCard({
           >
             <span
               className={cn(
-                "flex min-w-0 items-center gap-2 text-base font-semibold",
+                "flex min-w-0 items-center gap-2",
                 !hasTags && "flex-1",
               )}
             >
@@ -129,7 +139,7 @@ export function ProjectCard({
           <FormattedTime
             time={displayTime}
             className={cn(
-              "ml-auto shrink-0 justify-end text-lg leading-none text-muted-foreground",
+              "ml-auto shrink-0 justify-end leading-none text-muted-foreground",
               timeWidth,
             )}
           />

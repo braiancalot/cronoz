@@ -13,6 +13,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
 import { useTapOnlyDropdown } from "@/hooks/useTapOnlyDropdown.js";
+import { FLOATING_MENU_BUTTON } from "@/lib/floatingMenuLayout.js";
+import { cn } from "@/lib/utils.js";
 
 export function LapMenu({ onCopyTimes, onRename, onDelete }) {
   const { menuProps, triggerProps } = useTapOnlyDropdown();
@@ -24,7 +26,10 @@ export function LapMenu({ onCopyTimes, onRename, onDelete }) {
           variant="ghost"
           size="icon-sm"
           title="Mais opções"
-          className="text-muted-foreground active:text-foreground"
+          className={cn(
+            FLOATING_MENU_BUTTON,
+            "text-muted-foreground active:text-foreground",
+          )}
           {...triggerProps}
         >
           <DotsThreeVerticalIcon />

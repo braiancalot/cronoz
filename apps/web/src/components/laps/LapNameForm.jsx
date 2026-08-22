@@ -10,8 +10,9 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
   });
 
   return (
-    // min-h-9 holds the row at the height it rests at.
-    <form {...formProps} className="flex items-center gap-2 min-h-9 w-full">
+    // -my-1 pulls the icon-xs buttons (size-7, 28px) back down to the resting
+    // row's text height (~20px) — otherwise the card grows entering rename.
+    <form {...formProps} className="flex items-center gap-2 -my-1 w-full">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
