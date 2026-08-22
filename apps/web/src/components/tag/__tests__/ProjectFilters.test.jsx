@@ -10,7 +10,7 @@ const TAGS = [
   { name: "Encomenda", key: "encomenda", count: 1 },
 ];
 
-function FilterHarness() {
+function FilterHarness({ showCompletedFilter }) {
   const [selectedTagKeys, setSelectedTagKeys] = useState([]);
   const [completedOnly, setCompletedOnly] = useState(false);
 
@@ -27,6 +27,7 @@ function FilterHarness() {
       tags={TAGS}
       selectedTagKeys={selectedTagKeys}
       completedOnly={completedOnly}
+      showCompletedFilter={showCompletedFilter}
       onToggleTag={toggleTag}
       onToggleCompleted={() => setCompletedOnly((current) => !current)}
       onClear={() => {
@@ -69,5 +70,14 @@ describe("ProjectFilters", () => {
     expect(tag.className).not.toContain("scale-95");
     expect(tag.className).not.toContain("brightness");
     expect(tag).toHaveClass("h-[30px]!", "border-2!");
+  });
+
+  it("hides the completed chip when it would not exclude anything", () => {
+    render(<FilterHarness showCompletedFilter={false} />);
+
+    expect(
+      screen.queryByRole("button", { name: "Concluídos" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Crochê" })).toBeInTheDocument();
   });
 });

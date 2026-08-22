@@ -9,6 +9,7 @@ export function ProjectFilters({
   tags,
   selectedTagKeys,
   completedOnly,
+  showCompletedFilter = true,
   onToggleTag,
   onToggleCompleted,
   onClear,
@@ -20,13 +21,15 @@ export function ProjectFilters({
     <div className={cn("flex min-w-0 items-center gap-2", className)}>
       <div className="min-w-0 flex-1 overflow-x-auto pb-1 [scrollbar-width:thin]">
         <div className="flex w-max items-center gap-2">
-          <FilterChip selected={completedOnly} onClick={onToggleCompleted}>
-            <CheckCircleIcon
-              className="size-3.5"
-              weight={completedOnly ? "fill" : "regular"}
-            />
-            Concluídos
-          </FilterChip>
+          {showCompletedFilter && (
+            <FilterChip selected={completedOnly} onClick={onToggleCompleted}>
+              <CheckCircleIcon
+                className="size-3.5"
+                weight={completedOnly ? "fill" : "regular"}
+              />
+              Concluídos
+            </FilterChip>
+          )}
 
           {tags.map((tag) => (
             <FilterChip

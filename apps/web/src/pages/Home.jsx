@@ -242,9 +242,14 @@ export default function Home() {
     (project) => project.id !== creatingProjectId,
   );
   const allTags = collectTags(listProjects);
+  // Only useful when it can exclude something: some completed, some not.
+  const showCompletedFilter =
+    listProjects.some((project) => project.completedAt !== null) &&
+    listProjects.some((project) => project.completedAt === null);
+  const effectiveCompletedOnly = showCompletedFilter && completedOnly;
   const filteredProjects = filterProjects(listProjects, {
     tagKeys: selectedTagKeys,
-    completed: completedOnly ? true : undefined,
+    completed: effectiveCompletedOnly ? true : undefined,
   });
   const activeProjects = filteredProjects.filter(
     (p) => p.completedAt === null && p.id !== creatingProjectId,
@@ -253,9 +258,8 @@ export default function Home() {
     (p) => p.completedAt !== null,
   );
   const isEmpty = listProjects.length === 0;
-  const hasActiveFilters = selectedTagKeys.length > 0 || completedOnly;
-  const hasFilterOptions =
-    allTags.length > 0 || listProjects.some((project) => project.completedAt);
+  const hasActiveFilters = selectedTagKeys.length > 0 || effectiveCompletedOnly;
+  const hasFilterOptions = allTags.length > 0 || showCompletedFilter;
   const noFilteredProjects =
     !isEmpty && activeProjects.length === 0 && completedProjects.length === 0;
   const timeWidth = anyReachesAnHour(
@@ -284,7 +288,8 @@ export default function Home() {
           <ProjectFilters
             tags={allTags}
             selectedTagKeys={selectedTagKeys}
-            completedOnly={completedOnly}
+            completedOnly={effectiveCompletedOnly}
+            showCompletedFilter={showCompletedFilter}
             className="mt-6"
             onToggleTag={toggleTagFilter}
             onToggleCompleted={() => setCompletedOnly((current) => !current)}

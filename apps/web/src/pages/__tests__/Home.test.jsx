@@ -89,6 +89,18 @@ describe("Home tags", () => {
     expect(screen.getByRole("link", { name: "Tapete" })).toBeInTheDocument();
   });
 
+  it("hides the Concluídos filter when no project is completed", () => {
+    vi.mocked(useLiveQuery).mockReturnValue(
+      PROJECTS.map((p) => ({ ...p, completedAt: null })),
+    );
+    renderHome();
+
+    expect(
+      screen.queryByRole("button", { name: "Concluídos" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Crochê" })).toBeInTheDocument();
+  });
+
   it("opens tag registration from the card and updates optimistically", async () => {
     const user = userEvent.setup();
     renderHome();
