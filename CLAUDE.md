@@ -23,8 +23,9 @@ Cronoz is a Turborepo monorepo with npm workspaces:
 cronoz/
   apps/
     web/     — Vite + React Router SPA (PWA, offline-first)
-    api/     — Hono API (minimal skeleton, for future sync)
-  packages/  — Shared packages (created when needed)
+    api/     — Hono API (sync/pairing)
+  packages/
+    shared/  — Zod schemas and constants shared by apps/web and apps/api
 ```
 
 ## apps/web
@@ -40,7 +41,7 @@ PWA multi-project stopwatch built with Vite, React 19, and React Router. Users c
 
 - `src/pages/` — Route components (Home, ProjectPage)
 - `src/components/` — Presentational React components
-- `src/hooks/` — Custom React hooks (`useProject`, `useAutoPause`, `useKeyboardShortcuts`, `useInstallPrompt`)
+- `src/hooks/` — Custom React hooks (`useProject`, `useAutoPause`, `useKeyboardShortcuts`, `useInstallPrompt`, …)
 - `src/lib/` — Pure utility functions (`stopwatch.js`: time calculation and formatting)
 - `src/services/` — Data access layer (Dexie/IndexedDB wrappers)
 - `src/main.jsx` — Entry point with React Router setup
@@ -51,11 +52,12 @@ Components are grouped by family in subfolders, each with its own `__tests__/`:
 ```
 components/
   laps/     Laps LapItem LapCard LapName LapNameForm LapTime LapMenu
-  timer/    TimerStage {Minimal,Inline,Stacked}Stage TimerDisplay TimerMeta
+  timer/    TimerStage {Minimal,Inline,Stacked}Stage TimerDisplay TimerMeta TimerSlot
             RunningIndicator TimerControls TimerAdjuster StepGroup AdjustActions
   pip/      PiPContent PiPTimer PiPIdleView PiPLapView PiPDiscardView PiPPlaceholder
   project/  ProjectCard ProjectHeader ProjectTitle ProjectMenu ProjectRenameActions
-  sync/     SyncCard SyncPairingCode SyncPairingStart SyncJoinForm SyncPairedPanel
+  sync/     SyncCard SyncIndicator SyncPairingCode SyncPairingStart SyncJoinForm SyncPairedPanel
+  tag/      TagChip TagManagerDialog DynamicTagRow ProjectFilters
   ui/       shadcn primitives
 ```
 
@@ -127,42 +129,46 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 
 ## apps/api
 
-Minimal Hono API with a `/health` endpoint. Runs on port 3001 via `@hono/node-server`. Will be expanded when sync/pairing feature is implemented.
+Hono API backing project sync/pairing: pairing codes, JWT auth, sync endpoints, plus a `/health` check. Runs on port 3001 via `@hono/node-server`.
 
 ### Database (Postgres + Drizzle)
 
-Schema fica em `src/db/schema.js`. Conexão em `src/db/index.js` usa **uma única env var `DATABASE_URL`** com a connection string completa (não quebrar em peças separadas tipo `PGHOST/PGUSER/...`). Motivo: é o padrão do ecossistema Postgres (drivers, drizzle-kit, hosting), evita duplicação na hora de montar URL em vários lugares e mantém SSL/channel-binding embutidos na própria string.
+Schema lives in `src/db/schema.js`. The connection in `src/db/index.js` uses a **single `DATABASE_URL` env var** with the full connection string (don't split it into separate pieces like `PGHOST`/`PGUSER`/...). Reason: this is the Postgres ecosystem's standard (drivers, drizzle-kit, hosting), it avoids duplicating URL-assembly logic across the codebase, and keeps SSL/channel-binding embedded in the string itself.
 
-Em produção (Vercel), o `DATABASE_URL` é o connection string do Neon (use a variante com `-pooler` no host — pooled connection, recomendada para serverless).
+In production (Vercel), `DATABASE_URL` is the Neon connection string (use the `-pooler` host variant — a pooled connection, recommended for serverless).
 
 ### Migrations (Drizzle)
 
-**Estado atual:** o projeto usa `drizzle-kit push` (sincroniza `schema.js` → banco direto, sem arquivos versionados). A pasta `apps/api/drizzle/` não existe.
+**Current state:** the project uses `drizzle-kit push` (syncs `schema.js` → database directly, no versioned migration files). The `apps/api/drizzle/` folder does not exist.
 
-- **Pra dev local:** `npm run db:push --workspace=apps/api` aplica o schema no Postgres local.
-- **Pra primeiro deploy (banco vazio):** rodar `db:push` apontando o `DATABASE_URL` pra branch de produção do Neon. Funciona porque não há dados nem histórico de schema.
+- **Local dev:** `npm run db:push --workspace=apps/api` applies the schema to the local Postgres.
+- **First deploy (empty database):** run `db:push` pointed at the Neon production branch's `DATABASE_URL`. This works because there's no data or schema history yet.
 
-**Quando mudar schema novamente, migrar pra migrations versionadas antes de aplicar:**
+**Next time the schema changes, switch to versioned migrations before applying it:**
 
-1. Adicionar script `db:migrate` em `apps/api/package.json` que invoca `drizzle-orm/migrator` apontando pra `./drizzle`.
-2. Criar `src/db/migrate.js` (script standalone que lê `DATABASE_URL` e roda o migrator).
-3. Rodar `npm run db:generate --workspace=apps/api` (gera SQL files em `apps/api/drizzle/`).
-4. Versionar a pasta `drizzle/` no git.
-5. Em prod, rodar `db:migrate` manualmente do local apontado pro Neon (uso pessoal, projeto pequeno — não justifica CI de migrations).
+1. Add a `db:migrate` script to `apps/api/package.json` that invokes `drizzle-orm/migrator` pointed at `./drizzle`.
+2. Create `src/db/migrate.js` (a standalone script that reads `DATABASE_URL` and runs the migrator).
+3. Run `npm run db:generate --workspace=apps/api` (generates SQL files in `apps/api/drizzle/`).
+4. Commit the `drizzle/` folder to git.
+5. In production, run `db:migrate` manually from local, pointed at Neon (personal project, small scale — doesn't justify migration CI).
 
-**Regra:** depois que houver migrations versionadas, **nunca mais usar `db:push` em produção** — só `db:migrate`. Push é OK em dev local, mas em prod ele pode propor `DROP` em colunas renomeadas e perder dados.
+**Rule:** once versioned migrations exist, **never use `db:push` in production again** — only `db:migrate`. Push is fine in local dev, but in production it can propose a `DROP` on renamed columns and lose data.
 
-**Branches do Neon:** uma branch só (`main`) para produção. Vercel Production aponta pra ela. Sem branch separada de preview/staging por enquanto — projeto pessoal não justifica.
+**Neon branches:** a single `main` branch for production. Vercel Production points to it. No separate preview/staging branch for now — a personal project doesn't justify one.
 
 ## Project Vision
 
-Consulte `docs/IDEA.md` para entender as ideias, requisitos e direção do projeto. Esse documento deve ser consultado sempre que necessário para alinhar decisões com a visão do produto. Sempre que uma decisão na conversa alterar algo relacionado à visão do produto (escopo, funcionalidades, stack, prioridades), pergunte ao usuário se deve atualizar o `docs/IDEA.md`.
+See `docs/IDEA.md` for the project's ideas, requirements, and direction. Consult it whenever needed to align decisions with the product vision. Whenever a decision in conversation changes something related to the product vision (scope, features, stack, priorities), ask the user whether `docs/IDEA.md` should be updated.
 
-## Commit Convention
+## Conventions
 
-This project enforces Conventional Commits via commitlint (husky hook). Use `git commit` directly with a properly formatted message (feat:, fix:, refactor:, etc.).
+### Commit Convention
 
-## Code Style
+This project enforces Conventional Commits via commitlint (husky hook). Use `git commit` directly with a properly formatted message (feat:, fix:, refactor:, etc.). Commit messages are always in English, even when the conversation is in another language.
+
+Most commits need only a subject line. Add a body only when it carries something the diff can't show — the why, a trade-off, a gotcha — and keep it as short as possible; never restate what changed. Same test as code comments (see Comments below): if the diff already shows it, don't write it.
+
+### Code Style
 
 - Functions: 4-20 lines. Split if longer.
 - Files: under 500 lines as a hard ceiling. Components keep the tighter ~150-line rule from the apps/web Code Organization section above — split those earlier; hooks/services/lib files can run up to the 500-line ceiling.
@@ -172,62 +178,46 @@ This project enforces Conventional Commits via commitlint (husky hook). Use `git
 - No code duplication. Extract shared logic into a function/module.
 - Early returns over nested ifs. Max 2 levels of indentation.
 - Exception messages must include the offending value and expected shape.
+- Dependencies: inject through constructor/parameter, not global/import; wrap third-party libs behind a thin interface owned by this project.
+- Structure: predictable paths (`pages/` `components/` `hooks/` `lib/` `services/` on the web, `src/db` + routes on the API) — see the apps/web and apps/api sections above for the actual layout.
+- Formatting: use the project's formatter/linter (`npm run lint`, `npm run lint:check`). Don't discuss style beyond that.
+- Logging: structured JSON for debugging/observability; plain text only for user-facing CLI output.
 
-### Dependencies
-
-- Inject dependencies through constructor/parameter, not global/import.
-- Wrap third-party libs behind a thin interface owned by this project.
-
-### Structure
-
-- Follow the framework's convention (Vite/React Router on the web, Hono on the API).
-- Prefer small focused modules over god files — see Code Organization above for how apps/web is actually laid out.
-- Predictable paths: `pages/` `components/` `hooks/` `lib/` `services/` on the web, `src/db` + routes on the API.
-
-### Formatting
-
-- Use the project's formatter/linter (`npm run lint`, `npm run lint:check`). Don't discuss style beyond that.
-
-### Logging
-
-- Structured JSON when logging for debugging/observability (relevant once apps/api grows beyond `/health`).
-- Plain text only for user-facing CLI output.
-
-## Comments
+### Comments
 
 Short sentences. RFC 2119 keywords for obligations. Commit = imperative subject; body only for a fact the diff cannot show. Comments only where code needs clarification — never narration; write WHY, not WHAT (skip `// increment counter` above `i++`). Keep existing comments on refactor — don't strip them, they carry intent and provenance the diff won't restate.
 
-## Metodologia de Trabalho (Senior Agile Vibe Coding)
+## Working Methodology (Senior Agile Vibe Coding)
 
-Este projeto segue a metodologia Senior Agile Vibe Coding — Engenharia de Software aplicada à IA, com foco em construir software de produção resiliente.
+This project follows the Senior Agile Vibe Coding methodology — software engineering applied to AI-assisted development, focused on building resilient production software.
 
 ### Pair Programming
 
-Claude é o piloto, o usuário é o navegador/arquiteto. Antes de executar mudanças grandes no código:
+Claude is the driver, the user is the navigator/architect. Before making large code changes:
 
-1. Descrever o plano de ação com clareza
-2. Aguardar confirmação do usuário antes de prosseguir
-3. Mudanças pequenas e localizadas podem ser feitas diretamente
+1. Describe the plan clearly
+2. Wait for user confirmation before proceeding
+3. Small, localized changes can be made directly
 
 ### Test-Driven Development (TDD)
 
-- Toda nova funcionalidade deve vir acompanhada de testes unitários
-- Toda correção de bug exige um teste de regressão para evitar reincidência
-- Escrever o teste antes da implementação quando possível (red → green → refactor)
-- Mockar I/O externo (API, DB, filesystem) com classes fake nomeadas, não stubs inline
-- Testes devem ser F.I.R.S.T: fast, independent, repeatable, self-validating, timely
+- Every new feature must ship with unit tests
+- Every bug fix requires a regression test to prevent recurrence
+- Write the test before the implementation when possible (red → green → refactor)
+- Mock external I/O (API, DB, filesystem) with named fake classes, not inline stubs
+- Tests must be F.I.R.S.T: fast, independent, repeatable, self-validating, timely
 
-### Small Releases (Commits Curtos)
+### Small Releases
 
-- Trabalhar em incrementos funcionais e independentes
-- Cada commit deve ser funcional, passar no CI e ser production-ready
-- Evitar commits grandes que misturam múltiplas responsabilidades
+- Work in independent, functional increments
+- Every commit should be functional, pass CI, and be production-ready
+- Avoid large commits that mix multiple responsibilities
 
-### Refactoring Contínuo
+### Continuous Refactoring
 
-- Se um arquivo começar a crescer demais ou acumular responsabilidades, sugerir extração de componentes ou hooks imediatamente
-- Não deixar dívida técnica se acumular — tratar no momento em que for identificada
+- If a file starts growing too large or accumulating responsibilities, suggest extracting components or hooks immediately
+- Don't let technical debt accumulate — address it as soon as it's identified
 
 ## Living Document
 
-Este CLAUDE.md é um documento vivo. Sempre que encontrarmos um obstáculo técnico recorrente ou definirmos um novo padrão de design, ele deve ser documentado aqui para preservar o contexto em sessões futuras.
+This CLAUDE.md is a living document. Whenever we hit a recurring technical obstacle or settle on a new design pattern, document it here to preserve context for future sessions.
