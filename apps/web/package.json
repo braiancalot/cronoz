@@ -46,6 +46,6 @@
     "shadcn": "^4.1.0",
     "tailwindcss": "^4",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.11"
   }
 }
