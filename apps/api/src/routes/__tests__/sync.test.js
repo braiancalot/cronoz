@@ -376,6 +376,25 @@ describe("end-to-end: device A pushes, device B pulls", () => {
     expect(updated.updatedAt).toBe(2000);
     expect(syncGroupId).toBeTruthy();
   });
+
+  it("propagates the project tags from A to B", async () => {
+    const { token: tokenB } = await pair(DEVICE_A, DEVICE_B);
+    const tokenA = await tokenFor(DEVICE_A);
+
+    await post(
+      "/api/sync/push",
+      {
+        projects: [makeProject({ id: PROJECT_2, tags: ["Crochê", "Urgente"] })],
+        settings: [],
+      },
+      tokenA,
+    );
+
+    const pullB = await post("/api/sync/pull", { cursor: 0 }, tokenB);
+    const bodyB = await pullB.json();
+    const pulled = bodyB.projects.find((p) => p.id === PROJECT_2);
+    expect(pulled.tags).toEqual(["Crochê", "Urgente"]);
+  });
 });
 
 describe("end-to-end: A, B, C in same group", () => {

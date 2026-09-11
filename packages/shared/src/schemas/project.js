@@ -24,5 +24,6 @@ export const projectSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number().optional(),
   deletedAt: z.number().nullable().optional(),
+  tags: z.array(z.string()).optional(),
   stopwatch: stopwatchSchema,
 });

@@ -137,6 +137,43 @@ describe("projectSchema", () => {
     expect(projectSchema.parse(project)).toEqual(project);
   });
 
+  it("accepts a project with tags", () => {
+    const project = {
+      id: crypto.randomUUID(),
+      name: "Projeto #3",
+      completedAt: null,
+      createdAt: Date.now(),
+      tags: ["Crochê", "Urgente"],
+      stopwatch: {
+        startTimestamp: null,
+        currentLapTime: 0,
+        isRunning: false,
+        lastActiveAt: null,
+        laps: [],
+      },
+    };
+    expect(projectSchema.parse(project)).toEqual(project);
+  });
+
+  it("rejects tags that are not strings", () => {
+    expect(() =>
+      projectSchema.parse({
+        id: crypto.randomUUID(),
+        name: "Test",
+        completedAt: null,
+        createdAt: Date.now(),
+        tags: [1, 2],
+        stopwatch: {
+          startTimestamp: null,
+          currentLapTime: 0,
+          isRunning: false,
+          lastActiveAt: null,
+          laps: [],
+        },
+      }),
+    ).toThrow();
+  });
+
   it("rejects a project without stopwatch", () => {
     expect(() =>
       projectSchema.parse({
