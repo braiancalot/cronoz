@@ -1,4 +1,4 @@
-const SERVER_URL = "postgresql://cronoz:cronoz@localhost:5432";
+const SERVER_URL = "postgresql://cronoz:cronoz@localhost:5433";
 
 export const TEST_DATABASE_NAME = "cronoz_test";
 export const TEST_DATABASE_URL = `${SERVER_URL}/${TEST_DATABASE_NAME}`;
