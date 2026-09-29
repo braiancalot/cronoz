@@ -3,14 +3,14 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import postgres from "postgres";
 
-const ADMIN_URL = "postgresql://cronoz:cronoz@localhost:5432/postgres";
-const TEST_DB = "cronoz_test";
+import { ADMIN_DATABASE_URL, TEST_DATABASE_NAME } from "./databaseUrl.js";
+
 const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export async function setup() {
-  const admin = postgres(ADMIN_URL);
+  const admin = postgres(ADMIN_DATABASE_URL);
   try {
-    await admin.unsafe(`CREATE DATABASE ${TEST_DB}`);
+    await admin.unsafe(`CREATE DATABASE ${TEST_DATABASE_NAME}`);
   } catch (err) {
     if (err.code !== "42P04") throw err;
   } finally {
