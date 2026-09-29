@@ -1,9 +1,10 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not set");
-}
+import { assertUsableSecret } from "./jwtSecret.js";
+
+const JWT_SECRET = assertUsableSecret(process.env.JWT_SECRET, {
+  nodeEnv: process.env.NODE_ENV,
+});
 
 const secret = new TextEncoder().encode(JWT_SECRET);
 const ALGORITHM = "HS256";

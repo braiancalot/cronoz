@@ -1,10 +1,12 @@
 import { defineConfig } from "vitest/config";
 
+import { TEST_DATABASE_URL } from "./test/databaseUrl.js";
+
 export default defineConfig({
   test: {
     env: {
-      DATABASE_URL: "postgresql://cronoz:cronoz@localhost:5432/cronoz_test",
-      JWT_SECRET: "test-secret",
+      DATABASE_URL: TEST_DATABASE_URL,
+      JWT_SECRET: "vitest-only-nCq7xWm2Rt9bZk4vLp8sHy3dFg6jAe5U",
     },
     globalSetup: ["./test/globalSetup.js"],
     setupFiles: ["./test/setup.js"],

@@ -163,6 +163,24 @@ In production (Vercel), `DATABASE_URL` is the Neon connection string (use the `-
 
 **Neon branches:** a single `main` branch for production. Vercel Production points to it. No separate preview/staging branch for now — a personal project doesn't justify one.
 
+### Tests
+
+`npm test --workspace=apps/api` runs against a real Postgres. Its `pretest` runs
+`docker compose up -d --wait`, so Docker MUST be running. Without it no API test runs,
+including the pure `src/lib` ones: `pretest` fails before Vitest starts.
+
+The test connection string lives only in `apps/api/test/databaseUrl.js`.
+`vitest.config.js`, `drizzle.test.config.js` and `test/globalSetup.js` import it.
+
+### JWT secret guard
+
+`src/lib/jwtSecret.js` aborts boot when `JWT_SECRET` is missing, is a known placeholder
+(`dev-secret-change-me`, `test-secret`, `changeme`), or is shorter than 32 characters
+under `NODE_ENV=production`. Short secrets stay legal in dev.
+
+Exception messages MUST NOT include the secret; the length error reports the length only.
+This is the one exception to the "include the offending value" rule in Code Style.
+
 ## Project Vision
 
 See `docs/IDEA.md` for the project's ideas, requirements, and direction. Consult it whenever needed to align decisions with the product vision. Whenever a decision in conversation changes something related to the product vision (scope, features, stack, priorities), ask the user whether `docs/IDEA.md` should be updated.
@@ -193,6 +211,8 @@ Most commits need only a subject line. Add a body only when it carries something
 ### Comments
 
 Short sentences. RFC 2119 keywords for obligations. Commit = imperative subject; body only for a fact the diff cannot show. Comments only where code needs clarification — never narration; write WHY, not WHAT (skip `// increment counter` above `i++`). Keep existing comments on refactor — don't strip them, they carry intent and provenance the diff won't restate.
+
+Comments are in English, like commit messages, even when the conversation is in another language. This covers `.env.example` and any other versioned config.
 
 ## Working Methodology (Senior Agile Vibe Coding)
 
