@@ -32,3 +32,5 @@ yarn-error.log*
 
 # Superpowers brainstorm scratch
 .superpowers/
+
+docs/security-audit/
