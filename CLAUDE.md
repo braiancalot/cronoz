@@ -172,6 +172,15 @@ including the pure `src/lib` ones: `pretest` fails before Vitest starts.
 The test connection string lives only in `apps/api/test/databaseUrl.js`.
 `vitest.config.js`, `drizzle.test.config.js` and `test/globalSetup.js` import it.
 
+### CORS allowlist
+
+`src/lib/corsOrigins.js` turns `CORS_ALLOWED_ORIGINS` into the array Hono's `cors` matches
+against. Entries MUST be bare origins: a trailing slash or a path never matches the
+browser's `Origin` header, so boot rejects them and names the corrected value.
+
+An empty list aborts boot under `NODE_ENV=production` and falls back to
+`http://localhost:5173` elsewhere. Vercel MUST have the variable set before a deploy.
+
 ### JWT secret guard
 
 `src/lib/jwtSecret.js` aborts boot when `JWT_SECRET` is missing, is a known placeholder

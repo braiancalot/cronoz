@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import app from "../app.js";
 
-const ORIGIN = "https://cronoz.app";
+const ORIGIN = "http://localhost:5173";
+const UNKNOWN_ORIGIN = "https://evil.example";
 
 const registeredRoutes = (() => {
   const seen = new Set();
@@ -49,5 +50,31 @@ describe("CORS preflight", () => {
       .split(",")
       .map((m) => m.trim().toUpperCase());
     expect(allowed).not.toContain("PATCH");
+  });
+});
+
+describe("CORS allowlist", () => {
+  it("echoes an allowed origin on preflight", async () => {
+    const res = await preflight("/api/health", "GET");
+    expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN);
+  });
+
+  it("omits the allow-origin header on preflight from an unknown origin", async () => {
+    const res = await app.request("/api/health", {
+      method: "OPTIONS",
+      headers: {
+        Origin: UNKNOWN_ORIGIN,
+        "Access-Control-Request-Method": "GET",
+      },
+    });
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("omits the allow-origin header on a simple request from an unknown origin", async () => {
+    const res = await app.request("/api/health", {
+      headers: { Origin: UNKNOWN_ORIGIN },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
   });
 });
