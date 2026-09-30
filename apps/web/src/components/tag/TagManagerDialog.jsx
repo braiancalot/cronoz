@@ -13,13 +13,8 @@ import {
 } from "@/components/ui/dialog.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
-import {
-  MAX_TAG_LENGTH,
-  hasTag,
-  normalizeTag,
-  suggestTags,
-  tagKey,
-} from "@/lib/tags.js";
+import { MAX_TAG_LENGTH } from "@cronoz/shared";
+import { hasTag, normalizeTag, suggestTags, tagKey } from "@/lib/tags.js";
 
 export function TagManagerDialog({
   open,

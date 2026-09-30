@@ -1,3 +1,4 @@
+import { MAX_LAPS_PER_PROJECT } from "@cronoz/shared";
 import db from "./db.js";
 import { emitMutation } from "./repoEvents.js";
 import { addTagToList, removeTagFromList } from "@/lib/tags.js";
@@ -96,6 +97,7 @@ async function reopen(id) {
 async function addLap({ id, lapTime, name }) {
   const project = await getRawById(id);
   if (!project) return;
+  if (project.stopwatch.laps.length >= MAX_LAPS_PER_PROJECT) return;
 
   const newLap = {
     id: crypto.randomUUID(),

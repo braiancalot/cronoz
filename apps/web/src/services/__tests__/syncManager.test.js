@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   LAST_PUSHED_AT_KEY,
   LAST_SYNCED_AT_KEY,
+  MAX_PUSH_PROJECTS,
   SYNC_CURSOR_KEY,
   SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
@@ -39,6 +40,14 @@ beforeEach(async () => {
 afterEach(() => {
   vi.useRealTimers();
 });
+
+async function seedPendingProjects(count) {
+  const projects = Array.from({ length: count }, (_, i) => ({
+    id: `p${i}`,
+    updatedAt: 10,
+  }));
+  await db.projects.bulkPut(projects);
+}
 
 describe("syncManager.isPaired", () => {
   it("returns false when no token is stored", async () => {
@@ -94,6 +103,37 @@ describe("syncManager.sync — paired", () => {
 
     expect(await internalRepository.get(LAST_PUSHED_AT_KEY)).toBe(999);
     expect(syncService.pull).toHaveBeenCalled();
+  });
+
+  it("splits a large push into batches the API accepts", async () => {
+    await seedPendingProjects(MAX_PUSH_PROJECTS + 1);
+    await db.settings.put({ key: "hourlyPrice", value: 10, updatedAt: 10 });
+
+    syncService.push
+      .mockResolvedValueOnce({ ok: true, serverTimestamp: 500 })
+      .mockResolvedValueOnce({ ok: true, serverTimestamp: 600 });
+
+    await syncManager.sync();
+
+    const [[first], [second]] = syncService.push.mock.calls;
+    expect(syncService.push).toHaveBeenCalledTimes(2);
+    expect(first.projects).toHaveLength(MAX_PUSH_PROJECTS);
+    expect(first.settings).toHaveLength(1);
+    expect(second.projects).toHaveLength(1);
+    expect(second.settings).toHaveLength(0);
+    expect(await internalRepository.get(LAST_PUSHED_AT_KEY)).toBe(500);
+  });
+
+  it("keeps lastPushedAt when a later batch fails", async () => {
+    await seedPendingProjects(MAX_PUSH_PROJECTS + 1);
+
+    syncService.push
+      .mockResolvedValueOnce({ ok: true, serverTimestamp: 500 })
+      .mockRejectedValueOnce(new SyncError("boom", { status: 500 }));
+
+    await syncManager.sync();
+
+    expect(await internalRepository.get(LAST_PUSHED_AT_KEY)).toBeUndefined();
   });
 
   it("applies pulled records that are newer than local", async () => {

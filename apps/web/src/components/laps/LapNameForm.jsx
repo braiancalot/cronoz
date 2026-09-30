@@ -1,4 +1,5 @@
 import { CheckIcon, XIcon } from "@phosphor-icons/react";
+import { MAX_LAP_NAME_LENGTH } from "@cronoz/shared";
 import { Button } from "@/components/ui/button.jsx";
 import { useInlineEditForm } from "@/hooks/useInlineEditForm.js";
 
@@ -17,6 +18,7 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         {...fieldProps}
+        maxLength={MAX_LAP_NAME_LENGTH}
         className="flex-1 min-w-0 bg-transparent outline-none"
         autoFocus
       />

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MAX_LAP_NAME_LENGTH } from "@cronoz/shared";
 import { PiPLapView } from "@/components/pip/PiPLapView.jsx";
 
 describe("PiPLapView", () => {
@@ -14,6 +15,21 @@ describe("PiPLapView", () => {
       />,
     );
     expect(screen.getByRole("textbox").value).toBe("1º ");
+  });
+
+  it("caps the name at the sync limit", () => {
+    render(
+      <PiPLapView
+        value=""
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("textbox")).toHaveAttribute(
+      "maxLength",
+      String(MAX_LAP_NAME_LENGTH),
+    );
   });
 
   it("calls onChange while typing", async () => {

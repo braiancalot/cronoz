@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MAX_LAP_NAME_LENGTH } from "@cronoz/shared";
 import { Laps } from "@/components/laps/Laps.jsx";
 
 async function startRename(lapIndex = 0) {
@@ -158,6 +159,19 @@ describe("Laps", () => {
     await userEvent.click(renameItem);
 
     expect(screen.getByDisplayValue("Lap #1")).toBeInTheDocument();
+  });
+
+  it("caps the rename field at the sync limit", async () => {
+    render(
+      <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
+    );
+
+    await startRename(0);
+
+    expect(screen.getByDisplayValue("Lap #1")).toHaveAttribute(
+      "maxLength",
+      String(MAX_LAP_NAME_LENGTH),
+    );
   });
 
   it("keeps the card the same height while renaming", async () => {

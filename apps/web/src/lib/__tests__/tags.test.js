@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { MAX_TAG_LENGTH, MAX_TAGS_PER_PROJECT } from "@cronoz/shared";
 import {
-  MAX_TAG_LENGTH,
   normalizeTag,
   tagKey,
   addTagToList,
@@ -77,6 +77,14 @@ describe("addTagToList", () => {
   it("ignores a blank name", () => {
     const tags = ["Crochê"];
     expect(addTagToList(tags, "   ")).toBe(tags);
+  });
+
+  it("ignores a new tag once the list is at the sync limit", () => {
+    const full = Array.from(
+      { length: MAX_TAGS_PER_PROJECT },
+      (_, i) => `t${i}`,
+    );
+    expect(addTagToList(full, "nova")).toBe(full);
   });
 
   it("treats a missing list as empty", () => {
