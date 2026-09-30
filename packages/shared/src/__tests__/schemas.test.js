@@ -204,6 +204,16 @@ describe("settingSchema", () => {
     expect(settingSchema.parse(setting)).toEqual(setting);
   });
 
+  it("accepts a boolean value", () => {
+    const setting = { key: "hideTags", value: true };
+    expect(settingSchema.parse(setting)).toEqual(setting);
+  });
+
+  it("rejects a value that is not a number or boolean", () => {
+    expect(() => settingSchema.parse({ key: "k", value: "x" })).toThrow();
+    expect(() => settingSchema.parse({ key: "k", value: { a: 1 } })).toThrow();
+  });
+
   it("accepts a setting with updatedAt", () => {
     const setting = { key: "hourlyPrice", value: 10, updatedAt: Date.now() };
     expect(settingSchema.parse(setting)).toEqual(setting);

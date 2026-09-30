@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { zValidator } from "@hono/zod-validator";
 import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
 import { pullRequestSchema, pushRequestSchema } from "@cronoz/shared";
@@ -20,88 +21,102 @@ class SyncError extends Error {
   }
 }
 
+// Below Vercel's 4.5 MB request cap, so the client gets this JSON 413
+// instead of the platform's.
+export const MAX_PUSH_BODY_BYTES = 4 * 1024 * 1024;
+
+const pushBodyLimit = bodyLimit({
+  maxSize: MAX_PUSH_BODY_BYTES,
+  onError: (c) => c.json({ error: "payload_too_large" }, 413),
+});
+
 const syncRouter = new Hono();
 
 syncRouter.use("*", authMiddleware);
 
-syncRouter.post("/push", zValidator("json", pushRequestSchema), async (c) => {
-  const syncGroupId = c.get("syncGroupId");
-  const { projects: incomingProjects, settings: incomingSettings } =
-    c.req.valid("json");
-  const serverTimestamp = Date.now();
+syncRouter.post(
+  "/push",
+  pushBodyLimit,
+  zValidator("json", pushRequestSchema),
+  async (c) => {
+    const syncGroupId = c.get("syncGroupId");
+    const { projects: incomingProjects, settings: incomingSettings } =
+      c.req.valid("json");
+    const serverTimestamp = Date.now();
 
-  try {
-    await db.transaction(async (tx) => {
-      if (incomingProjects.length > 0) {
-        const ids = incomingProjects.map((p) => p.id);
-        const existing = await tx
-          .select({
-            id: projects.id,
-            syncGroupId: projects.syncGroupId,
-          })
-          .from(projects)
-          .where(inArray(projects.id, ids));
+    try {
+      await db.transaction(async (tx) => {
+        if (incomingProjects.length > 0) {
+          const ids = incomingProjects.map((p) => p.id);
+          const existing = await tx
+            .select({
+              id: projects.id,
+              syncGroupId: projects.syncGroupId,
+            })
+            .from(projects)
+            .where(inArray(projects.id, ids));
 
-        for (const row of existing) {
-          if (row.syncGroupId !== syncGroupId) {
-            throw new SyncError(409, "project_belongs_to_other_group");
+          for (const row of existing) {
+            if (row.syncGroupId !== syncGroupId) {
+              throw new SyncError(409, "project_belongs_to_other_group");
+            }
           }
         }
-      }
 
-      for (const project of incomingProjects) {
-        await tx
-          .insert(projects)
-          .values({
-            id: project.id,
-            syncGroupId,
-            data: project,
-            updatedAt: project.updatedAt ?? 0,
-            serverUpdatedAt: serverTimestamp,
-            deletedAt: project.deletedAt ?? null,
-          })
-          .onConflictDoUpdate({
-            target: projects.id,
-            set: {
-              data: sql`excluded.data`,
-              updatedAt: sql`excluded.updated_at`,
-              serverUpdatedAt: sql`excluded.server_updated_at`,
-              deletedAt: sql`excluded.deleted_at`,
-            },
-            setWhere: sql`${projects.updatedAt} < excluded.updated_at`,
-          });
-      }
+        for (const project of incomingProjects) {
+          await tx
+            .insert(projects)
+            .values({
+              id: project.id,
+              syncGroupId,
+              data: project,
+              updatedAt: project.updatedAt ?? 0,
+              serverUpdatedAt: serverTimestamp,
+              deletedAt: project.deletedAt ?? null,
+            })
+            .onConflictDoUpdate({
+              target: projects.id,
+              set: {
+                data: sql`excluded.data`,
+                updatedAt: sql`excluded.updated_at`,
+                serverUpdatedAt: sql`excluded.server_updated_at`,
+                deletedAt: sql`excluded.deleted_at`,
+              },
+              setWhere: sql`${projects.updatedAt} < excluded.updated_at`,
+            });
+        }
 
-      for (const setting of incomingSettings) {
-        await tx
-          .insert(settings)
-          .values({
-            syncGroupId,
-            key: setting.key,
-            value: setting.value,
-            updatedAt: setting.updatedAt ?? 0,
-            serverUpdatedAt: serverTimestamp,
-          })
-          .onConflictDoUpdate({
-            target: [settings.syncGroupId, settings.key],
-            set: {
-              value: sql`excluded.value`,
-              updatedAt: sql`excluded.updated_at`,
-              serverUpdatedAt: sql`excluded.server_updated_at`,
-            },
-            setWhere: sql`${settings.updatedAt} < excluded.updated_at`,
-          });
+        for (const setting of incomingSettings) {
+          await tx
+            .insert(settings)
+            .values({
+              syncGroupId,
+              key: setting.key,
+              value: setting.value,
+              updatedAt: setting.updatedAt ?? 0,
+              serverUpdatedAt: serverTimestamp,
+            })
+            .onConflictDoUpdate({
+              target: [settings.syncGroupId, settings.key],
+              set: {
+                value: sql`excluded.value`,
+                updatedAt: sql`excluded.updated_at`,
+                serverUpdatedAt: sql`excluded.server_updated_at`,
+              },
+              setWhere: sql`${settings.updatedAt} < excluded.updated_at`,
+            });
+        }
+      });
+    } catch (err) {
+      if (err instanceof SyncError) {
+        return c.json({ error: err.code }, err.status);
       }
-    });
-  } catch (err) {
-    if (err instanceof SyncError) {
-      return c.json({ error: err.code }, err.status);
+      throw err;
     }
-    throw err;
-  }
 
-  return c.json({ ok: true, serverTimestamp });
-});
+    return c.json({ ok: true, serverTimestamp });
+  },
+);
 
 syncRouter.post("/pull", zValidator("json", pullRequestSchema), async (c) => {
   const syncGroupId = c.get("syncGroupId");
