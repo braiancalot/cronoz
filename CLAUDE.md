@@ -134,6 +134,10 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 
 **Update prompt:** `registerType: "prompt"`, so `UpdateBanner` is the only path to a new version. It renders above the `<Outlet />` in `App.jsx` and pushes the page down — the shell is `flex flex-col` with the outlet in `flex-1 min-h-0` so `PageContainer`'s `h-full` does not overflow. Append `?swupdate` to any route to force it on **in dev only** (`src/lib/updateSimulation.js`); it bypasses `useRegisterSW`, so it proves nothing about the real service-worker plumbing — verify that with `build` + `preview` + a rebuild.
 
+**Sync payload limits** live in `packages/shared/src/constants.js`. The push schema rejects anything above them, so the client MUST enforce the same numbers: a record over a limit fails every push and sync stalls for good. A new user-editable text field needs a `maxLength` from there, and a new list that grows without bound needs a cap in its repository. `syncManager` already splits pushes into batches of `MAX_PUSH_PROJECTS`.
+
+**Content-Security-Policy** is set in `apps/web/vercel.json` and only applies on Vercel. Dev and tests never see it, so a new external origin (API host, font, image) passes locally and gets blocked in production. Add it to the matching directive in the same change. `style-src` keeps `'unsafe-inline'` because Radix, Sonner and the PiP window inject `<style>` tags.
+
 ## apps/api
 
 Hono API backing project sync/pairing: pairing codes, JWT auth, sync endpoints, plus a `/health` check. Runs on port 3001 via `@hono/node-server`.

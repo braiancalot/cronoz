@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { MAX_LAPS_PER_PROJECT } from "@cronoz/shared";
 import db from "@/services/db.js";
 import projectRepository, {
   DEFAULT_STOPWATCH,
@@ -206,6 +207,26 @@ describe("complete / reopen", () => {
 });
 
 describe("addLap", () => {
+  it("ignores a lap past the sync limit", async () => {
+    const project = await projectRepository.create();
+    const laps = Array.from({ length: MAX_LAPS_PER_PROJECT }, (_, i) => ({
+      id: crypto.randomUUID(),
+      name: `Volta ${i}`,
+      lapTime: 1000,
+      createdAt: i,
+    }));
+    await db.projects.put({
+      ...project,
+      stopwatch: { ...project.stopwatch, currentLapTime: 700, laps },
+    });
+
+    await projectRepository.addLap({ id: project.id, lapTime: 700, name: "x" });
+
+    const found = await db.projects.get(project.id);
+    expect(found.stopwatch.laps).toHaveLength(MAX_LAPS_PER_PROJECT);
+    expect(found.stopwatch.currentLapTime).toBe(700);
+  });
+
   it("saves lap with lapTime and resets currentLapTime", async () => {
     const project = await projectRepository.create();
 

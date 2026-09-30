@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
+import {
+  MAX_LAP_NAME_LENGTH,
+  MAX_PROJECT_NAME_LENGTH,
+  MAX_PUSH_PROJECTS,
+} from "@cronoz/shared";
 import app from "../../app.js";
+import { MAX_PUSH_BODY_BYTES } from "../sync.js";
 import { db } from "../../db/index.js";
 import {
   devices,
@@ -81,6 +87,65 @@ describe("POST /api/sync/push", () => {
       token,
     );
     expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when the push carries more projects than the limit", async () => {
+    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const projects = Array.from({ length: MAX_PUSH_PROJECTS + 1 }, () =>
+      makeProject({ id: crypto.randomUUID() }),
+    );
+    const res = await post("/api/sync/push", { projects, settings: [] }, token);
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when a project name is over the limit", async () => {
+    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const name = "a".repeat(MAX_PROJECT_NAME_LENGTH + 1);
+    const res = await post(
+      "/api/sync/push",
+      { projects: [makeProject({ name })], settings: [] },
+      token,
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when a lap name is over the limit", async () => {
+    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const lap = {
+      id: crypto.randomUUID(),
+      name: "a".repeat(MAX_LAP_NAME_LENGTH + 1),
+      lapTime: 1000,
+      createdAt: 1000,
+    };
+    const project = makeProject();
+    project.stopwatch.laps = [lap];
+    const res = await post(
+      "/api/sync/push",
+      { projects: [project], settings: [] },
+      token,
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when a setting value is not a number or boolean", async () => {
+    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const res = await post(
+      "/api/sync/push",
+      { projects: [], settings: [{ key: "hourlyPrice", value: { a: 1 } }] },
+      token,
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 413 when the body is over the byte limit", async () => {
+    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const padding = "a".repeat(MAX_PUSH_BODY_BYTES);
+    const res = await post(
+      "/api/sync/push",
+      { projects: [], settings: [], padding },
+      token,
+    );
+    expect(res.status).toBe(413);
   });
 
   it("inserts a new project with serverUpdatedAt set", async () => {

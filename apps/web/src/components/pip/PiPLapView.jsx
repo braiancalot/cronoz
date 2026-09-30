@@ -1,4 +1,5 @@
 import { CheckIcon, XIcon } from "@phosphor-icons/react";
+import { MAX_LAP_NAME_LENGTH } from "@cronoz/shared";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import {
@@ -42,6 +43,7 @@ export function PiPLapView({
         onChange={(event) => onChange(event.target.value)}
         onFocus={(event) => event.target.select()}
         onKeyDown={(event) => event.key === "Escape" && onCancel()}
+        maxLength={MAX_LAP_NAME_LENGTH}
         className={INPUT[size]}
         autoFocus
       />

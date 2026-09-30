@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
+import { MAX_PROJECT_NAME_LENGTH } from "@cronoz/shared";
 import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
 
 function renderHeader(props = {}) {
@@ -70,6 +71,16 @@ describe("ProjectHeader", () => {
     const heading = screen.getByRole("heading");
     expect(heading).toHaveClass("truncate", "min-w-0");
     expect(heading.parentElement).toHaveClass("min-w-0");
+  });
+
+  it("caps the rename field at the sync limit", async () => {
+    renderHeader();
+
+    await startRename();
+    expect(screen.getByDisplayValue("Projeto")).toHaveAttribute(
+      "maxLength",
+      String(MAX_PROJECT_NAME_LENGTH),
+    );
   });
 
   it("saves the rename when the ✓ button is clicked", async () => {

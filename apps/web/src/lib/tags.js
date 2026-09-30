@@ -1,4 +1,4 @@
-export const MAX_TAG_LENGTH = 24;
+import { MAX_TAG_LENGTH, MAX_TAGS_PER_PROJECT } from "@cronoz/shared";
 
 // normalizeTag is the spelling shown; tagKey is the identity. Case and
 // accents fold into the key, so "croche" reuses the "Crochê" already typed
@@ -25,6 +25,7 @@ export function addTagToList(tags, raw) {
   const list = Array.isArray(tags) ? tags : [];
   const name = normalizeTag(raw);
   if (!name || hasTag(list, name)) return tags ?? list;
+  if (list.length >= MAX_TAGS_PER_PROJECT) return tags ?? list;
   return [...list, name];
 }
 

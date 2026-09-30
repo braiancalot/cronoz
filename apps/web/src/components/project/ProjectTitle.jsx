@@ -1,3 +1,5 @@
+import { MAX_PROJECT_NAME_LENGTH } from "@cronoz/shared";
+
 export function ProjectTitle({
   isRenaming,
   name,
@@ -18,6 +20,7 @@ export function ProjectTitle({
         onChange={(event) => onDraftChange(event.target.value)}
         onFocus={(event) => event.target.select()}
         {...fieldProps}
+        maxLength={MAX_PROJECT_NAME_LENGTH}
         className="w-full min-w-0 bg-transparent text-lg font-medium outline-none"
         autoFocus
       />
