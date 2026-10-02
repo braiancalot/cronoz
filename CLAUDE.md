@@ -192,6 +192,15 @@ browser's `Origin` header, so boot rejects them and names the corrected value.
 An empty list aborts boot under `NODE_ENV=production` and falls back to
 `http://localhost:5173` elsewhere. Vercel MUST have the variable set before a deploy.
 
+### Token revocation
+
+`authMiddleware` looks the device up on every authenticated request and answers 401 when
+the row is gone or sits in another sync group than the token claims. Deleting a `devices`
+row is therefore the way to revoke access; the JWT itself carries no revocation state.
+
+The web client needs no special case: `callAuthed` retries through `/pair/token` on 401,
+gets 404 for a removed device and drops its local token.
+
 ### JWT secret guard
 
 `src/lib/jwtSecret.js` aborts boot when `JWT_SECRET` is missing, is a known placeholder

@@ -13,7 +13,7 @@ export async function signToken({ deviceId, syncGroupId }) {
   return new SignJWT({ deviceId, syncGroupId })
     .setProtectedHeader({ alg: ALGORITHM })
     .setIssuedAt()
-    .setExpirationTime("30d")
+    .setExpirationTime("24h")
     .sign(secret);
 }
 
