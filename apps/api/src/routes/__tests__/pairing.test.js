@@ -1,27 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
-import app from "../../app.js";
 import { db } from "../../db/index.js";
 import { pairingCodes, devices, syncGroups } from "../../db/schema.js";
 import { verifyToken } from "../../lib/jwt.js";
-
-const DEVICE_A = "11111111-1111-1111-1111-111111111111";
-const DEVICE_B = "22222222-2222-2222-2222-222222222222";
-const DEVICE_C = "33333333-3333-3333-3333-333333333333";
-
-function post(path, body) {
-  return app.request(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
-async function initiate(deviceId) {
-  const res = await post("/api/pair/initiate", { deviceId });
-  const body = await res.json();
-  return body.code;
-}
+import {
+  DEVICE_A,
+  DEVICE_B,
+  DEVICE_C,
+  initiate,
+  post,
+} from "../../../test/pairingFixtures.js";
 
 describe("POST /api/pair/initiate", () => {
   it("creates sync_group, device, and pairing code for a new device", async () => {

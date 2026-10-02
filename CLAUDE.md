@@ -178,6 +178,11 @@ including the pure `src/lib` ones: `pretest` fails before Vitest starts.
 The test connection string lives only in `apps/api/test/databaseUrl.js`.
 `vitest.config.js`, `drizzle.test.config.js` and `test/globalSetup.js` import it.
 
+Route tests share `apps/api/test/pairingFixtures.js` (device ids, `post`, `initiate`, `pair`,
+`tokenFor`) and `test/projectFixtures.js` (`makeProject`). Import from there instead of
+redefining them per file. Sync tests are split by endpoint (`syncPush`, `syncPull`,
+`syncDevices`) to stay under the 500-line ceiling.
+
 ### CORS allowlist
 
 `src/lib/corsOrigins.js` turns `CORS_ALLOWED_ORIGINS` into the array Hono's `cors` matches
