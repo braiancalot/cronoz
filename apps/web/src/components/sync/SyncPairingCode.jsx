@@ -1,5 +1,6 @@
 import { CheckIcon, XIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
+import { formatPairingCode } from "@/lib/pairingCode.js";
 import { formatCountdown } from "./syncFormat.js";
 
 export function SyncPairingCode({
@@ -20,7 +21,7 @@ export function SyncPairingCode({
         onClick={onCopy}
         className="font-mono text-4xl tracking-widest tabular-nums hover:opacity-80"
       >
-        {code}
+        {formatPairingCode(code)}
       </button>
       <p className="text-xs text-muted-foreground">
         Expira em {formatCountdown(remainingMs)}

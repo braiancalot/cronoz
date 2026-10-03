@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { and, eq, gt, isNull, lte } from "drizzle-orm";
+import { and, eq, gt, isNull, lt, lte, sql } from "drizzle-orm";
 import {
   pairInitiateRequestSchema,
   pairJoinRequestSchema,
@@ -9,7 +9,11 @@ import {
 import { db } from "../db/index.js";
 import { devices, pairingCodes, syncGroups } from "../db/schema.js";
 import { signToken } from "../lib/jwt.js";
-import { computeExpiresAt, generateCode } from "../lib/pairingCode.js";
+import {
+  PAIRING_CODE_MAX_FAILED_JOINS,
+  computeExpiresAt,
+  generateCode,
+} from "../lib/pairingCode.js";
 
 class PairError extends Error {
   constructor(status, code) {
@@ -87,40 +91,18 @@ pairingRouter.post(
 
     try {
       const syncGroupId = await db.transaction(async (tx) => {
-        const [pairing] = await tx
-          .update(pairingCodes)
-          .set({ usedAt: new Date() })
-          .where(
-            and(
-              eq(pairingCodes.code, code),
-              isNull(pairingCodes.usedAt),
-              gt(pairingCodes.expiresAt, new Date()),
-            ),
-          )
-          .returning();
-
+        const pairing = await claimCode(tx, code);
         if (!pairing) {
-          throw new PairError(400, "invalid_or_expired_code");
+          await countFailedJoin(tx);
+          return null;
         }
-
-        const [existing] = await tx
-          .select()
-          .from(devices)
-          .where(eq(devices.id, deviceId));
-
-        if (existing && existing.syncGroupId !== pairing.syncGroupId) {
-          throw new PairError(409, "device_already_paired");
-        }
-
-        if (!existing) {
-          await tx
-            .insert(devices)
-            .values({ id: deviceId, syncGroupId: pairing.syncGroupId });
-        }
-
+        await joinGroup(tx, deviceId, pairing.syncGroupId);
         return pairing.syncGroupId;
       });
 
+      if (!syncGroupId) {
+        return c.json({ error: "invalid_or_expired_code" }, 400);
+      }
       const token = await signToken({ deviceId, syncGroupId });
       return c.json({ token, syncGroupId });
     } catch (err) {
@@ -131,6 +113,46 @@ pairingRouter.post(
     }
   },
 );
+
+function liveCodeConditions(now = new Date()) {
+  return [
+    isNull(pairingCodes.usedAt),
+    gt(pairingCodes.expiresAt, now),
+    lt(pairingCodes.failedJoins, PAIRING_CODE_MAX_FAILED_JOINS),
+  ];
+}
+
+async function claimCode(tx, code) {
+  const [pairing] = await tx
+    .update(pairingCodes)
+    .set({ usedAt: new Date() })
+    .where(and(eq(pairingCodes.code, code), ...liveCodeConditions()))
+    .returning();
+  return pairing;
+}
+
+// A wrong guess counts against every live code, not the one guessed: the
+// guesser does not know which codes exist, so per-code counters stop nothing.
+async function countFailedJoin(tx) {
+  await tx
+    .update(pairingCodes)
+    .set({ failedJoins: sql`${pairingCodes.failedJoins} + 1` })
+    .where(and(...liveCodeConditions()));
+}
+
+async function joinGroup(tx, deviceId, syncGroupId) {
+  const [existing] = await tx
+    .select()
+    .from(devices)
+    .where(eq(devices.id, deviceId));
+
+  if (existing && existing.syncGroupId !== syncGroupId) {
+    throw new PairError(409, "device_already_paired");
+  }
+  if (!existing) {
+    await tx.insert(devices).values({ id: deviceId, syncGroupId });
+  }
+}
 
 pairingRouter.post(
   "/token",

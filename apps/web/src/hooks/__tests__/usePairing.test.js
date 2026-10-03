@@ -39,7 +39,7 @@ afterEach(() => {
 describe("usePairing.generateCode", () => {
   it("transitions to 'showing-code' with code and expiresAt", async () => {
     syncService.pairInitiate.mockResolvedValue({
-      code: "123456",
+      code: "ABCD2345",
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
     });
 
@@ -50,7 +50,7 @@ describe("usePairing.generateCode", () => {
     });
 
     expect(result.current.mode).toBe("showing-code");
-    expect(result.current.code).toBe("123456");
+    expect(result.current.code).toBe("ABCD2345");
     expect(result.current.remainingMs).toBeGreaterThan(0);
   });
 
@@ -113,7 +113,7 @@ describe("usePairing.joinWithCode", () => {
     const { result } = renderHook(() => usePairing());
     let outcome;
     await act(async () => {
-      outcome = await result.current.joinWithCode("123456");
+      outcome = await result.current.joinWithCode("ABCD2345");
     });
 
     expect(outcome).toEqual({ ok: true });
@@ -133,7 +133,7 @@ describe("usePairing.joinWithCode", () => {
     const { result } = renderHook(() => usePairing());
     let outcome;
     await act(async () => {
-      outcome = await result.current.joinWithCode("000000");
+      outcome = await result.current.joinWithCode("22222222");
     });
 
     expect(outcome).toEqual({
@@ -155,7 +155,7 @@ describe("usePairing.joinWithCode", () => {
     const { result } = renderHook(() => usePairing());
     let outcome;
     await act(async () => {
-      outcome = await result.current.joinWithCode("123456");
+      outcome = await result.current.joinWithCode("ABCD2345");
     });
 
     expect(outcome).toEqual({
@@ -169,7 +169,7 @@ describe("usePairing.joinWithCode", () => {
 describe("usePairing countdown", () => {
   it("returns to idle when expiresAt is already past", async () => {
     syncService.pairInitiate.mockResolvedValue({
-      code: "123456",
+      code: "ABCD2345",
       expiresAt: new Date(Date.now() - 1000).toISOString(),
     });
 

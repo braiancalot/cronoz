@@ -6,6 +6,7 @@ import {
   settingSchema,
   pushRequestSchema,
   pullRequestSchema,
+  pairJoinRequestSchema,
 } from "../index.js";
 
 describe("lapSchema", () => {
@@ -263,4 +264,22 @@ describe("sync schemas", () => {
     };
     expect(pushRequestSchema.parse(req)).toEqual(req);
   });
+});
+
+describe("pairJoinRequestSchema", () => {
+  const deviceId = crypto.randomUUID();
+
+  it("accepts an 8-character code from the alphabet", () => {
+    const body = { deviceId, code: "ABCD2345" };
+    expect(pairJoinRequestSchema.parse(body)).toEqual(body);
+  });
+
+  it.each(["ABCD234", "ABCD23456", "abcd2345", "ABCD-234", "OBCD2345"])(
+    "rejects %s",
+    (code) => {
+      expect(pairJoinRequestSchema.safeParse({ deviceId, code }).success).toBe(
+        false,
+      );
+    },
+  );
 });

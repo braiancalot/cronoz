@@ -4,7 +4,9 @@ export const SYNC_CURSOR_KEY = "syncCursor";
 export const LAST_PUSHED_AT_KEY = "lastPushedAt";
 export const LAST_SYNCED_AT_KEY = "lastSyncedAt";
 
-export const PAIRING_CODE_LENGTH = 6;
+export const PAIRING_CODE_LENGTH = 8;
+// No 0/O, 1/I/L or U: codes are read aloud and typed by hand.
+export const PAIRING_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTVWXYZ";
 export const PAIRING_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutos
 
 // Sync payload limits. The API rejects anything above them, so the client

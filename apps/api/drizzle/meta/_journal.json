@@ -8,6 +8,13 @@
       "when": 1790989596518,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790990379587,
+      "tag": "0001_pairing_code_hardening",
+      "breakpoints": true
     }
   ]
 }

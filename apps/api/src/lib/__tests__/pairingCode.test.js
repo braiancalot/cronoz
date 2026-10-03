@@ -1,12 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { PAIRING_CODE_TTL_MS } from "@cronoz/shared";
+import { PAIRING_CODE_ALPHABET, PAIRING_CODE_TTL_MS } from "@cronoz/shared";
 import { generateCode, computeExpiresAt, isExpired } from "../pairingCode.js";
 
+class FakeRandomSource {
+  constructor(bytes) {
+    this.bytes = [...bytes];
+  }
+
+  fill = (array) => {
+    for (let i = 0; i < array.length; i++) array[i] = this.bytes.shift() ?? 0;
+    return array;
+  };
+}
+
 describe("generateCode", () => {
-  it("returns a 6-digit numeric string", () => {
+  it("returns 8 characters from the unambiguous alphabet", () => {
     const code = generateCode();
-    expect(code).toHaveLength(6);
-    expect(code).toMatch(/^\d{6}$/);
+    expect(code).toMatch(new RegExp(`^[${PAIRING_CODE_ALPHABET}]{8}$`));
+  });
+
+  it("maps each random byte onto the alphabet", () => {
+    const random = new FakeRandomSource([0, 1, 29, 30, 31, 59, 60, 239]);
+    expect(generateCode(random.fill)).toBe("23Z23Z2Z");
+  });
+
+  it("discards bytes past the last full alphabet cycle to avoid bias", () => {
+    const random = new FakeRandomSource([240, 255, 1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(generateCode(random.fill)).toBe("33333333");
   });
 
   it("produces different values across calls", () => {

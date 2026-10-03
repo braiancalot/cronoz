@@ -35,12 +35,12 @@ afterEach(() => {
 describe("syncService.pairInitiate", () => {
   it("POSTs deviceId to /api/pair/initiate without auth", async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ body: { code: "123456", expiresAt: "2026-01-01" } }),
+      mockResponse({ body: { code: "ABCD2345", expiresAt: "2026-01-01" } }),
     );
 
     const res = await syncService.pairInitiate({ deviceId: "dev-1" });
 
-    expect(res).toEqual({ code: "123456", expiresAt: "2026-01-01" });
+    expect(res).toEqual({ code: "ABCD2345", expiresAt: "2026-01-01" });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/initiate");
     expect(init.method).toBe("POST");

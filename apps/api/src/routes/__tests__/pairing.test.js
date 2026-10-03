@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
+import { PAIRING_CODE_ALPHABET } from "@cronoz/shared";
 import { db } from "../../db/index.js";
 import { pairingCodes, devices, syncGroups } from "../../db/schema.js";
 import { verifyToken } from "../../lib/jwt.js";
@@ -7,6 +8,7 @@ import {
   DEVICE_A,
   DEVICE_B,
   DEVICE_C,
+  DEVICE_D,
   initiate,
   post,
 } from "../../../test/pairingFixtures.js";
@@ -16,7 +18,7 @@ describe("POST /api/pair/initiate", () => {
     const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.code).toMatch(/^\d{6}$/);
+    expect(body.code).toMatch(new RegExp(`^[${PAIRING_CODE_ALPHABET}]{8}$`));
     expect(body.expiresAt).toBeTruthy();
 
     const groups = await db.select().from(syncGroups);
@@ -103,7 +105,7 @@ describe("POST /api/pair/join", () => {
   it("returns 400 for non-existent code", async () => {
     const res = await post("/api/pair/join", {
       deviceId: DEVICE_B,
-      code: "000000",
+      code: "22222222",
     });
     expect(res.status).toBe(400);
   });
@@ -148,6 +150,57 @@ describe("POST /api/pair/join", () => {
       deviceId: DEVICE_B,
       code: code2,
     });
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("POST /api/pair/join failed-attempt brake", () => {
+  function join(deviceId, code) {
+    return post("/api/pair/join", { deviceId, code });
+  }
+
+  function codeOutside(liveCodes) {
+    return ["22222222", "33333333", "44444444"].find(
+      (candidate) => !liveCodes.includes(candidate),
+    );
+  }
+
+  async function failJoins(liveCodes, times) {
+    const wrongCode = codeOutside(liveCodes);
+    for (let i = 0; i < times; i++) await join(DEVICE_B, wrongCode);
+  }
+
+  it("still accepts a live code after 4 failed joins", async () => {
+    const code = await initiate(DEVICE_A);
+    await failJoins([code], 4);
+
+    const res = await join(DEVICE_B, code);
+    expect(res.status).toBe(200);
+  });
+
+  it("burns every live code after 5 failed joins", async () => {
+    const codeA = await initiate(DEVICE_A);
+    const codeC = await initiate(DEVICE_C);
+    await failJoins([codeA, codeC], 5);
+
+    expect((await join(DEVICE_B, codeA)).status).toBe(400);
+    expect((await join(DEVICE_D, codeC)).status).toBe(400);
+  });
+
+  it("gives a code generated after the brake a clean slate", async () => {
+    const burned = await initiate(DEVICE_A);
+    await failJoins([burned], 5);
+
+    const fresh = await initiate(DEVICE_A);
+    const res = await join(DEVICE_B, fresh);
+    expect(res.status).toBe(200);
+  });
+
+  it("does not count malformed codes rejected by validation", async () => {
+    const code = await initiate(DEVICE_A);
+    for (let i = 0; i < 5; i++) await join(DEVICE_B, "0000OOOO");
+
+    const res = await join(DEVICE_B, code);
     expect(res.status).toBe(200);
   });
 });

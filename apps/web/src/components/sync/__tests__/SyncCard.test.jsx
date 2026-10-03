@@ -71,18 +71,49 @@ describe("SyncCard", () => {
     usePairing.mockReturnValue({
       ...basePairing,
       mode: "showing-code",
-      code: "123456",
+      code: "ABCD2345",
       remainingMs: 60_000,
     });
     useSyncStatus.mockReturnValue(baseStatus);
 
     render(<SyncCard />);
 
-    expect(screen.getByText("123456")).toBeTruthy();
+    expect(screen.getByText("ABCD-2345")).toBeTruthy();
     expect(screen.getByText(/Expira em 1:00/)).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /Já pareei o outro device/i }),
     ).toBeTruthy();
+  });
+
+  it("copies the code without the reading hyphen", async () => {
+    const user = userEvent.setup();
+    usePairing.mockReturnValue({
+      ...basePairing,
+      mode: "showing-code",
+      code: "ABCD2345",
+      remainingMs: 60_000,
+    });
+    useSyncStatus.mockReturnValue(baseStatus);
+
+    render(<SyncCard />);
+    await user.click(screen.getByRole("button", { name: "ABCD-2345" }));
+
+    expect(await navigator.clipboard.readText()).toBe("ABCD2345");
+  });
+
+  it("joins with a code pasted in its displayed form", async () => {
+    const user = userEvent.setup();
+    const joinWithCode = vi.fn().mockResolvedValue({ ok: true });
+    usePairing.mockReturnValue({ ...basePairing, joinWithCode });
+    useSyncStatus.mockReturnValue(baseStatus);
+
+    render(<SyncCard />);
+    await user.click(screen.getByRole("button", { name: /Inserir código/i }));
+    await user.click(screen.getByLabelText(/Código de pareamento/i));
+    await user.paste(" ABCD-2345 ");
+    await user.click(screen.getByRole("button", { name: /^Parear$/ }));
+
+    expect(joinWithCode).toHaveBeenCalledWith("ABCD2345");
   });
 
   it("renders paired state with last sync, device count, sync/unpair buttons", async () => {
@@ -183,11 +214,11 @@ describe("SyncCard", () => {
     await userEvent.click(
       screen.getByRole("button", { name: /Inserir código/i }),
     );
-    const input = screen.getByLabelText(/Código de 6 dígitos/i);
-    await userEvent.type(input, "123456");
+    const input = screen.getByLabelText(/Código de pareamento/i);
+    await userEvent.type(input, "abcd-2345");
     await userEvent.click(screen.getByRole("button", { name: /^Parear$/ }));
 
-    expect(joinWithCode).toHaveBeenCalledWith("123456");
+    expect(joinWithCode).toHaveBeenCalledWith("ABCD2345");
     expect(toast.error).toHaveBeenCalledWith(
       "Este dispositivo já está pareado em outro grupo.",
     );

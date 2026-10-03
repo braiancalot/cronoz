@@ -6,6 +6,7 @@ import {
   bigint,
   jsonb,
   char,
+  integer,
   primaryKey,
   index,
 } from "drizzle-orm/pg-core";
@@ -32,7 +33,7 @@ export const devices = pgTable(
 export const pairingCodes = pgTable(
   "pairing_codes",
   {
-    code: char("code", { length: 6 }).primaryKey(),
+    code: char("code", { length: 8 }).primaryKey(),
     syncGroupId: uuid("sync_group_id")
       .notNull()
       .references(() => syncGroups.id, { onDelete: "cascade" }),
@@ -42,6 +43,7 @@ export const pairingCodes = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     expiresAt: timestamp("expires_at").notNull(),
     usedAt: timestamp("used_at"),
+    failedJoins: integer("failed_joins").notNull().default(0),
   },
   (t) => [index("pairing_codes_expires_at_idx").on(t.expiresAt)],
 );
