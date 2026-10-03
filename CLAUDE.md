@@ -152,20 +152,24 @@ In production (Vercel), `DATABASE_URL` is the Neon connection string (use the `-
 
 ### Migrations (Drizzle)
 
-**Current state:** the project uses `drizzle-kit push` (syncs `schema.js` → database directly, no versioned migration files). The `apps/api/drizzle/` folder does not exist.
+Schema changes go through versioned migrations in `apps/api/drizzle/`, committed to git.
 
-- **Local dev:** `npm run db:push --workspace=apps/api` applies the schema to the local Postgres.
-- **First deploy (empty database):** run `db:push` pointed at the Neon production branch's `DATABASE_URL`. This works because there's no data or schema history yet.
+1. Edit `src/db/schema.js`.
+2. Run `npm run db:generate --workspace=apps/api -- --name <what_changed>` and review the SQL.
+3. Run `npm run db:migrate --workspace=apps/api` against the target `DATABASE_URL`.
 
-**Next time the schema changes, switch to versioned migrations before applying it:**
+Production runs `db:migrate` manually from local, pointed at Neon, **before** deploying the
+API that needs it. Each migration MUST stay compatible with the API version already live.
 
-1. Add a `db:migrate` script to `apps/api/package.json` that invokes `drizzle-orm/migrator` pointed at `./drizzle`.
-2. Create `src/db/migrate.js` (a standalone script that reads `DATABASE_URL` and runs the migrator).
-3. Run `npm run db:generate --workspace=apps/api` (generates SQL files in `apps/api/drizzle/`).
-4. Commit the `drizzle/` folder to git.
-5. In production, run `db:migrate` manually from local, pointed at Neon (personal project, small scale — doesn't justify migration CI).
+`db:push` is gone on purpose: in production it can propose a `DROP` on a renamed column and
+lose data. Never reintroduce it.
 
-**Rule:** once versioned migrations exist, **never use `db:push` in production again** — only `db:migrate`. Push is fine in local dev, but in production it can propose a `DROP` on renamed columns and lose data.
+`0000_baseline` is the schema that existed before migrations. Databases created by the old
+`push` MUST be marked as already holding it (one row in `drizzle.__drizzle_migrations` with
+the file's SHA-256 and the journal's `when`) instead of running it.
+
+Tests drop and recreate `cronoz_test` on every run and build it with the same migrator, so
+a broken migration fails the suite.
 
 **Neon branches:** a single `main` branch for production. Vercel Production points to it. No separate preview/staging branch for now — a personal project doesn't justify one.
 
@@ -176,7 +180,7 @@ In production (Vercel), `DATABASE_URL` is the Neon connection string (use the `-
 including the pure `src/lib` ones: `pretest` fails before Vitest starts.
 
 The test connection string lives only in `apps/api/test/databaseUrl.js`.
-`vitest.config.js`, `drizzle.test.config.js` and `test/globalSetup.js` import it.
+`vitest.config.js` and `test/globalSetup.js` import it.
 
 Route tests share `apps/api/test/pairingFixtures.js` (device ids, `post`, `initiate`, `pair`,
 `tokenFor`) and `test/projectFixtures.js` (`makeProject`). Import from there instead of

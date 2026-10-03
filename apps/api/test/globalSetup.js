@@ -1,24 +1,23 @@
-import { execSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
 import postgres from "postgres";
 
-import { ADMIN_DATABASE_URL, TEST_DATABASE_NAME } from "./databaseUrl.js";
+import { applyMigrations } from "../src/db/migrate.js";
+import {
+  ADMIN_DATABASE_URL,
+  TEST_DATABASE_NAME,
+  TEST_DATABASE_URL,
+} from "./databaseUrl.js";
 
-const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
+// Recreated on every run so the migrations, not a leftover schema, build it.
 export async function setup() {
-  const admin = postgres(ADMIN_DATABASE_URL);
+  const admin = postgres(ADMIN_DATABASE_URL, { onnotice: () => {} });
   try {
+    await admin.unsafe(
+      `DROP DATABASE IF EXISTS ${TEST_DATABASE_NAME} WITH (FORCE)`,
+    );
     await admin.unsafe(`CREATE DATABASE ${TEST_DATABASE_NAME}`);
-  } catch (err) {
-    if (err.code !== "42P04") throw err;
   } finally {
     await admin.end();
   }
 
-  execSync("npx drizzle-kit push --config=drizzle.test.config.js --force", {
-    cwd: apiRoot,
-    stdio: "pipe",
-  });
+  await applyMigrations(TEST_DATABASE_URL);
 }
