@@ -4,8 +4,8 @@ import {
   LAST_SYNCED_AT_KEY,
   MAX_PUSH_PROJECTS,
   SYNC_CURSOR_KEY,
+  SYNC_PAIRED_KEY,
   SYNC_REVOKED_KEY,
-  SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
 
 vi.mock("@/services/syncService.js", async () => {
@@ -15,15 +15,16 @@ vi.mock("@/services/syncService.js", async () => {
     default: {
       pairInitiate: vi.fn(),
       pairJoin: vi.fn(),
-      refreshToken: vi.fn(),
       push: vi.fn(),
       pull: vi.fn(),
+      getDeviceCount: vi.fn(),
       leaveGroup: vi.fn(),
     },
   };
 });
 
 import db from "@/services/db.js";
+import deviceService from "@/services/deviceService.js";
 import internalRepository from "@/services/internalRepository.js";
 import projectRepository from "@/services/projectRepository.js";
 import syncService, { SyncError } from "@/services/syncService.js";
@@ -51,18 +52,18 @@ async function seedPendingProjects(count) {
 }
 
 describe("syncManager.isPaired", () => {
-  it("returns false when no token is stored", async () => {
+  it("returns false when the device is not marked paired", async () => {
     expect(await syncManager.isPaired()).toBe(false);
   });
 
-  it("returns true when a token is stored", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+  it("returns true when the device is marked paired", async () => {
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     expect(await syncManager.isPaired()).toBe(true);
   });
 });
 
 describe("syncManager.sync — not paired", () => {
-  it("returns without calling syncService when no token", async () => {
+  it("returns without calling syncService when not paired", async () => {
     await syncManager.sync();
     expect(syncService.push).not.toHaveBeenCalled();
     expect(syncService.pull).not.toHaveBeenCalled();
@@ -71,7 +72,7 @@ describe("syncManager.sync — not paired", () => {
 
 describe("syncManager.sync — paired", () => {
   beforeEach(async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     syncService.pull.mockResolvedValue({
       projects: [],
       settings: [],
@@ -82,7 +83,10 @@ describe("syncManager.sync — paired", () => {
   it("only pulls when there are no local changes", async () => {
     await syncManager.sync();
     expect(syncService.push).not.toHaveBeenCalled();
-    expect(syncService.pull).toHaveBeenCalledWith({ token: "tok", cursor: 0 });
+    expect(syncService.pull).toHaveBeenCalledWith({
+      credential: await deviceService.getDeviceCredential(),
+      cursor: 0,
+    });
   });
 
   it("pushes local changes newer than lastPushedAt, then pulls", async () => {
@@ -98,7 +102,7 @@ describe("syncManager.sync — paired", () => {
 
     expect(syncService.push).toHaveBeenCalledTimes(1);
     const pushArg = syncService.push.mock.calls[0][0];
-    expect(pushArg.token).toBe("tok");
+    expect(pushArg.credential).toBe(await deviceService.getDeviceCredential());
     expect(pushArg.projects.map((p) => p.id)).toEqual(["p2"]);
     expect(pushArg.settings.map((s) => s.key)).toEqual(["hourlyPrice"]);
 
@@ -174,20 +178,28 @@ describe("syncManager.sync — paired", () => {
     expect(setting.value).toBe(7);
   });
 
-  it("clears token when 401 and refreshToken returns 404", async () => {
+  it("drops the pairing and flags it revoked on 401", async () => {
     syncService.pull.mockRejectedValue(
       new SyncError("http_401", { status: 401, body: { error: "x" } }),
     );
-    syncService.refreshToken.mockRejectedValue(
-      new SyncError("http_404", {
-        status: 404,
-        body: { error: "device_not_found" },
-      }),
-    );
 
     await expect(syncManager.sync()).resolves.toBeUndefined();
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+    expect(await internalRepository.get(SYNC_PAIRED_KEY)).toBeUndefined();
     expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBe(true);
+    expect(syncService.pull).toHaveBeenCalledTimes(1);
+  });
+
+  // The server may still hold this secret's hash: a new one would be refused
+  // when the device pairs again.
+  it("keeps the device credential when the pairing is dropped", async () => {
+    const credential = await deviceService.getDeviceCredential();
+    syncService.pull.mockRejectedValue(
+      new SyncError("http_401", { status: 401, body: { error: "x" } }),
+    );
+
+    await syncManager.sync();
+
+    expect(await deviceService.getDeviceCredential()).toBe(credential);
   });
 
   it("does not flag the device as revoked on a network error", async () => {
@@ -197,26 +209,8 @@ describe("syncManager.sync — paired", () => {
 
     await syncManager.sync();
 
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
+    expect(await internalRepository.get(SYNC_PAIRED_KEY)).toBe(true);
     expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBeUndefined();
-  });
-
-  it("silently refreshes token on 401 and retries", async () => {
-    syncService.pull
-      .mockRejectedValueOnce(
-        new SyncError("http_401", { status: 401, body: {} }),
-      )
-      .mockResolvedValueOnce({ projects: [], settings: [], cursor: 0 });
-    syncService.refreshToken.mockResolvedValue({
-      token: "new-tok",
-      syncGroupId: "g1",
-    });
-
-    await syncManager.sync();
-
-    expect(syncService.refreshToken).toHaveBeenCalledTimes(1);
-    expect(syncService.pull).toHaveBeenCalledTimes(2);
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("new-tok");
   });
 
   it("writes LAST_SYNCED_AT_KEY at the end of a successful run", async () => {
@@ -232,7 +226,7 @@ describe("syncManager.sync — paired", () => {
     );
 
     await expect(syncManager.sync()).resolves.toBeUndefined();
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
+    expect(await internalRepository.get(SYNC_PAIRED_KEY)).toBe(true);
   });
 
   it("dedupes concurrent sync() calls (inFlight)", async () => {
@@ -302,7 +296,7 @@ describe("syncManager.sync — paired", () => {
 
 describe("syncManager.subscribe / getStatus", () => {
   beforeEach(async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     syncService.pull.mockResolvedValue({
       projects: [],
       settings: [],
@@ -344,8 +338,8 @@ describe("syncManager.subscribe / getStatus", () => {
   });
 });
 
-describe("syncManager.adoptToken", () => {
-  it("stores the token, lifts the revoked notice and syncs", async () => {
+describe("syncManager.adoptPairing", () => {
+  it("marks the device paired, lifts the revoked notice and syncs", async () => {
     await internalRepository.set(SYNC_REVOKED_KEY, true);
     syncService.pull.mockResolvedValue({
       projects: [],
@@ -353,23 +347,21 @@ describe("syncManager.adoptToken", () => {
       cursor: 1,
     });
 
-    await syncManager.adoptToken("fresh");
+    await syncManager.adoptPairing();
 
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("fresh");
+    expect(await internalRepository.get(SYNC_PAIRED_KEY)).toBe(true);
     expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBeUndefined();
+    const credential = await deviceService.getDeviceCredential();
     await vi.waitFor(() =>
-      expect(syncService.pull).toHaveBeenCalledWith({
-        token: "fresh",
-        cursor: 0,
-      }),
+      expect(syncService.pull).toHaveBeenCalledWith({ credential, cursor: 0 }),
     );
     await syncManager.sync();
   });
 });
 
 describe("syncManager.unpair", () => {
-  it("calls leaveGroup with the stored token before clearing local state", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+  it("calls leaveGroup with the device credential before clearing local state", async () => {
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     await internalRepository.set(SYNC_CURSOR_KEY, 123);
     await internalRepository.set(LAST_PUSHED_AT_KEY, 456);
     await internalRepository.set(LAST_SYNCED_AT_KEY, 789);
@@ -378,8 +370,10 @@ describe("syncManager.unpair", () => {
 
     await syncManager.unpair();
 
-    expect(syncService.leaveGroup).toHaveBeenCalledWith({ token: "tok" });
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+    expect(syncService.leaveGroup).toHaveBeenCalledWith({
+      credential: await deviceService.getDeviceCredential(),
+    });
+    expect(await internalRepository.get(SYNC_PAIRED_KEY)).toBeUndefined();
     expect(await internalRepository.get(SYNC_CURSOR_KEY)).toBeUndefined();
     expect(await internalRepository.get(LAST_PUSHED_AT_KEY)).toBeUndefined();
     expect(await internalRepository.get(LAST_SYNCED_AT_KEY)).toBeUndefined();
@@ -387,7 +381,7 @@ describe("syncManager.unpair", () => {
   });
 
   it("still clears local state when leaveGroup fails (offline)", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     syncService.leaveGroup.mockRejectedValue(
       new SyncError("network_error", { body: "Failed to fetch" }),
     );
@@ -395,18 +389,54 @@ describe("syncManager.unpair", () => {
     await syncManager.unpair();
 
     expect(syncService.leaveGroup).toHaveBeenCalled();
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+    expect(await internalRepository.get(SYNC_PAIRED_KEY)).toBeUndefined();
   });
 
-  it("does not call leaveGroup when there is no stored token", async () => {
+  it("does not call leaveGroup when the device is not paired", async () => {
     await syncManager.unpair();
     expect(syncService.leaveGroup).not.toHaveBeenCalled();
+  });
+
+  it("keeps the device credential for the next pairing", async () => {
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
+    const credential = await deviceService.getDeviceCredential();
+    syncService.leaveGroup.mockResolvedValue({ ok: true });
+
+    await syncManager.unpair();
+
+    expect(await deviceService.getDeviceCredential()).toBe(credential);
+  });
+});
+
+describe("syncManager.getDeviceCount", () => {
+  it("asks the server with the device credential", async () => {
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
+    syncService.getDeviceCount.mockResolvedValue({ count: 2 });
+
+    expect(await syncManager.getDeviceCount()).toBe(2);
+    expect(syncService.getDeviceCount).toHaveBeenCalledWith({
+      credential: await deviceService.getDeviceCredential(),
+    });
+  });
+
+  it("returns null without asking when the device is not paired", async () => {
+    expect(await syncManager.getDeviceCount()).toBeNull();
+    expect(syncService.getDeviceCount).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the request fails", async () => {
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
+    syncService.getDeviceCount.mockRejectedValue(
+      new SyncError("network_error", { body: "x" }),
+    );
+
+    expect(await syncManager.getDeviceCount()).toBeNull();
   });
 });
 
 describe("syncManager.scheduleSync", () => {
   beforeEach(async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     syncService.pull.mockResolvedValue({
       projects: [],
       settings: [],

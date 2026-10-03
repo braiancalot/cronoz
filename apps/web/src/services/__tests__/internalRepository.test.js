@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import db from "@/services/db.js";
 import internalRepository from "@/services/internalRepository.js";
 
@@ -38,5 +38,38 @@ describe("internalRepository", () => {
 
   it("remove is idempotent on missing key", async () => {
     await expect(internalRepository.remove("nope")).resolves.toBeUndefined();
+  });
+});
+
+describe("internalRepository.getOrCreate", () => {
+  it("stores and returns the value it made for a missing key", async () => {
+    const value = await internalRepository.getOrCreate("k", () => "made");
+
+    expect(value).toBe("made");
+    expect(await internalRepository.get("k")).toBe("made");
+  });
+
+  it("returns the stored value without making another", async () => {
+    await internalRepository.set("k", "stored");
+    const makeValue = vi.fn(() => "made");
+
+    const value = await internalRepository.getOrCreate("k", makeValue);
+
+    expect(value).toBe("stored");
+    expect(makeValue).not.toHaveBeenCalled();
+  });
+
+  it("gives racing callers the same value", async () => {
+    let made = 0;
+    const makeValue = () => `made-${++made}`;
+
+    const values = await Promise.all([
+      internalRepository.getOrCreate("k", makeValue),
+      internalRepository.getOrCreate("k", makeValue),
+      internalRepository.getOrCreate("k", makeValue),
+    ]);
+
+    expect(new Set(values).size).toBe(1);
+    expect(await internalRepository.get("k")).toBe(values[0]);
   });
 });

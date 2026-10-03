@@ -4,7 +4,7 @@ import {
   LAST_PUSHED_AT_KEY,
   LAST_SYNCED_AT_KEY,
   SYNC_CURSOR_KEY,
-  SYNC_TOKEN_KEY,
+  SYNC_PAIRED_KEY,
 } from "@cronoz/shared";
 
 vi.mock("@/services/syncService.js", async () => {
@@ -14,7 +14,6 @@ vi.mock("@/services/syncService.js", async () => {
     default: {
       pairInitiate: vi.fn(),
       pairJoin: vi.fn(),
-      refreshToken: vi.fn(),
       push: vi.fn(),
       pull: vi.fn(),
       getDeviceCount: vi.fn(),
@@ -40,21 +39,21 @@ afterEach(() => {
 });
 
 describe("useSyncStatus", () => {
-  it("reports not paired when no token", async () => {
+  it("reports not paired when the device is not marked paired", async () => {
     const { result } = renderHook(() => useSyncStatus(), { wrapper });
     await waitFor(() => expect(result.current.isPaired).toBe(false));
     expect(result.current.lastSyncedAt).toBeNull();
   });
 
-  it("reports paired when token is set", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+  it("reports paired when the device is marked paired", async () => {
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
 
     const { result } = renderHook(() => useSyncStatus(), { wrapper });
     await waitFor(() => expect(result.current.isPaired).toBe(true));
   });
 
   it("does not fetch device count from network", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
 
     renderHook(() => useSyncStatus(), { wrapper });
     await waitFor(() => expect(true).toBe(true));
@@ -63,7 +62,7 @@ describe("useSyncStatus", () => {
   });
 
   it("exposes lastSyncedAt from internal", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     await internalRepository.set(LAST_SYNCED_AT_KEY, 12345);
 
     const { result } = renderHook(() => useSyncStatus(), { wrapper });
@@ -71,7 +70,7 @@ describe("useSyncStatus", () => {
   });
 
   it("exposes syncing, error and isOnline from the manager store", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
 
     const { result } = renderHook(() => useSyncStatus(), { wrapper });
     await waitFor(() => expect(result.current.isPaired).toBe(true));
@@ -82,7 +81,7 @@ describe("useSyncStatus", () => {
   });
 
   it("unpair clears all sync-related internal keys", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     await internalRepository.set(SYNC_CURSOR_KEY, 1000);
     await internalRepository.set(LAST_PUSHED_AT_KEY, 2000);
     await internalRepository.set(LAST_SYNCED_AT_KEY, 3000);

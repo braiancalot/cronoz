@@ -22,33 +22,27 @@ function joinErrorCode(err) {
 }
 
 async function issuePairingCode() {
-  const deviceId = await deviceService.getOrCreateDeviceId();
-  const issued = await syncService.pairInitiate({ deviceId });
+  const credential = await deviceService.getDeviceCredential();
+  const issued = await syncService.pairInitiate({ credential });
   const pending = {
     code: issued.code,
     expiresAt: new Date(issued.expiresAt).getTime(),
   };
-  // Stored so leaving the page does not strand a host that has no token yet.
+  // Stored so leaving the page does not strand a host that is not marked
+  // paired yet.
   await internalRepository.set(PENDING_PAIRING_KEY, pending);
   return pending;
 }
 
 async function readHostStatus({ code, expiresAt }) {
   try {
-    const deviceId = await deviceService.getOrCreateDeviceId();
-    const { status } = await syncService.pairStatus({ deviceId, code });
+    const credential = await deviceService.getDeviceCredential();
+    const { status } = await syncService.pairStatus({ credential, code });
     return status;
   } catch {
     // Server unreachable: only the local clock can end the wait.
     return Date.now() >= expiresAt ? "expired" : "waiting";
   }
-}
-
-async function adoptGroupToken() {
-  const deviceId = await deviceService.getOrCreateDeviceId();
-  const { token } = await syncService.refreshToken({ deviceId });
-  await internalRepository.remove(PENDING_PAIRING_KEY);
-  await syncManager.adoptToken(token);
 }
 
 async function settleHostStatus({ code, expiresAt, dispatch, onPaired }) {
@@ -57,7 +51,10 @@ async function settleHostStatus({ code, expiresAt, dispatch, onPaired }) {
     dispatch({ type: "host_status", code, status });
     return;
   }
-  await adoptGroupToken();
+  // Marked first: a failure in between leaves a stale code, not a host that
+  // never learns it was paired.
+  await syncManager.adoptPairing();
+  await internalRepository.remove(PENDING_PAIRING_KEY);
   dispatch({ type: "reset" });
   onPaired();
 }
@@ -72,7 +69,7 @@ function useHostPolling({ flow, dispatch, onPaired, pollMs }) {
     const poll = async () => {
       if (settling) return;
       settling = true;
-      // A failed token fetch leaves the code as joined; the next poll retries.
+      // A failed local write leaves the code as joined; the next poll retries.
       await settleHostStatus({ code, expiresAt, dispatch, onPaired }).catch(
         () => {},
       );
@@ -108,9 +105,9 @@ export function usePairing({ onPaired, pollMs = HOST_POLL_MS }) {
     async (code) => {
       dispatch({ type: "join_started" });
       try {
-        const deviceId = await deviceService.getOrCreateDeviceId();
-        const { token } = await syncService.pairJoin({ deviceId, code });
-        await syncManager.adoptToken(token);
+        const credential = await deviceService.getDeviceCredential();
+        await syncService.pairJoin({ credential, code });
+        await syncManager.adoptPairing();
         dispatch({ type: "reset" });
         onPaired();
         return true;

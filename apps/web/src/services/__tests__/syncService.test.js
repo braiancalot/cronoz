@@ -33,77 +33,62 @@ afterEach(() => {
 });
 
 describe("syncService.pairInitiate", () => {
-  it("POSTs deviceId to /api/pair/initiate without auth", async () => {
+  it("POSTs to /api/pair/initiate with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(
       mockResponse({ body: { code: "ABCD2345", expiresAt: "2026-01-01" } }),
     );
 
-    const res = await syncService.pairInitiate({ deviceId: "dev-1" });
+    const res = await syncService.pairInitiate({ credential: "cred" });
 
     expect(res).toEqual({ code: "ABCD2345", expiresAt: "2026-01-01" });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/initiate");
     expect(init.method).toBe("POST");
     expect(init.headers["Content-Type"]).toBe("application/json");
-    expect(init.headers.Authorization).toBeUndefined();
-    expect(body).toEqual({ deviceId: "dev-1" });
+    expect(init.headers.Authorization).toBe("Bearer cred");
+    expect(body).toEqual({});
   });
 });
 
 describe("syncService.pairJoin", () => {
-  it("POSTs deviceId+code to /api/pair/join", async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ body: { token: "tok", syncGroupId: "g-1" } }),
-    );
+  it("POSTs the code to /api/pair/join with the credential as bearer", async () => {
+    fetchMock.mockResolvedValue(mockResponse({ body: { syncGroupId: "g-1" } }));
 
-    const res = await syncService.pairJoin({ deviceId: "dev-1", code: "999" });
+    const res = await syncService.pairJoin({ credential: "cred", code: "999" });
 
-    expect(res).toEqual({ token: "tok", syncGroupId: "g-1" });
-    const { url, body } = getRequestArgs();
+    expect(res).toEqual({ syncGroupId: "g-1" });
+    const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/join");
-    expect(body).toEqual({ deviceId: "dev-1", code: "999" });
+    expect(init.headers.Authorization).toBe("Bearer cred");
+    expect(body).toEqual({ code: "999" });
   });
 });
 
 describe("syncService.pairStatus", () => {
-  it("POSTs deviceId+code to /api/pair/status", async () => {
+  it("POSTs the code to /api/pair/status with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: { status: "waiting" } }));
 
     const res = await syncService.pairStatus({
-      deviceId: "dev-1",
+      credential: "cred",
       code: "ABCD2345",
     });
 
     expect(res).toEqual({ status: "waiting" });
-    const { url, body } = getRequestArgs();
+    const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/status");
-    expect(body).toEqual({ deviceId: "dev-1", code: "ABCD2345" });
-  });
-});
-
-describe("syncService.refreshToken", () => {
-  it("POSTs deviceId to /api/pair/token", async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ body: { token: "tok2", syncGroupId: "g-1" } }),
-    );
-
-    const res = await syncService.refreshToken({ deviceId: "dev-1" });
-
-    expect(res).toEqual({ token: "tok2", syncGroupId: "g-1" });
-    const { url, body } = getRequestArgs();
-    expect(url).toBe("http://api.test/api/pair/token");
-    expect(body).toEqual({ deviceId: "dev-1" });
+    expect(init.headers.Authorization).toBe("Bearer cred");
+    expect(body).toEqual({ code: "ABCD2345" });
   });
 });
 
 describe("syncService.push", () => {
-  it("POSTs projects+settings to /api/sync/push with bearer token", async () => {
+  it("POSTs projects+settings to /api/sync/push with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(
       mockResponse({ body: { ok: true, serverTimestamp: 123 } }),
     );
 
     const res = await syncService.push({
-      token: "tok",
+      credential: "cred",
       projects: [{ id: "p1" }],
       settings: [{ key: "hourlyPrice", value: 10 }],
     });
@@ -111,7 +96,7 @@ describe("syncService.push", () => {
     expect(res).toEqual({ ok: true, serverTimestamp: 123 });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/sync/push");
-    expect(init.headers.Authorization).toBe("Bearer tok");
+    expect(init.headers.Authorization).toBe("Bearer cred");
     expect(body).toEqual({
       projects: [{ id: "p1" }],
       settings: [{ key: "hourlyPrice", value: 10 }],
@@ -120,18 +105,46 @@ describe("syncService.push", () => {
 });
 
 describe("syncService.pull", () => {
-  it("POSTs cursor to /api/sync/pull with bearer token", async () => {
+  it("POSTs cursor to /api/sync/pull with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(
       mockResponse({ body: { projects: [], settings: [], cursor: 42 } }),
     );
 
-    const res = await syncService.pull({ token: "tok", cursor: 7 });
+    const res = await syncService.pull({ credential: "cred", cursor: 7 });
 
     expect(res).toEqual({ projects: [], settings: [], cursor: 42 });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/sync/pull");
-    expect(init.headers.Authorization).toBe("Bearer tok");
+    expect(init.headers.Authorization).toBe("Bearer cred");
     expect(body).toEqual({ cursor: 7 });
+  });
+});
+
+describe("syncService.getDeviceCount", () => {
+  it("GETs /api/sync/devices with the credential as bearer", async () => {
+    fetchMock.mockResolvedValue(mockResponse({ body: { count: 2 } }));
+
+    const res = await syncService.getDeviceCount({ credential: "cred" });
+
+    expect(res).toEqual({ count: 2 });
+    const { url, init } = getRequestArgs();
+    expect(url).toBe("http://api.test/api/sync/devices");
+    expect(init.method).toBe("GET");
+    expect(init.headers.Authorization).toBe("Bearer cred");
+    expect(init.body).toBeUndefined();
+  });
+});
+
+describe("syncService.leaveGroup", () => {
+  it("DELETEs /api/sync/device with the credential as bearer", async () => {
+    fetchMock.mockResolvedValue(mockResponse({ body: { ok: true } }));
+
+    await syncService.leaveGroup({ credential: "cred" });
+
+    const { url, init } = getRequestArgs();
+    expect(url).toBe("http://api.test/api/sync/device");
+    expect(init.method).toBe("DELETE");
+    expect(init.headers.Authorization).toBe("Bearer cred");
   });
 });
 
@@ -142,7 +155,7 @@ describe("syncService error handling", () => {
     );
 
     const err = await syncService
-      .pairJoin({ deviceId: "d", code: "x" })
+      .pairJoin({ credential: "cred", code: "x" })
       .catch((e) => e);
 
     expect(err).toBeInstanceOf(SyncError);
@@ -157,7 +170,7 @@ describe("syncService error handling", () => {
     );
 
     const err = await syncService
-      .pull({ token: "bad", cursor: 0 })
+      .pull({ credential: "bad", cursor: 0 })
       .catch((e) => e);
 
     expect(err).toBeInstanceOf(SyncError);
@@ -168,7 +181,7 @@ describe("syncService error handling", () => {
     fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
 
     const err = await syncService
-      .pairInitiate({ deviceId: "d" })
+      .pairInitiate({ credential: "cred" })
       .catch((e) => e);
 
     expect(err).toBeInstanceOf(SyncError);
@@ -180,7 +193,7 @@ describe("syncService error handling", () => {
   it("handles empty response body without crashing", async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: null }));
 
-    const res = await syncService.pairInitiate({ deviceId: "d" });
+    const res = await syncService.pairInitiate({ credential: "cred" });
     expect(res).toBeNull();
   });
 
@@ -190,7 +203,7 @@ describe("syncService error handling", () => {
     const { default: svc, SyncError: SE } =
       await import("@/services/syncService.js");
 
-    const err = await svc.pairInitiate({ deviceId: "d" }).catch((e) => e);
+    const err = await svc.pairInitiate({ credential: "cred" }).catch((e) => e);
     expect(err).toBeInstanceOf(SE);
     expect(err.message).toMatch(/VITE_API_URL/);
   });

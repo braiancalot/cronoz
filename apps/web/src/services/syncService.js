@@ -9,7 +9,7 @@ export class SyncError extends Error {
   }
 }
 
-async function request(path, { method = "POST", body, token } = {}) {
+async function request(path, { method = "POST", body, credential } = {}) {
   if (!API_URL) {
     throw new SyncError("VITE_API_URL is not configured");
   }
@@ -20,7 +20,7 @@ async function request(path, { method = "POST", body, token } = {}) {
       method,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -46,43 +46,41 @@ async function request(path, { method = "POST", body, token } = {}) {
   return parsed;
 }
 
-async function pairInitiate({ deviceId }) {
-  return request("/api/pair/initiate", { body: { deviceId } });
+async function pairInitiate({ credential }) {
+  return request("/api/pair/initiate", { credential, body: {} });
 }
 
-async function pairJoin({ deviceId, code }) {
-  return request("/api/pair/join", { body: { deviceId, code } });
+async function pairJoin({ credential, code }) {
+  return request("/api/pair/join", { credential, body: { code } });
 }
 
-async function pairStatus({ deviceId, code }) {
-  return request("/api/pair/status", { body: { deviceId, code } });
+async function pairStatus({ credential, code }) {
+  return request("/api/pair/status", { credential, body: { code } });
 }
 
-async function refreshToken({ deviceId }) {
-  return request("/api/pair/token", { body: { deviceId } });
+async function push({ credential, projects, settings }) {
+  return request("/api/sync/push", {
+    credential,
+    body: { projects, settings },
+  });
 }
 
-async function push({ token, projects, settings }) {
-  return request("/api/sync/push", { token, body: { projects, settings } });
+async function pull({ credential, cursor }) {
+  return request("/api/sync/pull", { credential, body: { cursor } });
 }
 
-async function pull({ token, cursor }) {
-  return request("/api/sync/pull", { token, body: { cursor } });
+async function getDeviceCount({ credential }) {
+  return request("/api/sync/devices", { method: "GET", credential });
 }
 
-async function getDeviceCount({ token }) {
-  return request("/api/sync/devices", { method: "GET", token });
-}
-
-async function leaveGroup({ token }) {
-  return request("/api/sync/device", { method: "DELETE", token });
+async function leaveGroup({ credential }) {
+  return request("/api/sync/device", { method: "DELETE", credential });
 }
 
 const syncService = {
   pairInitiate,
   pairJoin,
   pairStatus,
-  refreshToken,
   push,
   pull,
   getDeviceCount,

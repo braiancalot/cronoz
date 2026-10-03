@@ -4,7 +4,7 @@ import {
   LAST_SYNCED_AT_KEY,
   PENDING_PAIRING_KEY,
   SYNC_REVOKED_KEY,
-  SYNC_TOKEN_KEY,
+  SYNC_PAIRED_KEY,
 } from "@cronoz/shared";
 
 import db from "@/services/db.js";
@@ -31,7 +31,7 @@ describe("SyncStatusProvider", () => {
     await db.internal.clear();
   });
 
-  it("resolves not-paired once the token query settles", async () => {
+  it("resolves not-paired once the paired query settles", async () => {
     render(
       <SyncStatusProvider>
         <Probe />
@@ -45,7 +45,7 @@ describe("SyncStatusProvider", () => {
   });
 
   it("provides paired status and lastSyncedAt from internal storage", async () => {
-    await internalRepository.set(SYNC_TOKEN_KEY, "tok");
+    await internalRepository.set(SYNC_PAIRED_KEY, true);
     await internalRepository.set(LAST_SYNCED_AT_KEY, 12345);
 
     render(

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { PENDING_PAIRING_KEY } from "@cronoz/shared";
+import { PENDING_PAIRING_KEY, parseDeviceCredential } from "@cronoz/shared";
 
 vi.mock("@/services/syncService.js", async () => {
   const actual = await vi.importActual("@/services/syncService.js");
@@ -10,13 +10,12 @@ vi.mock("@/services/syncService.js", async () => {
       pairInitiate: vi.fn(),
       pairJoin: vi.fn(),
       pairStatus: vi.fn(),
-      refreshToken: vi.fn(),
     },
   };
 });
 
 vi.mock("@/services/syncManager.js", () => ({
-  default: { adoptToken: vi.fn() },
+  default: { adoptPairing: vi.fn() },
 }));
 
 import db from "@/services/db.js";
@@ -49,8 +48,8 @@ async function renderHosting() {
 beforeEach(async () => {
   await db.internal.clear();
   vi.clearAllMocks();
+  syncManager.adoptPairing.mockReset();
   answerStatus("waiting");
-  syncService.refreshToken.mockResolvedValue({ token: "tok" });
 });
 
 describe("usePairing.generateCode", () => {
@@ -66,6 +65,15 @@ describe("usePairing.generateCode", () => {
     });
     const pending = await internalRepository.get(PENDING_PAIRING_KEY);
     expect(pending.code).toBe(CODE);
+  });
+
+  it("asks for the code with the device credential", async () => {
+    issueCode();
+
+    await renderHosting();
+
+    const [request] = syncService.pairInitiate.mock.calls[0];
+    expect(parseDeviceCredential(request.credential)).not.toBeNull();
   });
 
   it("reports the error and stays idle when initiate fails", async () => {
@@ -94,14 +102,14 @@ describe("usePairing.generateCode", () => {
 });
 
 describe("usePairing host polling", () => {
-  it("adopts the group token once the other device joins", async () => {
+  it("marks itself paired once the other device joins", async () => {
     issueCode();
     answerStatus("joined");
 
     const { result } = await renderHosting();
 
     await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
-    expect(syncManager.adoptToken).toHaveBeenCalledWith("tok");
+    expect(syncManager.adoptPairing).toHaveBeenCalledOnce();
     expect(result.current.flow.screen).toBe("idle");
     expect(await internalRepository.get(PENDING_PAIRING_KEY)).toBeUndefined();
   });
@@ -113,8 +121,9 @@ describe("usePairing host polling", () => {
 
     await waitFor(() => expect(syncService.pairStatus).toHaveBeenCalled());
     const [request] = syncService.pairStatus.mock.calls[0];
+    const [initiateRequest] = syncService.pairInitiate.mock.calls[0];
     expect(request.code).toBe(CODE);
-    expect(request.deviceId).toEqual(expect.any(String));
+    expect(request.credential).toBe(initiateRequest.credential);
   });
 
   it.each(["expired", "burned"])("stops on a %s code", async (status) => {
@@ -124,7 +133,7 @@ describe("usePairing host polling", () => {
     const { result } = await renderHosting();
 
     await waitFor(() => expect(result.current.flow.hostState).toBe(status));
-    expect(syncManager.adoptToken).not.toHaveBeenCalled();
+    expect(syncManager.adoptPairing).not.toHaveBeenCalled();
   });
 
   it("keeps asking while the code waits", async () => {
@@ -138,17 +147,28 @@ describe("usePairing host polling", () => {
     await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
   });
 
-  it("retries on the next poll when the token fetch fails", async () => {
+  it("retries on the next poll when marking the pairing fails", async () => {
     issueCode();
     answerStatus("joined");
-    syncService.refreshToken.mockRejectedValueOnce(
-      new SyncError("network_error", { body: "x" }),
-    );
+    syncManager.adoptPairing.mockRejectedValueOnce(new Error("write failed"));
 
     await renderHosting();
 
     await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
-    expect(syncService.refreshToken).toHaveBeenCalledTimes(2);
+    expect(syncManager.adoptPairing).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the pending code until the pairing is marked", async () => {
+    issueCode();
+    answerStatus("joined");
+    syncManager.adoptPairing.mockRejectedValue(new Error("write failed"));
+
+    await renderHosting();
+
+    await waitFor(() => expect(syncManager.adoptPairing).toHaveBeenCalled());
+    const pending = await internalRepository.get(PENDING_PAIRING_KEY);
+    expect(pending).toMatchObject({ code: CODE });
+    expect(onPaired).not.toHaveBeenCalled();
   });
 
   it("keeps waiting when the server is unreachable before the deadline", async () => {
@@ -184,7 +204,7 @@ describe("usePairing host polling", () => {
     renderHook(() => usePairing({ onPaired }), { wrapper: SyncStatusProvider });
 
     await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
-    expect(syncManager.adoptToken).toHaveBeenCalledWith("tok");
+    expect(syncManager.adoptPairing).toHaveBeenCalledOnce();
   });
 });
 
@@ -211,13 +231,16 @@ describe("usePairing.joinWithCode", () => {
     return { ...view, joined };
   }
 
-  it("adopts the token and announces the pairing", async () => {
-    syncService.pairJoin.mockResolvedValue({ token: "tok", syncGroupId: "g" });
+  it("marks itself paired and announces the pairing", async () => {
+    syncService.pairJoin.mockResolvedValue({ syncGroupId: "g" });
 
     const { result, joined } = await join(CODE);
 
+    const [request] = syncService.pairJoin.mock.calls[0];
+    expect(request.code).toBe(CODE);
+    expect(parseDeviceCredential(request.credential)).not.toBeNull();
     expect(joined).toBe(true);
-    expect(syncManager.adoptToken).toHaveBeenCalledWith("tok");
+    expect(syncManager.adoptPairing).toHaveBeenCalledOnce();
     expect(onPaired).toHaveBeenCalledOnce();
     expect(result.current.flow.screen).toBe("idle");
   });
@@ -234,7 +257,7 @@ describe("usePairing.joinWithCode", () => {
 
     expect(joined).toBe(false);
     expect(result.current.flow).toMatchObject({ screen: "joining", error });
-    expect(syncManager.adoptToken).not.toHaveBeenCalled();
+    expect(syncManager.adoptPairing).not.toHaveBeenCalled();
   });
 
   it("clears the error on request", async () => {

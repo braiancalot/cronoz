@@ -3,8 +3,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import {
   LAST_SYNCED_AT_KEY,
   PENDING_PAIRING_KEY,
+  SYNC_PAIRED_KEY,
   SYNC_REVOKED_KEY,
-  SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
 
 import db from "@/services/db.js";
@@ -23,7 +23,7 @@ function useInternalRow(key) {
 
 export function SyncStatusProvider({ children }) {
   // Map a missing row to null so `undefined` strictly means "still loading".
-  const tokenRow = useInternalRow(SYNC_TOKEN_KEY);
+  const pairedRow = useInternalRow(SYNC_PAIRED_KEY);
   const lastSyncRow = useInternalRow(LAST_SYNCED_AT_KEY);
   const revokedRow = useInternalRow(SYNC_REVOKED_KEY);
   const pendingRow = useInternalRow(PENDING_PAIRING_KEY);
@@ -31,11 +31,11 @@ export function SyncStatusProvider({ children }) {
   // Gate on the rows that pick the card's layout (paired, waiting on a code,
   // unpaired) so it paints its final state instead of flashing through
   // another one.
-  const layoutRows = [tokenRow, revokedRow, pendingRow];
+  const layoutRows = [pairedRow, revokedRow, pendingRow];
   if (layoutRows.includes(undefined)) return null;
 
   const value = {
-    isPaired: !!tokenRow?.value,
+    isPaired: !!pairedRow?.value,
     lastSyncedAt: lastSyncRow?.value ?? null,
     wasRevoked: !!revokedRow?.value,
     pendingPairing: pendingRow?.value ?? null,

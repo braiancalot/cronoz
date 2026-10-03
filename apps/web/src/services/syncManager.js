@@ -3,8 +3,8 @@ import {
   LAST_SYNCED_AT_KEY,
   MAX_PUSH_PROJECTS,
   SYNC_CURSOR_KEY,
+  SYNC_PAIRED_KEY,
   SYNC_REVOKED_KEY,
-  SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
 import db from "./db.js";
 import deviceService from "./deviceService.js";
@@ -44,47 +44,25 @@ function subscribe(listener) {
 }
 
 async function isPaired() {
-  const token = await internalRepository.get(SYNC_TOKEN_KEY);
-  return !!token;
+  return !!(await internalRepository.get(SYNC_PAIRED_KEY));
 }
 
 // The server no longer knows this device: someone unpaired it from elsewhere.
-async function dropRevokedToken() {
-  await internalRepository.remove(SYNC_TOKEN_KEY);
+async function dropRevokedPairing() {
+  await internalRepository.remove(SYNC_PAIRED_KEY);
   await internalRepository.set(SYNC_REVOKED_KEY, true);
 }
 
-async function adoptToken(token) {
-  await internalRepository.set(SYNC_TOKEN_KEY, token);
+async function adoptPairing() {
+  await internalRepository.set(SYNC_PAIRED_KEY, true);
   await internalRepository.remove(SYNC_REVOKED_KEY);
   sync();
-}
-
-async function callAuthed(makeRequest) {
-  const token = await internalRepository.get(SYNC_TOKEN_KEY);
-  try {
-    return await makeRequest(token);
-  } catch (err) {
-    if (!(err instanceof SyncError) || err.status !== 401) throw err;
-
-    const deviceId = await deviceService.getOrCreateDeviceId();
-    try {
-      const { token: newToken } = await syncService.refreshToken({ deviceId });
-      await internalRepository.set(SYNC_TOKEN_KEY, newToken);
-      return await makeRequest(newToken);
-    } catch (refreshErr) {
-      if (refreshErr instanceof SyncError && refreshErr.status === 404) {
-        await dropRevokedToken();
-      }
-      throw refreshErr;
-    }
-  }
 }
 
 // lastPushedAt is a server timestamp, updatedAt a client one: clock skew can
 // let a local edit slip past the (updatedAt > lastPushedAt) filter, or re-push
 // a record. Acceptable for 1–2 personal devices; revisit if it bites.
-async function pushLocalChanges() {
+async function pushLocalChanges(credential) {
   const lastPushedAt = (await internalRepository.get(LAST_PUSHED_AT_KEY)) ?? 0;
   const pending = await collectPendingChanges(lastPushedAt);
   if (pending.projects.length === 0 && pending.settings.length === 0) return;
@@ -93,7 +71,7 @@ async function pushLocalChanges() {
     ...pending,
     batchSize: MAX_PUSH_PROJECTS,
   });
-  const pushedAt = await pushBatches(batches);
+  const pushedAt = await pushBatches(batches, credential);
   await internalRepository.set(LAST_PUSHED_AT_KEY, pushedAt);
 }
 
@@ -109,24 +87,25 @@ async function collectPendingChanges(lastPushedAt) {
 
 // Returns the first batch's timestamp, so an edit made while later batches
 // were in flight still counts as newer next time.
-async function pushBatches(batches) {
+async function pushBatches(batches, credential) {
   let pushedAt = null;
   for (const batch of batches) {
-    const { serverTimestamp } = await callAuthed((t) =>
-      syncService.push({ token: t, ...batch }),
-    );
+    const { serverTimestamp } = await syncService.push({
+      credential,
+      ...batch,
+    });
     pushedAt ??= serverTimestamp;
   }
   return pushedAt;
 }
 
-async function pullRemoteChanges() {
+async function pullRemoteChanges(credential) {
   const cursor = (await internalRepository.get(SYNC_CURSOR_KEY)) ?? 0;
   const {
     projects: incomingProjects,
     settings: incomingSettings,
     cursor: newCursor,
-  } = await callAuthed((t) => syncService.pull({ token: t, cursor }));
+  } = await syncService.pull({ credential, cursor });
 
   for (const incoming of incomingProjects) {
     const existing = (await db.projects.get(incoming.id)) ?? null;
@@ -146,19 +125,19 @@ async function pullRemoteChanges() {
 }
 
 async function runSync() {
-  const token = await internalRepository.get(SYNC_TOKEN_KEY);
-  if (!token) return;
+  if (!(await isPaired())) return;
 
   setStatus({ syncing: true, error: null });
 
   try {
-    await pushLocalChanges();
-    await pullRemoteChanges();
+    const credential = await deviceService.getDeviceCredential();
+    await pushLocalChanges(credential);
+    await pullRemoteChanges(credential);
     await internalRepository.set(LAST_SYNCED_AT_KEY, Date.now());
     setStatus({ syncing: false, error: null });
   } catch (err) {
     if (err instanceof SyncError && err.status === 401) {
-      await dropRevokedToken();
+      await dropRevokedPairing();
       setStatus({ syncing: false, error: null });
       return;
     }
@@ -201,16 +180,18 @@ function start() {
   return unsubscribeMutations;
 }
 
-async function unpair() {
-  const token = await internalRepository.get(SYNC_TOKEN_KEY);
-  if (token) {
-    try {
-      await syncService.leaveGroup({ token });
-    } catch (err) {
-      console.warn("[syncManager] leaveGroup failed:", err?.message);
-    }
+async function leaveGroupQuietly() {
+  try {
+    const credential = await deviceService.getDeviceCredential();
+    await syncService.leaveGroup({ credential });
+  } catch (err) {
+    console.warn("[syncManager] leaveGroup failed:", err?.message);
   }
-  await internalRepository.remove(SYNC_TOKEN_KEY);
+}
+
+async function unpair() {
+  if (await isPaired()) await leaveGroupQuietly();
+  await internalRepository.remove(SYNC_PAIRED_KEY);
   await internalRepository.remove(SYNC_CURSOR_KEY);
   await internalRepository.remove(LAST_PUSHED_AT_KEY);
   await internalRepository.remove(LAST_SYNCED_AT_KEY);
@@ -218,10 +199,10 @@ async function unpair() {
 }
 
 async function getDeviceCount() {
-  const token = await internalRepository.get(SYNC_TOKEN_KEY);
-  if (!token) return null;
+  if (!(await isPaired())) return null;
   try {
-    const { count } = await syncService.getDeviceCount({ token });
+    const credential = await deviceService.getDeviceCredential();
+    const { count } = await syncService.getDeviceCount({ credential });
     return count;
   } catch {
     return null;
@@ -230,7 +211,7 @@ async function getDeviceCount() {
 
 const syncManager = {
   isPaired,
-  adoptToken,
+  adoptPairing,
   sync,
   scheduleSync,
   start,

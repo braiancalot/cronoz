@@ -1,5 +1,6 @@
 export const DEVICE_ID_KEY = "deviceId";
-export const SYNC_TOKEN_KEY = "syncToken";
+export const DEVICE_SECRET_KEY = "deviceSecret";
+export const SYNC_PAIRED_KEY = "syncPaired";
 export const SYNC_CURSOR_KEY = "syncCursor";
 export const LAST_PUSHED_AT_KEY = "lastPushedAt";
 export const LAST_SYNCED_AT_KEY = "lastSyncedAt";

@@ -137,7 +137,13 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 
 **Web manifest** is the hand-written `apps/web/public/manifest.json`. `VitePWA` runs with `manifest: false`: left on, it emits a second `manifest.webmanifest` built from `package.json` defaults and links it next to the real one.
 
-**Pairing flow** is the pure reducer in `src/lib/pairingFlow.js`; `usePairing` wraps it with the network calls and `SyncCard` picks one screen component per state. The device showing a code polls `/pair/status` and moves on by itself when the other one joins, so no screen asks the user to confirm the pairing. The issued code is stored under `PENDING_PAIRING_KEY`: a device with no token yet that leaves Settings would otherwise never fetch one. `SyncStatusProvider` feeds that row back as the reducer's initial state.
+**Pairing flow** is the pure reducer in `src/lib/pairingFlow.js`; `usePairing` wraps it with the network calls and `SyncCard` picks one screen component per state. The device showing a code polls `/pair/status` and moves on by itself when the other one joins, so no screen asks the user to confirm the pairing. The issued code is stored under `PENDING_PAIRING_KEY`: a host that leaves Settings before the other device joins would otherwise never learn it was paired. `SyncStatusProvider` feeds that row back as the reducer's initial state.
+
+**Paired is a local marker** (`SYNC_PAIRED_KEY` in the `internal` store), set when `/pair/join` succeeds or when `/pair/status` answers `joined`. It carries no authority: what the API checks is the device credential (see Device credential under apps/api). `deviceService.getDeviceCredential()` builds it from the device id and the device secret, both created on first use by `internalRepository.getOrCreate`. That runs in one Dexie transaction, so two callers racing on first load cannot mint two secrets.
+
+The device secret MUST never be replaced or deleted, not even on unpair or when the pairing is revoked. The server keeps the first secret it sees for a device id and refuses any other, so a device that lost its secret could never use that id again. Backups export `projects` and `settings` only, so the secret never leaves the device.
+
+A 401 from `/sync/*` drops the marker and sets `SYNC_REVOKED_KEY`. There is nothing to refresh and no retry.
 
 Pairing and sync failures render inside the card. Toasts are kept for the two confirmations that have no other trace on screen ("Código copiado", "Pareado com sucesso").
 
@@ -149,7 +155,7 @@ The device count is refetched whenever `lastSyncedAt` changes. A device joining 
 
 ## apps/api
 
-Hono API backing project sync/pairing: pairing codes, JWT auth, sync endpoints, plus a `/health` check. Runs on port 3001 via `@hono/node-server`.
+Hono API backing project sync/pairing: pairing codes, device credentials, sync endpoints, plus a `/health` check. Runs on port 3001 via `@hono/node-server`.
 
 ### Database (Postgres + Drizzle)
 
@@ -203,15 +209,41 @@ browser's `Origin` header, so boot rejects them and names the corrected value.
 An empty list aborts boot under `NODE_ENV=production` and falls back to
 `http://localhost:5173` elsewhere. Vercel MUST have the variable set before a deploy.
 
-### Token revocation
+### Device credential
 
-`authMiddleware` looks the device up on every authenticated request and answers 401 when
-the row is gone or sits in another sync group than the token claims. Deleting a `devices`
-row is therefore the way to revoke access; the JWT itself carries no revocation state.
+Every request carries `Authorization: Bearer <deviceId>.<secret>`, the pairing routes
+included (`packages/shared/src/deviceCredential.js`). The device generates the secret (32
+random bytes, hex) and the server stores only its SHA-256 in `devices.secret_hash`
+(`src/lib/deviceSecret.js`). Nothing is issued, refreshed or expired.
 
-The web client needs no special case: `callAuthed` retries through `/pair/token` on 401,
-gets 404 for a removed device and drops its local token. It also sets `SYNC_REVOKED_KEY`,
-which the sync card turns into a notice until the device pairs again or unpairs.
+A device id alone proves nothing. Once a row has a hash, only that secret speaks for the
+device, on `/sync/*` and `/pair/*` alike. A pairing route answers 401
+`invalid_device_credential` to anything else.
+
+The secret MUST NOT appear in an exception message or a log line.
+
+**Legacy clients (temporary).** Web builds from before the credential send a JWT to
+`/sync/*` and name themselves with `deviceId` in the pairing bodies. The API still accepts
+that, only for a device row without a hash:
+
+- `authMiddleware` takes a JWT for a hashless device and refuses it for any other.
+- A hashless device adopts the first secret presented for it (`adoptSecret`), on any route.
+  From then on its JWT is refused and `/pair/token` answers 404 for it.
+- `deviceId` stays optional in the pairing request schemas.
+
+All of it leaves together once every device still in use has a hash: the JWT branch,
+`/pair/token`, `lib/jwt.js`, `lib/jwtSecret.js`, the `jose` dependency, the body `deviceId`
+and the adoption. The same migration deletes the hashless rows and makes the column
+`NOT NULL`.
+
+### Revocation
+
+`authMiddleware` looks the device up on every authenticated request, so deleting a
+`devices` row is the way to revoke access.
+
+The web client needs no special case: the next sync gets 401, drops its paired marker and
+sets `SYNC_REVOKED_KEY`, which the sync card turns into a notice until the device pairs
+again or unpairs. It keeps its secret and presents the same one when it pairs again.
 
 ### Pairing brakes
 
@@ -237,7 +269,8 @@ so the brakes live in Postgres and are global: there is no caller identity to me
 `POST /pair/status` tells the device that generated a code whether it is `waiting`,
 `joined`, `expired` or `burned`. The lookup demands the code AND the device that generated
 it: by code alone it would answer whether any code exists without tripping the wrong-code
-brake. An unknown pair answers `expired`, same as a real expired code.
+brake. An unknown pair answers `expired`, same as a real expired code. The device proves
+itself with its credential like on any other route.
 
 ### JWT secret guard
 
@@ -245,8 +278,11 @@ brake. An unknown pair answers `expired`, same as a real expired code.
 (`dev-secret-change-me`, `test-secret`, `changeme`), or is shorter than 32 characters
 under `NODE_ENV=production`. Short secrets stay legal in dev.
 
+It signs the tokens of legacy clients only and leaves with them (see Device credential).
+
 Exception messages MUST NOT include the secret; the length error reports the length only.
-This is the one exception to the "include the offending value" rule in Code Style.
+This and the device secret are the exceptions to the "include the offending value" rule in
+Code Style.
 
 ## Project Vision
 

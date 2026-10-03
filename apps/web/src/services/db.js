@@ -1,6 +1,8 @@
 import Dexie from "dexie";
+import { SYNC_PAIRED_KEY } from "@cronoz/shared";
 
 const DB_NAME = "cronoz-db";
+const LEGACY_SYNC_TOKEN_KEY = "syncToken";
 
 const db = new Dexie(DB_NAME);
 
@@ -71,6 +73,22 @@ db.version(5)
           project.stopwatch.lastActiveAt = null;
         }
       });
+  });
+
+// Being paired used to mean holding a sync token. The device secret replaced
+// the token, so a device that held one keeps its pairing under the marker.
+db.version(6)
+  .stores({
+    projects: "id, completedAt, createdAt, updatedAt, deletedAt",
+    settings: "key",
+    internal: "key",
+  })
+  .upgrade(async (tx) => {
+    const internal = tx.table("internal");
+    if (!(await internal.get(LEGACY_SYNC_TOKEN_KEY))) return;
+
+    await internal.put({ key: SYNC_PAIRED_KEY, value: true });
+    await internal.delete(LEGACY_SYNC_TOKEN_KEY);
   });
 
 export default db;
