@@ -23,7 +23,7 @@ Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para
   - `packages/shared` — constantes e schemas Zod compartilhados (sync)
 - Tailwind CSS 4 + shadcn/ui — design system e componentes de UI
 - Dexie (IndexedDB) — persistência local offline-first
-- Drizzle ORM (adapter `drizzle-orm/neon-http`) + Neon (Postgres serverless) — banco remoto do sync
+- Drizzle ORM (driver `drizzle-orm/postgres-js`) + Neon (Postgres serverless) — banco remoto do sync
 - vite-plugin-pwa (Workbox) — PWA / Service Worker
 - Vercel — deploy (web e api)
 - Node 24
@@ -32,7 +32,7 @@ Arquitetura de sync: Dexie continua como banco local offline-first, Neon como ba
 
 ## Sincronização entre Dispositivos (entregue)
 
-Sincroniza dados entre dispositivos sem login, via código de pareamento. Cada dispositivo tem um token único; um código temporário associa dispositivos a um grupo de sync; a autenticação na API Hono é via Bearer token. A troca é incremental (push/pull) com last-write-wins.
+Sincroniza dados entre dispositivos sem login, via código de pareamento. Cada dispositivo gera um identificador e um segredo próprios, e os dois juntos são a credencial que ele envia em toda requisição à API Hono; o servidor guarda só o hash do segredo. Um código temporário associa dispositivos a um grupo de sync. A troca é incremental (push/pull) com last-write-wins.
 
 ## Estado Atual
 
@@ -72,3 +72,4 @@ Coisas que podem ser úteis mas não são prioridade agora:
 - Estimativa de tempo por projeto (ex: "12h de 20h")
 - Exportar resumo do projeto para compartilhar com clientes
 - Estatísticas (tempo total no mês, médias, evolução)
+- Ver os dispositivos do grupo de sync e remover um deles a partir de outro, como os aparelhos conectados do WhatsApp. Precisa de algo que identifique cada um: apelido ou, no mínimo, o user agent. Avaliar a segurança antes de fazer.
