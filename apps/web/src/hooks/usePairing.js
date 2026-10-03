@@ -1,126 +1,138 @@
-import { useCallback, useEffect, useState } from "react";
-import { SYNC_TOKEN_KEY } from "@cronoz/shared";
+import { useCallback, useEffect, useReducer } from "react";
+import { PENDING_PAIRING_KEY } from "@cronoz/shared";
 import deviceService from "@/services/deviceService.js";
 import internalRepository from "@/services/internalRepository.js";
 import syncManager from "@/services/syncManager.js";
 import syncService, { SyncError } from "@/services/syncService.js";
+import { useSyncData } from "@/providers/SyncStatusProvider.jsx";
+import { initPairingFlow, pairingFlowReducer } from "@/lib/pairingFlow.js";
+
+const HOST_POLL_MS = 2000;
 
 function initiateErrorCode(err) {
   if (!(err instanceof SyncError)) return "unknown_error";
   return err.status === 429 ? "too_many_new_groups" : err.message;
 }
 
-export function usePairing() {
-  const [mode, setMode] = useState("idle");
-  const [code, setCode] = useState(null);
-  const [expiresAt, setExpiresAt] = useState(null);
-  const [remainingMs, setRemainingMs] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+function joinErrorCode(err) {
+  if (!(err instanceof SyncError)) return "unknown_error";
+  if (err.status === 400) return "invalid_or_expired_code";
+  if (err.status === 409) return "device_already_paired";
+  return err.message;
+}
+
+async function issuePairingCode() {
+  const deviceId = await deviceService.getOrCreateDeviceId();
+  const issued = await syncService.pairInitiate({ deviceId });
+  const pending = {
+    code: issued.code,
+    expiresAt: new Date(issued.expiresAt).getTime(),
+  };
+  // Stored so leaving the page does not strand a host that has no token yet.
+  await internalRepository.set(PENDING_PAIRING_KEY, pending);
+  return pending;
+}
+
+async function readHostStatus({ code, expiresAt }) {
+  try {
+    const deviceId = await deviceService.getOrCreateDeviceId();
+    const { status } = await syncService.pairStatus({ deviceId, code });
+    return status;
+  } catch {
+    // Server unreachable: only the local clock can end the wait.
+    return Date.now() >= expiresAt ? "expired" : "waiting";
+  }
+}
+
+async function adoptGroupToken() {
+  const deviceId = await deviceService.getOrCreateDeviceId();
+  const { token } = await syncService.refreshToken({ deviceId });
+  await internalRepository.remove(PENDING_PAIRING_KEY);
+  await syncManager.adoptToken(token);
+}
+
+async function settleHostStatus({ code, expiresAt, dispatch, onPaired }) {
+  const status = await readHostStatus({ code, expiresAt });
+  if (status !== "joined") {
+    dispatch({ type: "host_status", code, status });
+    return;
+  }
+  await adoptGroupToken();
+  dispatch({ type: "reset" });
+  onPaired();
+}
+
+function useHostPolling({ flow, dispatch, onPaired, pollMs }) {
+  const { code, expiresAt } = flow;
+  const isWaiting = flow.screen === "hosting" && flow.hostState === "waiting";
 
   useEffect(() => {
-    if (mode !== "showing-code" || !expiresAt) return;
-    const tick = () => {
-      const ms = Math.max(0, expiresAt - Date.now());
-      setRemainingMs(ms);
-      if (ms <= 0) {
-        setMode("idle");
-        setCode(null);
-        setExpiresAt(null);
-      }
+    if (!isWaiting) return;
+    let settling = false;
+    const poll = async () => {
+      if (settling) return;
+      settling = true;
+      // A failed token fetch leaves the code as joined; the next poll retries.
+      await settleHostStatus({ code, expiresAt, dispatch, onPaired }).catch(
+        () => {},
+      );
+      settling = false;
     };
-    tick();
-    const id = setInterval(tick, 1000);
+    poll();
+    const id = setInterval(poll, pollMs);
     return () => clearInterval(id);
-  }, [mode, expiresAt]);
+  }, [isWaiting, code, expiresAt, dispatch, onPaired, pollMs]);
+}
+
+// onPaired MUST be stable across renders: it restarts the host polling.
+export function usePairing({ onPaired, pollMs = HOST_POLL_MS }) {
+  const { pendingPairing } = useSyncData();
+  const [flow, dispatch] = useReducer(
+    pairingFlowReducer,
+    pendingPairing,
+    initPairingFlow,
+  );
+
+  useHostPolling({ flow, dispatch, onPaired, pollMs });
 
   const generateCode = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    dispatch({ type: "generate_started" });
     try {
-      const deviceId = await deviceService.getOrCreateDeviceId();
-      const { code, expiresAt } = await syncService.pairInitiate({ deviceId });
-      setCode(code);
-      setExpiresAt(new Date(expiresAt).getTime());
-      setMode("showing-code");
-      return { ok: true };
+      dispatch({ type: "code_issued", ...(await issuePairingCode()) });
     } catch (err) {
-      const code = initiateErrorCode(err);
-      setError(code);
-      return { ok: false, error: code };
-    } finally {
-      setLoading(false);
+      dispatch({ type: "generate_failed", error: initiateErrorCode(err) });
     }
   }, []);
 
-  const confirmPaired = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const deviceId = await deviceService.getOrCreateDeviceId();
-      const { token } = await syncService.refreshToken({ deviceId });
-      await internalRepository.set(SYNC_TOKEN_KEY, token);
-      setMode("idle");
-      setCode(null);
-      setExpiresAt(null);
-      syncManager.sync();
-      return { ok: true };
-    } catch (err) {
-      const code = err instanceof SyncError ? err.message : "unknown_error";
-      setError(code);
-      return { ok: false, error: code };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const joinWithCode = useCallback(async (codeInput) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const deviceId = await deviceService.getOrCreateDeviceId();
-      const { token } = await syncService.pairJoin({
-        deviceId,
-        code: codeInput,
-      });
-      await internalRepository.set(SYNC_TOKEN_KEY, token);
-      setMode("idle");
-      setCode(null);
-      setExpiresAt(null);
-      syncManager.sync();
-      return { ok: true };
-    } catch (err) {
-      let code;
-      if (err instanceof SyncError && err.status === 400) {
-        code = "invalid_or_expired_code";
-      } else if (err instanceof SyncError && err.status === 409) {
-        code = "device_already_paired";
-      } else {
-        code = err instanceof SyncError ? err.message : "unknown_error";
+  const joinWithCode = useCallback(
+    async (code) => {
+      dispatch({ type: "join_started" });
+      try {
+        const deviceId = await deviceService.getOrCreateDeviceId();
+        const { token } = await syncService.pairJoin({ deviceId, code });
+        await syncManager.adoptToken(token);
+        dispatch({ type: "reset" });
+        onPaired();
+        return true;
+      } catch (err) {
+        dispatch({ type: "join_failed", error: joinErrorCode(err) });
+        return false;
       }
-      setError(code);
-      return { ok: false, error: code };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [onPaired],
+  );
 
-  const cancel = useCallback(() => {
-    setMode("idle");
-    setCode(null);
-    setExpiresAt(null);
-    setError(null);
+  const cancel = useCallback(async () => {
+    dispatch({ type: "reset" });
+    await internalRepository.remove(PENDING_PAIRING_KEY);
   }, []);
 
   return {
-    mode,
-    code,
-    remainingMs,
-    loading,
-    error,
+    flow,
     generateCode,
-    confirmPaired,
     joinWithCode,
     cancel,
+    openJoin: useCallback(() => dispatch({ type: "join_opened" }), []),
+    clearError: useCallback(() => dispatch({ type: "error_cleared" }), []),
   };
 }

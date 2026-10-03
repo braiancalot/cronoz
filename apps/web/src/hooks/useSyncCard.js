@@ -1,102 +1,77 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import syncManager from "@/services/syncManager.js";
-import {
-  pairingErrorMessage,
-  syncErrorMessage,
-} from "@/components/sync/syncMessages.js";
 import { usePairing } from "./usePairing.js";
 import { useSyncStatus } from "./useSyncStatus.js";
 
-export function useSyncCard() {
-  const pairing = usePairing();
-  const status = useSyncStatus();
-  const [joining, setJoining] = useState(false);
-  const [codeInput, setCodeInput] = useState("");
-  const [confirmUnpair, setConfirmUnpair] = useState(false);
+function announcePaired() {
+  toast.success("Pareado com sucesso");
+}
+
+// Keyed on lastSyncedAt too: a device joining the group never flips isPaired
+// here, but it is always followed by a sync.
+function useDeviceCount({ isPaired, lastSyncedAt }) {
   const [deviceCount, setDeviceCount] = useState(null);
 
   useEffect(() => {
-    if (!status.isPaired) {
-      setDeviceCount(null);
-      return;
-    }
+    if (!isPaired) return;
     let cancelled = false;
-    syncManager.getDeviceCount().then((c) => {
-      if (!cancelled) setDeviceCount(c);
+    syncManager.getDeviceCount().then((count) => {
+      if (!cancelled && count !== null) setDeviceCount(count);
     });
     return () => {
       cancelled = true;
     };
-  }, [status.isPaired]);
+  }, [isPaired, lastSyncedAt]);
 
-  async function generateCode() {
-    const result = await pairing.generateCode();
-    if (!result.ok) toast.error(pairingErrorMessage(result.error));
+  return isPaired ? deviceCount : null;
+}
+
+export function useSyncCard() {
+  const pairing = usePairing({ onPaired: announcePaired });
+  const status = useSyncStatus();
+  const deviceCount = useDeviceCount(status);
+  const [codeInput, setCodeInput] = useState("");
+  const [confirmUnpair, setConfirmUnpair] = useState(false);
+
+  function editCodeInput(value) {
+    setCodeInput(value);
+    pairing.clearError();
   }
 
-  async function confirmPaired() {
-    const result = await pairing.confirmPaired();
-    if (result.ok) {
-      toast.success("Pareado com sucesso!");
-    } else {
-      toast.error(pairingErrorMessage(result.error));
-    }
+  function cancelPairing() {
+    setCodeInput("");
+    pairing.cancel();
   }
 
   async function join() {
-    const result = await pairing.joinWithCode(codeInput);
-    if (result.ok) {
-      toast.success("Pareado com sucesso!");
-      cancelJoin();
-    } else {
-      toast.error(pairingErrorMessage(result.error));
-    }
-  }
-
-  function cancelJoin() {
-    setJoining(false);
-    setCodeInput("");
-  }
-
-  async function syncNow() {
-    await status.syncNow();
-    const latest = syncManager.getStatus();
-    if (latest.error) {
-      toast.error(syncErrorMessage(latest.error));
-    } else {
-      toast.success("Sincronizado");
-    }
+    const joined = await pairing.joinWithCode(codeInput);
+    if (joined) setCodeInput("");
   }
 
   async function unpair() {
-    await status.unpair();
     setConfirmUnpair(false);
-    toast("Despareado");
+    await status.unpair();
   }
 
   function copyCode() {
-    if (!pairing.code) return;
-    navigator.clipboard.writeText(pairing.code);
+    navigator.clipboard.writeText(pairing.flow.code);
     toast("Código copiado");
   }
 
   return {
-    pairing,
+    flow: pairing.flow,
     status,
     deviceCount,
-    joining,
-    startJoin: () => setJoining(true),
-    cancelJoin,
     codeInput,
-    setCodeInput,
+    editCodeInput,
     confirmUnpair,
     askUnpair: () => setConfirmUnpair(true),
     dismissUnpair: () => setConfirmUnpair(false),
-    generateCode,
-    confirmPaired,
+    generateCode: pairing.generateCode,
+    openJoin: pairing.openJoin,
+    cancelPairing,
     join,
-    syncNow,
     unpair,
     copyCode,
   };

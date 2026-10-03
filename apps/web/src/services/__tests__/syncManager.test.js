@@ -4,6 +4,7 @@ import {
   LAST_SYNCED_AT_KEY,
   MAX_PUSH_PROJECTS,
   SYNC_CURSOR_KEY,
+  SYNC_REVOKED_KEY,
   SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
 
@@ -186,6 +187,18 @@ describe("syncManager.sync — paired", () => {
 
     await expect(syncManager.sync()).resolves.toBeUndefined();
     expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+    expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBe(true);
+  });
+
+  it("does not flag the device as revoked on a network error", async () => {
+    syncService.pull.mockRejectedValue(
+      new SyncError("network_error", { body: "Failed to fetch" }),
+    );
+
+    await syncManager.sync();
+
+    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
+    expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBeUndefined();
   });
 
   it("silently refreshes token on 401 and retries", async () => {
@@ -331,12 +344,36 @@ describe("syncManager.subscribe / getStatus", () => {
   });
 });
 
+describe("syncManager.adoptToken", () => {
+  it("stores the token, lifts the revoked notice and syncs", async () => {
+    await internalRepository.set(SYNC_REVOKED_KEY, true);
+    syncService.pull.mockResolvedValue({
+      projects: [],
+      settings: [],
+      cursor: 1,
+    });
+
+    await syncManager.adoptToken("fresh");
+
+    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("fresh");
+    expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBeUndefined();
+    await vi.waitFor(() =>
+      expect(syncService.pull).toHaveBeenCalledWith({
+        token: "fresh",
+        cursor: 0,
+      }),
+    );
+    await syncManager.sync();
+  });
+});
+
 describe("syncManager.unpair", () => {
   it("calls leaveGroup with the stored token before clearing local state", async () => {
     await internalRepository.set(SYNC_TOKEN_KEY, "tok");
     await internalRepository.set(SYNC_CURSOR_KEY, 123);
     await internalRepository.set(LAST_PUSHED_AT_KEY, 456);
     await internalRepository.set(LAST_SYNCED_AT_KEY, 789);
+    await internalRepository.set(SYNC_REVOKED_KEY, true);
     syncService.leaveGroup.mockResolvedValue({ ok: true });
 
     await syncManager.unpair();
@@ -346,6 +383,7 @@ describe("syncManager.unpair", () => {
     expect(await internalRepository.get(SYNC_CURSOR_KEY)).toBeUndefined();
     expect(await internalRepository.get(LAST_PUSHED_AT_KEY)).toBeUndefined();
     expect(await internalRepository.get(LAST_SYNCED_AT_KEY)).toBeUndefined();
+    expect(await internalRepository.get(SYNC_REVOKED_KEY)).toBeUndefined();
   });
 
   it("still clears local state when leaveGroup fails (offline)", async () => {

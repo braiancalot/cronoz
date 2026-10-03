@@ -9,12 +9,7 @@ vi.mock("@/hooks/useSyncStatus.js", () => ({
   useSyncStatus: vi.fn(),
 }));
 vi.mock("@/services/syncManager.js", () => ({
-  default: {
-    sync: vi.fn(),
-    unpair: vi.fn(),
-    getDeviceCount: vi.fn(),
-    getStatus: vi.fn(),
-  },
+  default: { getDeviceCount: vi.fn() },
 }));
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
@@ -24,11 +19,13 @@ import { toast } from "sonner";
 import { usePairing } from "@/hooks/usePairing.js";
 import { useSyncStatus } from "@/hooks/useSyncStatus.js";
 import syncManager from "@/services/syncManager.js";
+import { INITIAL_PAIRING_FLOW, initPairingFlow } from "@/lib/pairingFlow.js";
 import { SyncCard } from "@/components/sync/SyncCard.jsx";
 
 const baseStatus = {
   isPaired: false,
   lastSyncedAt: null,
+  wasRevoked: false,
   syncing: false,
   error: null,
   isOnline: true,
@@ -36,231 +33,291 @@ const baseStatus = {
   syncNow: vi.fn(),
 };
 
+const pairedStatus = {
+  ...baseStatus,
+  isPaired: true,
+  lastSyncedAt: Date.now() - 5_000,
+};
+
 const basePairing = {
-  mode: "idle",
-  code: null,
-  remainingMs: 0,
-  loading: false,
-  error: null,
+  flow: INITIAL_PAIRING_FLOW,
   generateCode: vi.fn(),
-  confirmPaired: vi.fn(),
   joinWithCode: vi.fn(),
   cancel: vi.fn(),
+  openJoin: vi.fn(),
+  clearError: vi.fn(),
 };
+
+const joiningFlow = { ...INITIAL_PAIRING_FLOW, screen: "joining" };
+
+function hostingFlow(overrides) {
+  const issued = { code: "ABCD2345", expiresAt: Date.now() + 60_500 };
+  return { ...initPairingFlow(issued), ...overrides };
+}
+
+function renderCard({ pairing, status } = {}) {
+  usePairing.mockReturnValue({ ...basePairing, ...pairing });
+  useSyncStatus.mockReturnValue({ ...baseStatus, ...status });
+  return render(<SyncCard />);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  syncManager.getDeviceCount.mockResolvedValue(null);
-  syncManager.getStatus.mockReturnValue({ syncing: false, error: null });
+  syncManager.getDeviceCount.mockResolvedValue(2);
 });
 
-describe("SyncCard", () => {
-  it("renders not-paired state with generate/insert buttons", () => {
-    usePairing.mockReturnValue(basePairing);
-    useSyncStatus.mockReturnValue(baseStatus);
+describe("SyncCard: not paired", () => {
+  it("offers to generate a code or type one", async () => {
+    const generateCode = vi.fn();
+    const openJoin = vi.fn();
+    renderCard({ pairing: { generateCode, openJoin } });
 
-    render(<SyncCard />);
-
-    expect(screen.getByRole("button", { name: /gerar código/i })).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: /inserir código/i }),
-    ).toBeTruthy();
-  });
-
-  it("renders showing-code state with the code and confirm button", () => {
-    usePairing.mockReturnValue({
-      ...basePairing,
-      mode: "showing-code",
-      code: "ABCD2345",
-      remainingMs: 60_000,
-    });
-    useSyncStatus.mockReturnValue(baseStatus);
-
-    render(<SyncCard />);
-
-    expect(screen.getByText("ABCD-2345")).toBeTruthy();
-    expect(screen.getByText(/Expira em 1:00/)).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: /Já pareei o outro device/i }),
-    ).toBeTruthy();
-  });
-
-  it("shows an error toast when the code cannot be generated", async () => {
-    const generateCode = vi
-      .fn()
-      .mockResolvedValue({ ok: false, error: "too_many_new_groups" });
-    usePairing.mockReturnValue({ ...basePairing, generateCode });
-    useSyncStatus.mockReturnValue(baseStatus);
-
-    render(<SyncCard />);
+    await userEvent.click(screen.getByRole("button", { name: "Gerar código" }));
     await userEvent.click(
-      screen.getByRole("button", { name: /gerar código/i }),
+      screen.getByRole("button", { name: "Tenho um código" }),
     );
 
-    expect(toast.error).toHaveBeenCalledWith(
+    expect(generateCode).toHaveBeenCalledOnce();
+    expect(openJoin).toHaveBeenCalledOnce();
+  });
+
+  it("shows a generate failure in the card instead of a toast", () => {
+    const flow = { ...INITIAL_PAIRING_FLOW, error: "too_many_new_groups" };
+    renderCard({ pairing: { flow } });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
       "Limite de pareamentos atingido. Tente em 1 hora.",
     );
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("disables pairing while offline and says why", () => {
+    renderCard({ status: { isOnline: false } });
+
+    expect(screen.getByRole("button", { name: "Gerar código" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Tenho um código" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText("Sem conexão. O pareamento precisa de internet."),
+    ).toBeInTheDocument();
+  });
+
+  it("tells a device that it was unpaired from elsewhere", () => {
+    renderCard({ status: { wasRevoked: true } });
+
+    expect(
+      screen.getByText(/Este dispositivo foi despareado/),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("SyncCard: showing a code", () => {
+  it("shows the code and the countdown, with no confirm button", () => {
+    renderCard({ pairing: { flow: hostingFlow() } });
+
+    expect(screen.getByText("ABCD-2345")).toBeInTheDocument();
+    expect(screen.getByText(/expira em 1:00/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Já pareei/i })).toBeNull();
   });
 
   it("copies the code without the reading hyphen", async () => {
     const user = userEvent.setup();
-    usePairing.mockReturnValue({
-      ...basePairing,
-      mode: "showing-code",
-      code: "ABCD2345",
-      remainingMs: 60_000,
-    });
-    useSyncStatus.mockReturnValue(baseStatus);
+    renderCard({ pairing: { flow: hostingFlow() } });
 
-    render(<SyncCard />);
-    await user.click(screen.getByRole("button", { name: "ABCD-2345" }));
+    await user.click(screen.getByRole("button", { name: /ABCD-2345/ }));
 
     expect(await navigator.clipboard.readText()).toBe("ABCD2345");
+    expect(toast).toHaveBeenCalledWith("Código copiado");
   });
 
-  it("joins with a code pasted in its displayed form", async () => {
-    const user = userEvent.setup();
-    const joinWithCode = vi.fn().mockResolvedValue({ ok: true });
-    usePairing.mockReturnValue({ ...basePairing, joinWithCode });
-    useSyncStatus.mockReturnValue(baseStatus);
+  it("keeps the code screen on a device that is already paired", () => {
+    renderCard({ pairing: { flow: hostingFlow() }, status: pairedStatus });
 
-    render(<SyncCard />);
-    await user.click(screen.getByRole("button", { name: /Inserir código/i }));
-    await user.click(screen.getByLabelText(/Código de pareamento/i));
+    expect(screen.getByText("ABCD-2345")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Sincronizar agora/ }),
+    ).toBeNull();
+  });
+
+  it.each([
+    ["expired", "O código expirou."],
+    ["burned", "Código invalidado. Gere outro."],
+  ])("offers another code once it is %s", async (hostState, message) => {
+    const generateCode = vi.fn();
+    const flow = hostingFlow({ hostState });
+    renderCard({ pairing: { flow, generateCode } });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Gerar outro código" }),
+    );
+
+    expect(screen.getByText(message)).toBeInTheDocument();
+    expect(screen.queryByText("ABCD-2345")).toBeNull();
+    expect(generateCode).toHaveBeenCalledOnce();
+  });
+});
+
+describe("SyncCard: typing a code", () => {
+  it("focuses the field and joins on Enter with the pasted code", async () => {
+    const user = userEvent.setup();
+    const joinWithCode = vi.fn().mockResolvedValue(true);
+    renderCard({ pairing: { flow: joiningFlow, joinWithCode } });
+
+    expect(
+      screen.getByLabelText("Código mostrado no outro dispositivo"),
+    ).toHaveFocus();
     await user.paste(" ABCD-2345 ");
-    await user.click(screen.getByRole("button", { name: /^Parear$/ }));
+    await user.keyboard("{Enter}");
 
     expect(joinWithCode).toHaveBeenCalledWith("ABCD2345");
   });
 
-  it("renders paired state with last sync, device count, sync/unpair buttons", async () => {
-    syncManager.getDeviceCount.mockResolvedValue(2);
-    usePairing.mockReturnValue(basePairing);
-    useSyncStatus.mockReturnValue({
-      ...baseStatus,
-      isPaired: true,
-      lastSyncedAt: Date.now() - 5_000,
-    });
+  it("does not submit an incomplete code", async () => {
+    const user = userEvent.setup();
+    const joinWithCode = vi.fn();
+    renderCard({ pairing: { flow: joiningFlow, joinWithCode } });
 
-    render(<SyncCard />);
+    await user.keyboard("ABCD{Enter}");
 
-    await waitFor(() =>
-      expect(screen.getByText(/2 dispositivos no grupo/)).toBeTruthy(),
-    );
-    expect(screen.getByText(/Última sincronização/)).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: /Sincronizar agora/i }),
-    ).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Desparear/i })).toBeTruthy();
-    expect(syncManager.getDeviceCount).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Parear" })).toBeDisabled();
+    expect(joinWithCode).not.toHaveBeenCalled();
   });
 
-  it("renders 'Adicionar dispositivo' button when paired", async () => {
-    syncManager.getDeviceCount.mockResolvedValue(2);
-    const generateCode = vi.fn();
-    usePairing.mockReturnValue({ ...basePairing, generateCode });
-    useSyncStatus.mockReturnValue({ ...baseStatus, isPaired: true });
+  it("keeps the typed code after a failed join", async () => {
+    const user = userEvent.setup();
+    const joinWithCode = vi.fn().mockResolvedValue(false);
+    renderCard({ pairing: { flow: joiningFlow, joinWithCode } });
 
-    render(<SyncCard />);
+    await user.keyboard("ABCD2345{Enter}");
 
-    const button = await screen.findByRole("button", {
-      name: /Adicionar dispositivo/i,
+    expect(screen.getByRole("textbox")).toHaveValue("ABCD2345");
+  });
+
+  it("shows the join error under the field and clears it on typing", async () => {
+    const user = userEvent.setup();
+    const clearError = vi.fn();
+    const flow = { ...joiningFlow, error: "invalid_or_expired_code" };
+    renderCard({ pairing: { flow, clearError } });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Código inválido ou expirado. Confira no outro dispositivo ou gere um novo.",
+    );
+    expect(toast.error).not.toHaveBeenCalled();
+    await user.keyboard("A");
+
+    expect(clearError).toHaveBeenCalled();
+  });
+
+  it("locks the submit button while pairing", () => {
+    renderCard({ pairing: { flow: { ...joiningFlow, busy: true } } });
+
+    expect(screen.getByRole("button", { name: "Pareando…" })).toBeDisabled();
+  });
+
+  it("goes back through Voltar", async () => {
+    const cancel = vi.fn();
+    renderCard({ pairing: { flow: joiningFlow, cancel } });
+
+    await userEvent.click(screen.getByRole("button", { name: "Voltar" }));
+
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+});
+
+describe("SyncCard: paired", () => {
+  it("shows the status line, the device count and the actions", async () => {
+    renderCard({ status: pairedStatus });
+
+    expect(await screen.findByText("2 dispositivos pareados")).toBeTruthy();
+    expect(screen.getByRole("status")).toHaveTextContent(/^Sincronizado · /);
+    expect(
+      screen.getByRole("button", { name: /Sincronizar agora/ }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Desparear este dispositivo" }),
+    ).toBeInTheDocument();
+  });
+
+  it("recounts the devices after every sync", async () => {
+    const view = renderCard({ status: pairedStatus });
+    await screen.findByText("2 dispositivos pareados");
+
+    syncManager.getDeviceCount.mockResolvedValue(3);
+    useSyncStatus.mockReturnValue({
+      ...pairedStatus,
+      lastSyncedAt: Date.now(),
     });
-    expect(button).toBeTruthy();
+    view.rerender(<SyncCard />);
 
-    await userEvent.click(button);
+    expect(await screen.findByText("3 dispositivos pareados")).toBeTruthy();
+  });
+
+  it("keeps the last count when the recount fails", async () => {
+    const view = renderCard({ status: pairedStatus });
+    await screen.findByText("2 dispositivos pareados");
+
+    syncManager.getDeviceCount.mockResolvedValue(null);
+    useSyncStatus.mockReturnValue({
+      ...pairedStatus,
+      lastSyncedAt: Date.now(),
+    });
+    view.rerender(<SyncCard />);
+
+    await waitFor(() =>
+      expect(syncManager.getDeviceCount).toHaveBeenCalledTimes(2),
+    );
+    expect(screen.getByText("2 dispositivos pareados")).toBeInTheDocument();
+  });
+
+  it("shows a failed sync in the status line instead of a toast", async () => {
+    const syncNow = vi.fn();
+    renderCard({ status: { ...pairedStatus, error: "http_500", syncNow } });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Sincronizar agora/ }),
+    );
+
+    expect(syncNow).toHaveBeenCalledOnce();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Falha ao sincronizar: servidor indisponível.",
+    );
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("blocks server actions while offline", () => {
+    renderCard({ status: { ...pairedStatus, isOnline: false } });
+
+    expect(
+      screen.getByRole("button", { name: /Sincronizar agora/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Adicionar dispositivo/ }),
+    ).toBeDisabled();
+  });
+
+  it("generates a code to add a device", async () => {
+    const generateCode = vi.fn();
+    renderCard({ pairing: { generateCode }, status: pairedStatus });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Adicionar dispositivo/ }),
+    );
+
     expect(generateCode).toHaveBeenCalledOnce();
   });
 
-  it("shows error line when sync has failed", async () => {
-    syncManager.getDeviceCount.mockResolvedValue(2);
-    usePairing.mockReturnValue(basePairing);
-    useSyncStatus.mockReturnValue({
-      ...baseStatus,
-      isPaired: true,
-      lastSyncedAt: Date.now() - 5_000,
-      error: "network_error",
-    });
-
-    render(<SyncCard />);
-
-    await waitFor(() =>
-      expect(screen.getByText(/Falha na última sincronização/i)).toBeTruthy(),
-    );
-    expect(screen.getByText(/Sem conexão com o servidor/i)).toBeTruthy();
-  });
-
-  it("shows error toast when manual sync fails", async () => {
-    syncManager.getDeviceCount.mockResolvedValue(2);
-    const syncNow = vi.fn().mockResolvedValue(undefined);
-    syncManager.getStatus.mockReturnValue({
-      syncing: false,
-      error: "http_500",
-    });
-    usePairing.mockReturnValue(basePairing);
-    useSyncStatus.mockReturnValue({
-      ...baseStatus,
-      isPaired: true,
-      syncNow,
-    });
-
-    render(<SyncCard />);
-
-    const button = await screen.findByRole("button", {
-      name: /Sincronizar agora/i,
-    });
-    await userEvent.click(button);
-
-    expect(syncNow).toHaveBeenCalledOnce();
-    expect(toast.error).toHaveBeenCalledWith(
-      "Servidor indisponível. Tente novamente.",
-    );
-    expect(toast.success).not.toHaveBeenCalled();
-  });
-
-  it("shows error toast when joinWithCode returns 409 (device_already_paired)", async () => {
-    const joinWithCode = vi.fn().mockResolvedValue({
-      ok: false,
-      error: "device_already_paired",
-    });
-    usePairing.mockReturnValue({ ...basePairing, joinWithCode });
-    useSyncStatus.mockReturnValue(baseStatus);
-
-    render(<SyncCard />);
+  it("unpairs only after confirming", async () => {
+    const unpair = vi.fn();
+    renderCard({ status: { ...pairedStatus, unpair } });
 
     await userEvent.click(
-      screen.getByRole("button", { name: /Inserir código/i }),
+      screen.getByRole("button", { name: "Desparear este dispositivo" }),
     );
-    const input = screen.getByLabelText(/Código de pareamento/i);
-    await userEvent.type(input, "abcd-2345");
-    await userEvent.click(screen.getByRole("button", { name: /^Parear$/ }));
+    expect(unpair).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Desparear" }));
 
-    expect(joinWithCode).toHaveBeenCalledWith("ABCD2345");
-    expect(toast.error).toHaveBeenCalledWith(
-      "Este dispositivo já está pareado em outro grupo.",
-    );
-    expect(toast.success).not.toHaveBeenCalled();
-  });
-
-  it("shows success toast when manual sync succeeds", async () => {
-    syncManager.getDeviceCount.mockResolvedValue(2);
-    const syncNow = vi.fn().mockResolvedValue(undefined);
-    syncManager.getStatus.mockReturnValue({ syncing: false, error: null });
-    usePairing.mockReturnValue(basePairing);
-    useSyncStatus.mockReturnValue({
-      ...baseStatus,
-      isPaired: true,
-      syncNow,
-    });
-
-    render(<SyncCard />);
-
-    const button = await screen.findByRole("button", {
-      name: /Sincronizar agora/i,
-    });
-    await userEvent.click(button);
-
-    expect(toast.success).toHaveBeenCalledWith("Sincronizado");
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(unpair).toHaveBeenCalledOnce();
   });
 });

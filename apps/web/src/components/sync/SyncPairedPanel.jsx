@@ -1,51 +1,63 @@
-import {
-  ArrowsClockwiseIcon,
-  LinkBreakIcon,
-  PlusIcon,
-} from "@phosphor-icons/react";
+import { ArrowsClockwiseIcon, PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button.jsx";
-import { formatRelativeTime } from "./syncFormat.js";
-import { syncErrorMessage } from "./syncMessages.js";
+import { cn } from "@/lib/utils.js";
+import { pairingErrorMessage } from "./syncMessages.js";
+import { syncStatusLine } from "./syncStatusLine.js";
+
+function deviceCountLabel(deviceCount) {
+  if (deviceCount === null) return null;
+  return deviceCount === 1
+    ? "1 dispositivo pareado"
+    : `${deviceCount} dispositivos pareados`;
+}
 
 export function SyncPairedPanel({
-  lastSyncedAt,
+  status,
   deviceCount,
-  error,
+  busy,
+  pairingError,
   onSyncNow,
   onAddDevice,
   onUnpair,
 }) {
+  const line = syncStatusLine(status);
+  const cannotReachServer = status.syncing || !status.isOnline;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1 text-sm">
-        <p>
-          Última sincronização:{" "}
-          <span className="font-medium">
-            {formatRelativeTime(lastSyncedAt)}
-          </span>
+        <p role="status" className={cn(line.isError && "text-destructive")}>
+          {line.text}
         </p>
-        <p className="text-muted-foreground">
-          {deviceCount === null
-            ? "Carregando dispositivos..."
-            : `${deviceCount} dispositivo${deviceCount === 1 ? "" : "s"} no grupo`}
+        {/* min-h holds the line while the count loads, so the buttons don't jump. */}
+        <p className="min-h-5 text-muted-foreground">
+          {deviceCountLabel(deviceCount)}
         </p>
-        {error && (
-          <p className="text-destructive">
-            Falha na última sincronização: {syncErrorMessage(error)}
-          </p>
-        )}
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button onClick={onSyncNow}>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button onClick={onSyncNow} disabled={cannotReachServer}>
           <ArrowsClockwiseIcon /> Sincronizar agora
         </Button>
-        <Button variant="outline" onClick={onAddDevice}>
+        <Button
+          variant="outline"
+          onClick={onAddDevice}
+          disabled={busy || !status.isOnline}
+        >
           <PlusIcon /> Adicionar dispositivo
         </Button>
-        <Button variant="destructive" onClick={onUnpair}>
-          <LinkBreakIcon /> Desparear
-        </Button>
       </div>
+      {pairingError && (
+        <p role="alert" className="text-sm text-destructive">
+          {pairingErrorMessage(pairingError)}
+        </p>
+      )}
+      <Button
+        variant="link"
+        onClick={onUnpair}
+        className="mt-2 h-auto self-start p-0 text-muted-foreground"
+      >
+        Desparear este dispositivo
+      </Button>
     </div>
   );
 }

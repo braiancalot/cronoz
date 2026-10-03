@@ -65,6 +65,22 @@ describe("syncService.pairJoin", () => {
   });
 });
 
+describe("syncService.pairStatus", () => {
+  it("POSTs deviceId+code to /api/pair/status", async () => {
+    fetchMock.mockResolvedValue(mockResponse({ body: { status: "waiting" } }));
+
+    const res = await syncService.pairStatus({
+      deviceId: "dev-1",
+      code: "ABCD2345",
+    });
+
+    expect(res).toEqual({ status: "waiting" });
+    const { url, body } = getRequestArgs();
+    expect(url).toBe("http://api.test/api/pair/status");
+    expect(body).toEqual({ deviceId: "dev-1", code: "ABCD2345" });
+  });
+});
+
 describe("syncService.refreshToken", () => {
   it("POSTs deviceId to /api/pair/token", async () => {
     fetchMock.mockResolvedValue(

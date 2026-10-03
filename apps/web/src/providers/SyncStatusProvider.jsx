@@ -1,6 +1,11 @@
 import { createContext, useContext } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { LAST_SYNCED_AT_KEY, SYNC_TOKEN_KEY } from "@cronoz/shared";
+import {
+  LAST_SYNCED_AT_KEY,
+  PENDING_PAIRING_KEY,
+  SYNC_REVOKED_KEY,
+  SYNC_TOKEN_KEY,
+} from "@cronoz/shared";
 
 import db from "@/services/db.js";
 
@@ -8,24 +13,32 @@ import db from "@/services/db.js";
 const SyncStatusContext = createContext({
   isPaired: false,
   lastSyncedAt: null,
+  wasRevoked: false,
+  pendingPairing: null,
 });
+
+function useInternalRow(key) {
+  return useLiveQuery(() => db.internal.get(key).then((row) => row ?? null));
+}
 
 export function SyncStatusProvider({ children }) {
   // Map a missing row to null so `undefined` strictly means "still loading".
-  const tokenRow = useLiveQuery(() =>
-    db.internal.get(SYNC_TOKEN_KEY).then((row) => row ?? null),
-  );
-  const lastSyncRow = useLiveQuery(() =>
-    db.internal.get(LAST_SYNCED_AT_KEY).then((row) => row ?? null),
-  );
+  const tokenRow = useInternalRow(SYNC_TOKEN_KEY);
+  const lastSyncRow = useInternalRow(LAST_SYNCED_AT_KEY);
+  const revokedRow = useInternalRow(SYNC_REVOKED_KEY);
+  const pendingRow = useInternalRow(PENDING_PAIRING_KEY);
 
-  // Gate on the token (it drives the paired/not-paired layout) so the card
-  // paints its final state instead of flashing through a loading layout.
-  if (tokenRow === undefined) return null;
+  // Gate on the rows that pick the card's layout (paired, waiting on a code,
+  // unpaired) so it paints its final state instead of flashing through
+  // another one.
+  const layoutRows = [tokenRow, revokedRow, pendingRow];
+  if (layoutRows.includes(undefined)) return null;
 
   const value = {
     isPaired: !!tokenRow?.value,
     lastSyncedAt: lastSyncRow?.value ?? null,
+    wasRevoked: !!revokedRow?.value,
+    pendingPairing: pendingRow?.value ?? null,
   };
 
   return (

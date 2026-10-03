@@ -57,7 +57,8 @@ components/
             TimerAdjustSlot StepGroup AdjustActions
   pip/      PiPContent PiPTimer PiPIdleView PiPLapView PiPDiscardView PiPPlaceholder
   project/  ProjectCard ProjectHeader ProjectTitle ProjectMenu ProjectRenameActions
-  sync/     SyncCard SyncIndicator SyncPairingCode SyncPairingStart SyncJoinForm SyncPairedPanel
+  sync/     SyncCard SyncIndicator SyncPairingStart SyncPairingCode SyncPairingEnded
+            SyncJoinForm SyncPairedPanel
   tag/      TagChip TagManagerDialog DynamicTagRow ProjectFilters
   ui/       shadcn primitives
 ```
@@ -136,6 +137,12 @@ Time is computed on the fly from `startTimestamp` (no stored elapsed during runn
 
 **Web manifest** is the hand-written `apps/web/public/manifest.json`. `VitePWA` runs with `manifest: false`: left on, it emits a second `manifest.webmanifest` built from `package.json` defaults and links it next to the real one.
 
+**Pairing flow** is the pure reducer in `src/lib/pairingFlow.js`; `usePairing` wraps it with the network calls and `SyncCard` picks one screen component per state. The device showing a code polls `/pair/status` and moves on by itself when the other one joins, so no screen asks the user to confirm the pairing. The issued code is stored under `PENDING_PAIRING_KEY`: a device with no token yet that leaves Settings would otherwise never fetch one. `SyncStatusProvider` feeds that row back as the reducer's initial state.
+
+Pairing and sync failures render inside the card. Toasts are kept for the two confirmations that have no other trace on screen ("Código copiado", "Pareado com sucesso").
+
+The device count is refetched whenever `lastSyncedAt` changes. A device joining the group never flips `isPaired` on the others, so keying the fetch on `isPaired` alone left the old count on screen.
+
 **Sync payload limits** live in `packages/shared/src/constants.js`. The push schema rejects anything above them, so the client MUST enforce the same numbers: a record over a limit fails every push and sync stalls for good. A new user-editable text field needs a `maxLength` from there, and a new list that grows without bound needs a cap in its repository. `syncManager` already splits pushes into batches of `MAX_PUSH_PROJECTS`.
 
 **Content-Security-Policy** is set in `apps/web/vercel.json` and only applies on Vercel. Dev and tests never see it, so a new external origin (API host, font, image) passes locally and gets blocked in production. Add it to the matching directive in the same change. `style-src` keeps `'unsafe-inline'` because Radix, Sonner and the PiP window inject `<style>` tags.
@@ -203,7 +210,8 @@ the row is gone or sits in another sync group than the token claims. Deleting a 
 row is therefore the way to revoke access; the JWT itself carries no revocation state.
 
 The web client needs no special case: `callAuthed` retries through `/pair/token` on 401,
-gets 404 for a removed device and drops its local token.
+gets 404 for a removed device and drops its local token. It also sets `SYNC_REVOKED_KEY`,
+which the sync card turns into a notice until the device pairs again or unpairs.
 
 ### Pairing brakes
 

@@ -9,12 +9,73 @@ import { useSyncCard } from "@/hooks/useSyncCard.js";
 import { SyncJoinForm } from "./SyncJoinForm.jsx";
 import { SyncPairedPanel } from "./SyncPairedPanel.jsx";
 import { SyncPairingCode } from "./SyncPairingCode.jsx";
+import { SyncPairingEnded } from "./SyncPairingEnded.jsx";
 import { SyncPairingStart } from "./SyncPairingStart.jsx";
+
+function SyncCardBody({ sync }) {
+  const { flow, status } = sync;
+
+  if (flow.screen === "hosting" && flow.hostState === "waiting") {
+    return (
+      <SyncPairingCode
+        code={flow.code}
+        expiresAt={flow.expiresAt}
+        onCopy={sync.copyCode}
+        onCancel={sync.cancelPairing}
+      />
+    );
+  }
+  if (flow.screen === "hosting") {
+    return (
+      <SyncPairingEnded
+        hostState={flow.hostState}
+        busy={flow.busy}
+        isOnline={status.isOnline}
+        error={flow.error}
+        onRegenerate={sync.generateCode}
+        onCancel={sync.cancelPairing}
+      />
+    );
+  }
+  if (status.isPaired) {
+    return (
+      <SyncPairedPanel
+        status={status}
+        deviceCount={sync.deviceCount}
+        busy={flow.busy}
+        pairingError={flow.error}
+        onSyncNow={status.syncNow}
+        onAddDevice={sync.generateCode}
+        onUnpair={sync.askUnpair}
+      />
+    );
+  }
+  if (flow.screen === "joining") {
+    return (
+      <SyncJoinForm
+        value={sync.codeInput}
+        onChange={sync.editCodeInput}
+        busy={flow.busy}
+        error={flow.error}
+        onSubmit={sync.join}
+        onCancel={sync.cancelPairing}
+      />
+    );
+  }
+  return (
+    <SyncPairingStart
+      busy={flow.busy}
+      isOnline={status.isOnline}
+      wasRevoked={status.wasRevoked}
+      error={flow.error}
+      onGenerate={sync.generateCode}
+      onJoin={sync.openJoin}
+    />
+  );
+}
 
 export function SyncCard() {
   const sync = useSyncCard();
-  const { pairing, status } = sync;
-  const isIdle = pairing.mode === "idle";
 
   return (
     <Card>
@@ -22,45 +83,7 @@ export function SyncCard() {
         <CardTitle>Sincronização entre dispositivos</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {pairing.mode === "showing-code" && (
-          <SyncPairingCode
-            code={pairing.code}
-            remainingMs={pairing.remainingMs}
-            loading={pairing.loading}
-            onCopy={sync.copyCode}
-            onConfirm={sync.confirmPaired}
-            onCancel={pairing.cancel}
-          />
-        )}
-
-        {isIdle && !status.isPaired && !sync.joining && (
-          <SyncPairingStart
-            loading={pairing.loading}
-            onGenerate={sync.generateCode}
-            onJoin={sync.startJoin}
-          />
-        )}
-
-        {isIdle && !status.isPaired && sync.joining && (
-          <SyncJoinForm
-            value={sync.codeInput}
-            onChange={sync.setCodeInput}
-            loading={pairing.loading}
-            onSubmit={sync.join}
-            onCancel={sync.cancelJoin}
-          />
-        )}
-
-        {isIdle && status.isPaired && (
-          <SyncPairedPanel
-            lastSyncedAt={status.lastSyncedAt}
-            deviceCount={sync.deviceCount}
-            error={status.error}
-            onSyncNow={sync.syncNow}
-            onAddDevice={sync.generateCode}
-            onUnpair={sync.askUnpair}
-          />
-        )}
+        <SyncCardBody sync={sync} />
       </CardContent>
 
       <ConfirmDialog

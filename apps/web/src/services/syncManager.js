@@ -3,6 +3,7 @@ import {
   LAST_SYNCED_AT_KEY,
   MAX_PUSH_PROJECTS,
   SYNC_CURSOR_KEY,
+  SYNC_REVOKED_KEY,
   SYNC_TOKEN_KEY,
 } from "@cronoz/shared";
 import db from "./db.js";
@@ -47,6 +48,18 @@ async function isPaired() {
   return !!token;
 }
 
+// The server no longer knows this device: someone unpaired it from elsewhere.
+async function dropRevokedToken() {
+  await internalRepository.remove(SYNC_TOKEN_KEY);
+  await internalRepository.set(SYNC_REVOKED_KEY, true);
+}
+
+async function adoptToken(token) {
+  await internalRepository.set(SYNC_TOKEN_KEY, token);
+  await internalRepository.remove(SYNC_REVOKED_KEY);
+  sync();
+}
+
 async function callAuthed(makeRequest) {
   const token = await internalRepository.get(SYNC_TOKEN_KEY);
   try {
@@ -61,7 +74,7 @@ async function callAuthed(makeRequest) {
       return await makeRequest(newToken);
     } catch (refreshErr) {
       if (refreshErr instanceof SyncError && refreshErr.status === 404) {
-        await internalRepository.remove(SYNC_TOKEN_KEY);
+        await dropRevokedToken();
       }
       throw refreshErr;
     }
@@ -145,7 +158,7 @@ async function runSync() {
     setStatus({ syncing: false, error: null });
   } catch (err) {
     if (err instanceof SyncError && err.status === 401) {
-      await internalRepository.remove(SYNC_TOKEN_KEY);
+      await dropRevokedToken();
       setStatus({ syncing: false, error: null });
       return;
     }
@@ -201,6 +214,7 @@ async function unpair() {
   await internalRepository.remove(SYNC_CURSOR_KEY);
   await internalRepository.remove(LAST_PUSHED_AT_KEY);
   await internalRepository.remove(LAST_SYNCED_AT_KEY);
+  await internalRepository.remove(SYNC_REVOKED_KEY);
 }
 
 async function getDeviceCount() {
@@ -216,6 +230,7 @@ async function getDeviceCount() {
 
 const syncManager = {
   isPaired,
+  adoptToken,
   sync,
   scheduleSync,
   start,

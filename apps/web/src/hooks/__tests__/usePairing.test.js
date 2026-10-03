@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { SYNC_TOKEN_KEY } from "@cronoz/shared";
+import { PENDING_PAIRING_KEY } from "@cronoz/shared";
 
 vi.mock("@/services/syncService.js", async () => {
   const actual = await vi.importActual("@/services/syncService.js");
@@ -9,63 +9,77 @@ vi.mock("@/services/syncService.js", async () => {
     default: {
       pairInitiate: vi.fn(),
       pairJoin: vi.fn(),
+      pairStatus: vi.fn(),
       refreshToken: vi.fn(),
-      push: vi.fn(),
-      pull: vi.fn(),
-      getDeviceCount: vi.fn(),
     },
   };
 });
 
 vi.mock("@/services/syncManager.js", () => ({
-  default: { sync: vi.fn(), unpair: vi.fn() },
+  default: { adoptToken: vi.fn() },
 }));
 
 import db from "@/services/db.js";
 import internalRepository from "@/services/internalRepository.js";
 import syncService, { SyncError } from "@/services/syncService.js";
 import syncManager from "@/services/syncManager.js";
+import { SyncStatusProvider } from "@/providers/SyncStatusProvider.jsx";
 import { usePairing } from "@/hooks/usePairing.js";
+
+const CODE = "ABCD2345";
+const onPaired = vi.fn();
+
+function issueCode({ expiresInMs = 60_000 } = {}) {
+  syncService.pairInitiate.mockResolvedValue({
+    code: CODE,
+    expiresAt: new Date(Date.now() + expiresInMs).toISOString(),
+  });
+}
+
+function answerStatus(status) {
+  syncService.pairStatus.mockResolvedValue({ status });
+}
+
+async function renderHosting() {
+  const view = renderHook(() => usePairing({ onPaired, pollMs: 10 }));
+  await act(() => view.result.current.generateCode());
+  return view;
+}
 
 beforeEach(async () => {
   await db.internal.clear();
   vi.clearAllMocks();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
+  answerStatus("waiting");
+  syncService.refreshToken.mockResolvedValue({ token: "tok" });
 });
 
 describe("usePairing.generateCode", () => {
-  it("transitions to 'showing-code' with code and expiresAt", async () => {
-    syncService.pairInitiate.mockResolvedValue({
-      code: "ABCD2345",
-      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  it("shows the issued code and stores it as pending", async () => {
+    issueCode();
+
+    const { result } = await renderHosting();
+
+    expect(result.current.flow).toMatchObject({
+      screen: "hosting",
+      hostState: "waiting",
+      code: CODE,
     });
-
-    const { result } = renderHook(() => usePairing());
-
-    await act(async () => {
-      await result.current.generateCode();
-    });
-
-    expect(result.current.mode).toBe("showing-code");
-    expect(result.current.code).toBe("ABCD2345");
-    expect(result.current.remainingMs).toBeGreaterThan(0);
+    const pending = await internalRepository.get(PENDING_PAIRING_KEY);
+    expect(pending.code).toBe(CODE);
   });
 
-  it("sets error when initiate fails", async () => {
+  it("reports the error and stays idle when initiate fails", async () => {
     syncService.pairInitiate.mockRejectedValue(
       new SyncError("network_error", { body: "x" }),
     );
 
-    const { result } = renderHook(() => usePairing());
-    await act(async () => {
-      await result.current.generateCode();
-    });
+    const { result } = await renderHosting();
 
-    expect(result.current.mode).toBe("idle");
-    expect(result.current.error).toBe("network_error");
+    expect(result.current.flow).toMatchObject({
+      screen: "idle",
+      busy: false,
+      error: "network_error",
+    });
   });
 
   it("reports the new-group quota when initiate answers 429", async () => {
@@ -73,126 +87,164 @@ describe("usePairing.generateCode", () => {
       new SyncError("http_429", { status: 429 }),
     );
 
-    const { result } = renderHook(() => usePairing());
-    let outcome;
-    await act(async () => {
-      outcome = await result.current.generateCode();
-    });
+    const { result } = await renderHosting();
 
-    expect(outcome).toEqual({ ok: false, error: "too_many_new_groups" });
-    expect(result.current.mode).toBe("idle");
+    expect(result.current.flow.error).toBe("too_many_new_groups");
   });
 });
 
-describe("usePairing.confirmPaired", () => {
-  it("plants token, returns to idle, triggers sync, returns ok", async () => {
-    syncService.refreshToken.mockResolvedValue({
-      token: "tok",
-      syncGroupId: "g",
-    });
+describe("usePairing host polling", () => {
+  it("adopts the group token once the other device joins", async () => {
+    issueCode();
+    answerStatus("joined");
 
-    const { result } = renderHook(() => usePairing());
-    let outcome;
-    await act(async () => {
-      outcome = await result.current.confirmPaired();
-    });
+    const { result } = await renderHosting();
 
-    expect(outcome).toEqual({ ok: true });
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
-    expect(result.current.mode).toBe("idle");
-    expect(syncManager.sync).toHaveBeenCalled();
+    await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
+    expect(syncManager.adoptToken).toHaveBeenCalledWith("tok");
+    expect(result.current.flow.screen).toBe("idle");
+    expect(await internalRepository.get(PENDING_PAIRING_KEY)).toBeUndefined();
   });
 
-  it("returns { ok: false, error } when refreshToken fails", async () => {
-    syncService.refreshToken.mockRejectedValue(
+  it("asks about the code this device generated", async () => {
+    issueCode();
+
+    await renderHosting();
+
+    await waitFor(() => expect(syncService.pairStatus).toHaveBeenCalled());
+    const [request] = syncService.pairStatus.mock.calls[0];
+    expect(request.code).toBe(CODE);
+    expect(request.deviceId).toEqual(expect.any(String));
+  });
+
+  it.each(["expired", "burned"])("stops on a %s code", async (status) => {
+    issueCode();
+    answerStatus(status);
+
+    const { result } = await renderHosting();
+
+    await waitFor(() => expect(result.current.flow.hostState).toBe(status));
+    expect(syncManager.adoptToken).not.toHaveBeenCalled();
+  });
+
+  it("keeps asking while the code waits", async () => {
+    issueCode();
+    await renderHosting();
+    await waitFor(() => expect(syncService.pairStatus).toHaveBeenCalled());
+    expect(onPaired).not.toHaveBeenCalled();
+
+    answerStatus("joined");
+
+    await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
+  });
+
+  it("retries on the next poll when the token fetch fails", async () => {
+    issueCode();
+    answerStatus("joined");
+    syncService.refreshToken.mockRejectedValueOnce(
       new SyncError("network_error", { body: "x" }),
     );
 
-    const { result } = renderHook(() => usePairing());
-    let outcome;
-    await act(async () => {
-      outcome = await result.current.confirmPaired();
-    });
+    await renderHosting();
 
-    expect(outcome).toEqual({ ok: false, error: "network_error" });
+    await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
+    expect(syncService.refreshToken).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps waiting when the server is unreachable before the deadline", async () => {
+    issueCode();
+    syncService.pairStatus.mockRejectedValue(
+      new SyncError("network_error", { body: "x" }),
+    );
+
+    const { result } = await renderHosting();
+
+    await waitFor(() => expect(syncService.pairStatus).toHaveBeenCalled());
+    expect(result.current.flow.hostState).toBe("waiting");
+  });
+
+  it("expires by the local clock when the server is unreachable", async () => {
+    issueCode({ expiresInMs: -1000 });
+    syncService.pairStatus.mockRejectedValue(
+      new SyncError("network_error", { body: "x" }),
+    );
+
+    const { result } = await renderHosting();
+
+    await waitFor(() => expect(result.current.flow.hostState).toBe("expired"));
+  });
+
+  it("resumes a pending code after the page was left", async () => {
+    await internalRepository.set(PENDING_PAIRING_KEY, {
+      code: CODE,
+      expiresAt: Date.now() + 60_000,
+    });
+    answerStatus("joined");
+
+    renderHook(() => usePairing({ onPaired }), { wrapper: SyncStatusProvider });
+
+    await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
+    expect(syncManager.adoptToken).toHaveBeenCalledWith("tok");
+  });
+});
+
+describe("usePairing.cancel", () => {
+  it("returns to idle and forgets the pending code", async () => {
+    issueCode();
+    const { result } = await renderHosting();
+
+    await act(() => result.current.cancel());
+
+    expect(result.current.flow.screen).toBe("idle");
+    expect(await internalRepository.get(PENDING_PAIRING_KEY)).toBeUndefined();
   });
 });
 
 describe("usePairing.joinWithCode", () => {
-  it("plants token, triggers sync, returns ok on success", async () => {
-    syncService.pairJoin.mockResolvedValue({
-      token: "tok",
-      syncGroupId: "g",
-    });
-
-    const { result } = renderHook(() => usePairing());
-    let outcome;
+  async function join(code) {
+    const view = renderHook(() => usePairing({ onPaired }));
+    act(() => view.result.current.openJoin());
+    let joined;
     await act(async () => {
-      outcome = await result.current.joinWithCode("ABCD2345");
+      joined = await view.result.current.joinWithCode(code);
     });
+    return { ...view, joined };
+  }
 
-    expect(outcome).toEqual({ ok: true });
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBe("tok");
-    expect(syncManager.sync).toHaveBeenCalled();
-    expect(result.current.error).toBeNull();
+  it("adopts the token and announces the pairing", async () => {
+    syncService.pairJoin.mockResolvedValue({ token: "tok", syncGroupId: "g" });
+
+    const { result, joined } = await join(CODE);
+
+    expect(joined).toBe(true);
+    expect(syncManager.adoptToken).toHaveBeenCalledWith("tok");
+    expect(onPaired).toHaveBeenCalledOnce();
+    expect(result.current.flow.screen).toBe("idle");
   });
 
-  it("maps 400 to 'invalid_or_expired_code' and returns it", async () => {
+  it.each([
+    [400, "invalid_or_expired_code"],
+    [409, "device_already_paired"],
+  ])("maps %i to %s and stays on the form", async (status, error) => {
     syncService.pairJoin.mockRejectedValue(
-      new SyncError("http_400", {
-        status: 400,
-        body: { error: "invalid_or_expired_code" },
-      }),
+      new SyncError(`http_${status}`, { status }),
     );
 
-    const { result } = renderHook(() => usePairing());
-    let outcome;
-    await act(async () => {
-      outcome = await result.current.joinWithCode("22222222");
-    });
+    const { result, joined } = await join(CODE);
 
-    expect(outcome).toEqual({
-      ok: false,
-      error: "invalid_or_expired_code",
-    });
-    expect(result.current.error).toBe("invalid_or_expired_code");
-    expect(await internalRepository.get(SYNC_TOKEN_KEY)).toBeUndefined();
+    expect(joined).toBe(false);
+    expect(result.current.flow).toMatchObject({ screen: "joining", error });
+    expect(syncManager.adoptToken).not.toHaveBeenCalled();
   });
 
-  it("maps 409 to 'device_already_paired' and returns it", async () => {
+  it("clears the error on request", async () => {
     syncService.pairJoin.mockRejectedValue(
-      new SyncError("http_409", {
-        status: 409,
-        body: { error: "device_already_paired" },
-      }),
+      new SyncError("http_400", { status: 400 }),
     );
+    const { result } = await join(CODE);
 
-    const { result } = renderHook(() => usePairing());
-    let outcome;
-    await act(async () => {
-      outcome = await result.current.joinWithCode("ABCD2345");
-    });
+    act(() => result.current.clearError());
 
-    expect(outcome).toEqual({
-      ok: false,
-      error: "device_already_paired",
-    });
-    expect(result.current.error).toBe("device_already_paired");
-  });
-});
-
-describe("usePairing countdown", () => {
-  it("returns to idle when expiresAt is already past", async () => {
-    syncService.pairInitiate.mockResolvedValue({
-      code: "ABCD2345",
-      expiresAt: new Date(Date.now() - 1000).toISOString(),
-    });
-
-    const { result } = renderHook(() => usePairing());
-    await act(async () => {
-      await result.current.generateCode();
-    });
-
-    await waitFor(() => expect(result.current.mode).toBe("idle"));
+    expect(result.current.flow.error).toBeNull();
   });
 });

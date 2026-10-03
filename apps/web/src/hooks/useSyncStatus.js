@@ -3,7 +3,7 @@ import syncManager from "@/services/syncManager.js";
 import { useSyncData } from "@/providers/SyncStatusProvider.jsx";
 
 export function useSyncStatus() {
-  const { isPaired, lastSyncedAt } = useSyncData();
+  const { isPaired, lastSyncedAt, wasRevoked } = useSyncData();
 
   const { syncing, error } = useSyncExternalStore(
     syncManager.subscribe,
@@ -30,6 +30,7 @@ export function useSyncStatus() {
   return {
     isPaired,
     lastSyncedAt,
+    wasRevoked,
     syncing,
     error,
     isOnline,

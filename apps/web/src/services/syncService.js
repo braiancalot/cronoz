@@ -54,6 +54,10 @@ async function pairJoin({ deviceId, code }) {
   return request("/api/pair/join", { body: { deviceId, code } });
 }
 
+async function pairStatus({ deviceId, code }) {
+  return request("/api/pair/status", { body: { deviceId, code } });
+}
+
 async function refreshToken({ deviceId }) {
   return request("/api/pair/token", { body: { deviceId } });
 }
@@ -77,6 +81,7 @@ async function leaveGroup({ token }) {
 const syncService = {
   pairInitiate,
   pairJoin,
+  pairStatus,
   refreshToken,
   push,
   pull,
