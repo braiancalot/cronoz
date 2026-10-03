@@ -15,6 +15,13 @@
       "when": 1790990379587,
       "tag": "0001_pairing_code_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791029806893,
+      "tag": "0002_device_secret_hash",
+      "breakpoints": true
     }
   ]
 }

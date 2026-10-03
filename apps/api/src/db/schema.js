@@ -24,6 +24,8 @@ export const devices = pgTable(
       .notNull()
       .references(() => syncGroups.id, { onDelete: "cascade" }),
     deviceName: text("device_name"),
+    // Null until a device paired before device secrets presents its first one.
+    secretHash: text("secret_hash"),
     joinedAt: timestamp("joined_at").notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
   },

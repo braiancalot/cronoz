@@ -5,8 +5,12 @@ const pairingCodeSchema = z
   .string()
   .regex(new RegExp(`^[${PAIRING_CODE_ALPHABET}]{${PAIRING_CODE_LENGTH}}$`));
 
+// Clients from before device secrets name themselves here instead of in the
+// Authorization header.
+const legacyDeviceIdSchema = z.string().uuid().optional();
+
 export const pairInitiateRequestSchema = z.object({
-  deviceId: z.string().uuid(),
+  deviceId: legacyDeviceIdSchema,
 });
 
 export const pairInitiateResponseSchema = z.object({
@@ -15,7 +19,7 @@ export const pairInitiateResponseSchema = z.object({
 });
 
 export const pairJoinRequestSchema = z.object({
-  deviceId: z.string().uuid(),
+  deviceId: legacyDeviceIdSchema,
   code: pairingCodeSchema,
 });
 
@@ -27,7 +31,7 @@ export const pairJoinResponseSchema = z.object({
 export const PAIRING_STATUSES = ["waiting", "joined", "expired", "burned"];
 
 export const pairStatusRequestSchema = z.object({
-  deviceId: z.string().uuid(),
+  deviceId: legacyDeviceIdSchema,
   code: pairingCodeSchema,
 });
 

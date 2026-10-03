@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { and, eq, gt, isNull, lt, lte, sql } from "drizzle-orm";
 import {
+  parseDeviceCredential,
   pairInitiateRequestSchema,
   pairJoinRequestSchema,
   pairStatusRequestSchema,
@@ -14,6 +15,11 @@ import {
   isNewGroupQuotaSpent,
   purgeAbandonedGroups,
 } from "../lib/groupQuota.js";
+import {
+  acceptDeviceSecret,
+  findDevice,
+  hashDeviceSecret,
+} from "../lib/deviceSecret.js";
 import { signToken } from "../lib/jwt.js";
 import {
   PAIRING_CODE_MAX_FAILED_JOINS,
@@ -21,6 +27,7 @@ import {
   generateCode,
   pairingStatusOf,
 } from "../lib/pairingCode.js";
+import { readBearer } from "../middleware/auth.js";
 
 class PairError extends Error {
   constructor(status, code) {
@@ -32,14 +39,38 @@ class PairError extends Error {
 
 const pairingRouter = new Hono();
 
+// A caller from before device secrets names itself in the body and carries a
+// null secret.
+function pairingCaller(c) {
+  const credential = parseDeviceCredential(readBearer(c));
+  if (credential) return credential;
+
+  const { deviceId } = c.req.valid("json");
+  if (!deviceId) throw new PairError(401, "missing_device_credential");
+  return { deviceId, secret: null };
+}
+
+// Undefined for a device the server has never seen.
+async function provenDevice(tx, { deviceId, secret }) {
+  const device = await findDevice(tx, deviceId);
+  if (device && !(await acceptDeviceSecret(tx, device, secret))) {
+    throw new PairError(401, "invalid_device_credential");
+  }
+  return device;
+}
+
+function newDeviceRow({ deviceId, secret }, syncGroupId) {
+  const secretHash = secret ? hashDeviceSecret(secret) : null;
+  return { id: deviceId, syncGroupId, secretHash };
+}
+
 pairingRouter.post(
   "/initiate",
   zValidator("json", pairInitiateRequestSchema),
   async (c) => {
-    const { deviceId } = c.req.valid("json");
-
     try {
-      const issued = await db.transaction((tx) => issueCode(tx, deviceId));
+      const caller = pairingCaller(c);
+      const issued = await db.transaction((tx) => issueCode(tx, caller));
       return c.json({
         code: issued.code,
         expiresAt: issued.expiresAt.toISOString(),
@@ -55,11 +86,12 @@ function pairErrorResponse(c, err) {
   return c.json({ error: err.code }, err.status);
 }
 
-async function issueCode(tx, deviceId) {
+async function issueCode(tx, caller) {
+  const { deviceId } = caller;
   await tx.delete(pairingCodes).where(lte(pairingCodes.expiresAt, new Date()));
   await purgeAbandonedGroups(tx);
 
-  const device = await findOrCreateDevice(tx, deviceId);
+  const device = await findOrCreateDevice(tx, caller);
   await tx
     .delete(pairingCodes)
     .where(
@@ -74,11 +106,8 @@ async function issueCode(tx, deviceId) {
   return { code, expiresAt };
 }
 
-async function findOrCreateDevice(tx, deviceId) {
-  const [known] = await tx
-    .select()
-    .from(devices)
-    .where(eq(devices.id, deviceId));
+async function findOrCreateDevice(tx, caller) {
+  const known = await provenDevice(tx, caller);
   if (known) return known;
 
   if (await isNewGroupQuotaSpent(tx)) {
@@ -87,7 +116,7 @@ async function findOrCreateDevice(tx, deviceId) {
   const [group] = await tx.insert(syncGroups).values({}).returning();
   const [created] = await tx
     .insert(devices)
-    .values({ id: deviceId, syncGroupId: group.id })
+    .values(newDeviceRow(caller, group.id))
     .returning();
   return created;
 }
@@ -109,23 +138,24 @@ pairingRouter.post(
   "/join",
   zValidator("json", pairJoinRequestSchema),
   async (c) => {
-    const { deviceId, code } = c.req.valid("json");
+    const { code } = c.req.valid("json");
 
     try {
+      const caller = pairingCaller(c);
       const syncGroupId = await db.transaction(async (tx) => {
         const pairing = await claimCode(tx, code);
         if (!pairing) {
           await countFailedJoin(tx);
           return null;
         }
-        await joinGroup(tx, deviceId, pairing.syncGroupId);
+        await joinGroup(tx, caller, pairing.syncGroupId);
         return pairing.syncGroupId;
       });
 
       if (!syncGroupId) {
         return c.json({ error: "invalid_or_expired_code" }, 400);
       }
-      const token = await signToken({ deviceId, syncGroupId });
+      const token = await signToken({ deviceId: caller.deviceId, syncGroupId });
       return c.json({ token, syncGroupId });
     } catch (err) {
       return pairErrorResponse(c, err);
@@ -159,18 +189,15 @@ async function countFailedJoin(tx) {
     .where(and(...liveCodeConditions()));
 }
 
-async function joinGroup(tx, deviceId, syncGroupId) {
-  const [existing] = await tx
-    .select()
-    .from(devices)
-    .where(eq(devices.id, deviceId));
+async function joinGroup(tx, caller, syncGroupId) {
+  const existing = await provenDevice(tx, caller);
 
   if (existing?.syncGroupId === syncGroupId) return;
   // The delete cascades to the device row, so it is inserted again below.
   if (existing && !(await discardUnusedGroup(tx, existing.syncGroupId))) {
     throw new PairError(409, "device_already_paired");
   }
-  await tx.insert(devices).values({ id: deviceId, syncGroupId });
+  await tx.insert(devices).values(newDeviceRow(caller, syncGroupId));
 }
 
 // The code alone would let anyone probe codes without tripping the failed-join
@@ -179,28 +206,40 @@ pairingRouter.post(
   "/status",
   zValidator("json", pairStatusRequestSchema),
   async (c) => {
-    const { deviceId, code } = c.req.valid("json");
-    const [pairing] = await db
-      .select()
-      .from(pairingCodes)
-      .where(
-        and(eq(pairingCodes.code, code), eq(pairingCodes.deviceId, deviceId)),
-      );
-    return c.json({ status: pairingStatusOf(pairing) });
+    const { code } = c.req.valid("json");
+
+    try {
+      const { deviceId } = await provenCaller(c);
+      const [pairing] = await db
+        .select()
+        .from(pairingCodes)
+        .where(
+          and(eq(pairingCodes.code, code), eq(pairingCodes.deviceId, deviceId)),
+        );
+      return c.json({ status: pairingStatusOf(pairing) });
+    } catch (err) {
+      return pairErrorResponse(c, err);
+    }
   },
 );
 
+async function provenCaller(c) {
+  const caller = pairingCaller(c);
+  await provenDevice(db, caller);
+  return caller;
+}
+
+// A device with a secret proves itself on every request. A token issued here
+// would hand its group to anyone who knows its id, so it gets the same answer
+// as an unknown device.
 pairingRouter.post(
   "/token",
   zValidator("json", pairTokenRequestSchema),
   async (c) => {
     const { deviceId } = c.req.valid("json");
-    const [device] = await db
-      .select()
-      .from(devices)
-      .where(eq(devices.id, deviceId));
+    const device = await findDevice(db, deviceId);
 
-    if (!device) {
+    if (!device || device.secretHash) {
       return c.json({ error: "device_not_found" }, 404);
     }
 
