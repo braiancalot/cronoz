@@ -8,6 +8,10 @@ import {
 } from "@cronoz/shared";
 import { db } from "../db/index.js";
 import { devices, pairingCodes, syncGroups } from "../db/schema.js";
+import {
+  isNewGroupQuotaSpent,
+  purgeAbandonedGroups,
+} from "../lib/groupQuota.js";
 import { signToken } from "../lib/jwt.js";
 import {
   PAIRING_CODE_MAX_FAILED_JOINS,
@@ -31,57 +35,72 @@ pairingRouter.post(
   async (c) => {
     const { deviceId } = c.req.valid("json");
 
-    const result = await db.transaction(async (tx) => {
-      await tx
-        .delete(pairingCodes)
-        .where(lte(pairingCodes.expiresAt, new Date()));
-
-      let [device] = await tx
-        .select()
-        .from(devices)
-        .where(eq(devices.id, deviceId));
-
-      if (!device) {
-        const [group] = await tx.insert(syncGroups).values({}).returning();
-        [device] = await tx
-          .insert(devices)
-          .values({ id: deviceId, syncGroupId: group.id })
-          .returning();
-      }
-
-      await tx
-        .delete(pairingCodes)
-        .where(
-          and(eq(pairingCodes.deviceId, deviceId), isNull(pairingCodes.usedAt)),
-        );
-
-      let newCode;
-      for (let i = 0; i < 10; i++) {
-        newCode = generateCode();
-        const existing = await tx
-          .select({ code: pairingCodes.code })
-          .from(pairingCodes)
-          .where(eq(pairingCodes.code, newCode));
-        if (existing.length === 0) break;
-      }
-
-      const expiresAt = computeExpiresAt();
-      await tx.insert(pairingCodes).values({
-        code: newCode,
-        syncGroupId: device.syncGroupId,
-        deviceId,
-        expiresAt,
+    try {
+      const issued = await db.transaction((tx) => issueCode(tx, deviceId));
+      return c.json({
+        code: issued.code,
+        expiresAt: issued.expiresAt.toISOString(),
       });
-
-      return { code: newCode, expiresAt };
-    });
-
-    return c.json({
-      code: result.code,
-      expiresAt: result.expiresAt.toISOString(),
-    });
+    } catch (err) {
+      return pairErrorResponse(c, err);
+    }
   },
 );
+
+function pairErrorResponse(c, err) {
+  if (!(err instanceof PairError)) throw err;
+  return c.json({ error: err.code }, err.status);
+}
+
+async function issueCode(tx, deviceId) {
+  await tx.delete(pairingCodes).where(lte(pairingCodes.expiresAt, new Date()));
+  await purgeAbandonedGroups(tx);
+
+  const device = await findOrCreateDevice(tx, deviceId);
+  await tx
+    .delete(pairingCodes)
+    .where(
+      and(eq(pairingCodes.deviceId, deviceId), isNull(pairingCodes.usedAt)),
+    );
+
+  const code = await pickUnusedCode(tx);
+  const expiresAt = computeExpiresAt();
+  await tx
+    .insert(pairingCodes)
+    .values({ code, syncGroupId: device.syncGroupId, deviceId, expiresAt });
+  return { code, expiresAt };
+}
+
+async function findOrCreateDevice(tx, deviceId) {
+  const [known] = await tx
+    .select()
+    .from(devices)
+    .where(eq(devices.id, deviceId));
+  if (known) return known;
+
+  if (await isNewGroupQuotaSpent(tx)) {
+    throw new PairError(429, "too_many_new_groups");
+  }
+  const [group] = await tx.insert(syncGroups).values({}).returning();
+  const [created] = await tx
+    .insert(devices)
+    .values({ id: deviceId, syncGroupId: group.id })
+    .returning();
+  return created;
+}
+
+async function pickUnusedCode(tx) {
+  let candidate;
+  for (let i = 0; i < 10; i++) {
+    candidate = generateCode();
+    const taken = await tx
+      .select({ code: pairingCodes.code })
+      .from(pairingCodes)
+      .where(eq(pairingCodes.code, candidate));
+    if (taken.length === 0) break;
+  }
+  return candidate;
+}
 
 pairingRouter.post(
   "/join",
@@ -106,10 +125,7 @@ pairingRouter.post(
       const token = await signToken({ deviceId, syncGroupId });
       return c.json({ token, syncGroupId });
     } catch (err) {
-      if (err instanceof PairError) {
-        return c.json({ error: err.code }, err.status);
-      }
-      throw err;
+      return pairErrorResponse(c, err);
     }
   },
 );

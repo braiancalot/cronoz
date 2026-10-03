@@ -31,7 +31,8 @@ export function useSyncCard() {
   }, [status.isPaired]);
 
   async function generateCode() {
-    await pairing.generateCode();
+    const result = await pairing.generateCode();
+    if (!result.ok) toast.error(pairingErrorMessage(result.error));
   }
 
   async function confirmPaired() {

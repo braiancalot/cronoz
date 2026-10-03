@@ -1,6 +1,8 @@
 const PAIRING_ERRORS = {
   invalid_or_expired_code: "Código inválido ou expirado.",
   device_already_paired: "Este dispositivo já está pareado em outro grupo.",
+  too_many_new_groups: "Limite de pareamentos atingido. Tente em 1 hora.",
+  network_error: "Sem conexão com o servidor.",
 };
 
 const SYNC_ERRORS = {

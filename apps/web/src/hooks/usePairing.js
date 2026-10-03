@@ -5,6 +5,11 @@ import internalRepository from "@/services/internalRepository.js";
 import syncManager from "@/services/syncManager.js";
 import syncService, { SyncError } from "@/services/syncService.js";
 
+function initiateErrorCode(err) {
+  if (!(err instanceof SyncError)) return "unknown_error";
+  return err.status === 429 ? "too_many_new_groups" : err.message;
+}
+
 export function usePairing() {
   const [mode, setMode] = useState("idle");
   const [code, setCode] = useState(null);
@@ -38,8 +43,11 @@ export function usePairing() {
       setCode(code);
       setExpiresAt(new Date(expiresAt).getTime());
       setMode("showing-code");
+      return { ok: true };
     } catch (err) {
-      setError(err instanceof SyncError ? err.message : "unknown_error");
+      const code = initiateErrorCode(err);
+      setError(code);
+      return { ok: false, error: code };
     } finally {
       setLoading(false);
     }

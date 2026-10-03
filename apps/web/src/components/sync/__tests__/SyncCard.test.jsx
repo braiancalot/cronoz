@@ -85,6 +85,23 @@ describe("SyncCard", () => {
     ).toBeTruthy();
   });
 
+  it("shows an error toast when the code cannot be generated", async () => {
+    const generateCode = vi
+      .fn()
+      .mockResolvedValue({ ok: false, error: "too_many_new_groups" });
+    usePairing.mockReturnValue({ ...basePairing, generateCode });
+    useSyncStatus.mockReturnValue(baseStatus);
+
+    render(<SyncCard />);
+    await userEvent.click(
+      screen.getByRole("button", { name: /gerar código/i }),
+    );
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Limite de pareamentos atingido. Tente em 1 hora.",
+    );
+  });
+
   it("copies the code without the reading hyphen", async () => {
     const user = userEvent.setup();
     usePairing.mockReturnValue({

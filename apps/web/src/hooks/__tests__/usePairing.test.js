@@ -67,6 +67,21 @@ describe("usePairing.generateCode", () => {
     expect(result.current.mode).toBe("idle");
     expect(result.current.error).toBe("network_error");
   });
+
+  it("reports the new-group quota when initiate answers 429", async () => {
+    syncService.pairInitiate.mockRejectedValue(
+      new SyncError("http_429", { status: 429 }),
+    );
+
+    const { result } = renderHook(() => usePairing());
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.generateCode();
+    });
+
+    expect(outcome).toEqual({ ok: false, error: "too_many_new_groups" });
+    expect(result.current.mode).toBe("idle");
+  });
 });
 
 describe("usePairing.confirmPaired", () => {

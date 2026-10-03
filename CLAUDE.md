@@ -205,6 +205,21 @@ row is therefore the way to revoke access; the JWT itself carries no revocation 
 The web client needs no special case: `callAuthed` retries through `/pair/token` on 401,
 gets 404 for a removed device and drops its local token.
 
+### Pairing brakes
+
+`/pair/initiate` and `/pair/join` are anonymous and Vercel Hobby has no firewall rate limit,
+so the brakes live in Postgres and are global: there is no caller identity to meter.
+
+- **Wrong codes:** a failed `/join` adds 1 to `failed_joins` on every live code, and a code
+  dies at `PAIRING_CODE_MAX_FAILED_JOINS`. The host generates a new one to recover.
+- **New groups:** `/initiate` answers 429 `too_many_new_groups` once
+  `MAX_NEW_GROUPS_PER_HOUR` groups exist from the last hour. A device that already has a
+  group is never refused.
+- **Cleanup:** every `/initiate` runs `purgeAbandonedGroups` (`src/lib/groupQuota.js`). It
+  deletes groups older than 24h with at most one device, no projects, no settings and no live
+  code. There is no cron. A table that hangs off `sync_groups` and holds user content MUST be
+  added to that check, or the purge deletes it by cascade.
+
 ### JWT secret guard
 
 `src/lib/jwtSecret.js` aborts boot when `JWT_SECRET` is missing, is a known placeholder
