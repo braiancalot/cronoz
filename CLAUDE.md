@@ -227,6 +227,10 @@ so the brakes live in Postgres and are global: there is no caller identity to me
   deletes groups older than 24h with at most one device, no projects, no settings and no live
   code. There is no cron. A table that hangs off `sync_groups` and holds user content MUST be
   added to that check, or the purge deletes it by cascade.
+- **Rejoin:** a device that generated a code and then joins another group leaves its own
+  behind. `/join` deletes it through `discardUnusedGroup` when it has no other device, no
+  projects and no settings, and answers 409 `device_already_paired` otherwise. Same check
+  as the purge, without the 24h wait.
 
 ### Pairing status
 

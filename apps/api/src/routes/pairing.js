@@ -10,6 +10,7 @@ import {
 import { db } from "../db/index.js";
 import { devices, pairingCodes, syncGroups } from "../db/schema.js";
 import {
+  discardUnusedGroup,
   isNewGroupQuotaSpent,
   purgeAbandonedGroups,
 } from "../lib/groupQuota.js";
@@ -164,12 +165,12 @@ async function joinGroup(tx, deviceId, syncGroupId) {
     .from(devices)
     .where(eq(devices.id, deviceId));
 
-  if (existing && existing.syncGroupId !== syncGroupId) {
+  if (existing?.syncGroupId === syncGroupId) return;
+  // The delete cascades to the device row, so it is inserted again below.
+  if (existing && !(await discardUnusedGroup(tx, existing.syncGroupId))) {
     throw new PairError(409, "device_already_paired");
   }
-  if (!existing) {
-    await tx.insert(devices).values({ id: deviceId, syncGroupId });
-  }
+  await tx.insert(devices).values({ id: deviceId, syncGroupId });
 }
 
 // The code alone would let anyone probe codes without tripping the failed-join

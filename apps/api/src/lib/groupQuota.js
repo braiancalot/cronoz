@@ -31,22 +31,35 @@ function hasNo(tx, table, ...conditions) {
   return notExists(rows);
 }
 
-// A group nobody joined and that never synced holds nothing worth keeping.
-// The live-code check spares a device that is waiting for its partner now.
-export async function purgeAbandonedGroups(tx) {
+// At most one device and nothing synced: deleting the group loses no content.
+function unusedGroupConditions(tx) {
   const deviceCount = tx
     .select({ total: sql`count(*)` })
     .from(devices)
     .where(ownedBy(devices));
+  return [sql`(${deviceCount}) <= 1`, hasNo(tx, projects), hasNo(tx, settings)];
+}
+
+// A group nobody joined and that never synced holds nothing worth keeping.
+// The live-code check spares a device that is waiting for its partner now.
+export async function purgeAbandonedGroups(tx) {
   await tx
     .delete(syncGroups)
     .where(
       and(
         sql`${syncGroups.createdAt} < now() - interval '24 hours'`,
-        sql`(${deviceCount}) <= 1`,
-        hasNo(tx, projects),
-        hasNo(tx, settings),
+        ...unusedGroupConditions(tx),
         hasNo(tx, pairingCodes, gt(pairingCodes.expiresAt, new Date())),
       ),
     );
+}
+
+// A device that generated a code and then joins someone else's leaves its own
+// group behind. Without this the join is refused until the purge runs.
+export async function discardUnusedGroup(tx, syncGroupId) {
+  const discarded = await tx
+    .delete(syncGroups)
+    .where(and(eq(syncGroups.id, syncGroupId), ...unusedGroupConditions(tx)))
+    .returning({ id: syncGroups.id });
+  return discarded.length > 0;
 }
