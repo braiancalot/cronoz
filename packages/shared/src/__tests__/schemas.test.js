@@ -267,19 +267,20 @@ describe("sync schemas", () => {
 });
 
 describe("pairJoinRequestSchema", () => {
-  const deviceId = crypto.randomUUID();
-
   it("accepts an 8-character code from the alphabet", () => {
-    const body = { deviceId, code: "ABCD2345" };
+    const body = { code: "ABCD2345" };
     expect(pairJoinRequestSchema.parse(body)).toEqual(body);
+  });
+
+  it("drops a device id sent in the body", () => {
+    const body = { deviceId: crypto.randomUUID(), code: "ABCD2345" };
+    expect(pairJoinRequestSchema.parse(body)).toEqual({ code: "ABCD2345" });
   });
 
   it.each(["ABCD234", "ABCD23456", "abcd2345", "ABCD-234", "OBCD2345"])(
     "rejects %s",
     (code) => {
-      expect(pairJoinRequestSchema.safeParse({ deviceId, code }).success).toBe(
-        false,
-      );
+      expect(pairJoinRequestSchema.safeParse({ code }).success).toBe(false);
     },
   );
 });

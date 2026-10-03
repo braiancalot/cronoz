@@ -3,23 +3,19 @@ import { eq } from "drizzle-orm";
 import app from "../../app.js";
 import { db } from "../../db/index.js";
 import { devices } from "../../db/schema.js";
-import { hashDeviceSecret } from "../../lib/deviceSecret.js";
-import { signToken } from "../../lib/jwt.js";
 import {
   CREDENTIAL_A,
   CREDENTIAL_B,
   CREDENTIAL_C,
   DEVICE_A,
   DEVICE_B,
-  DEVICE_C,
+  LEGACY_TOKEN,
   SECRET_A,
   SECRET_B,
   credentialOf,
   initiateWith,
-  pair,
   pairWith,
   post,
-  tokenFor,
 } from "../../../test/pairingFixtures.js";
 import { makeProject } from "../../../test/projectFixtures.js";
 
@@ -35,67 +31,34 @@ const AUTHED_ROUTES = [PULL, PUSH, COUNT_DEVICES, LEAVE_GROUP];
 
 const B_WITH_ANOTHER_SECRET = credentialOf(DEVICE_B, SECRET_A);
 
-function request({ method, path, body }, token) {
+function request({ method, path, body }, credential) {
   return app.request(path, {
     method,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${credential}`,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 }
 
-async function secretHashOf(deviceId) {
-  const [device] = await db
-    .select()
-    .from(devices)
-    .where(eq(devices.id, deviceId));
-  return device.secretHash;
+async function errorOf(res) {
+  return (await res.json()).error;
 }
 
 describe("authMiddleware", () => {
   it.each(AUTHED_ROUTES)(
     "returns 401 on $method $path for a deleted device",
     async (route) => {
-      const { token } = await pair(DEVICE_A, DEVICE_B);
+      await pairWith(CREDENTIAL_A, CREDENTIAL_B);
       await db.delete(devices).where(eq(devices.id, DEVICE_B));
 
-      const res = await request(route, token);
+      const res = await request(route, CREDENTIAL_B);
 
       expect(res.status).toBe(401);
     },
   );
 
-  it("returns 401 when the token's sync group is not the device's", async () => {
-    await pair(DEVICE_A, DEVICE_B);
-    const { syncGroupId: otherGroupId } = await pair(DEVICE_C, DEVICE_C);
-    const forged = await signToken({
-      deviceId: DEVICE_B,
-      syncGroupId: otherGroupId,
-    });
-
-    const res = await request(PULL, forged);
-
-    expect(res.status).toBe(401);
-  });
-
-  it("locks out a device that left while the rest of the group keeps syncing", async () => {
-    const { token: tokenB } = await pair(DEVICE_A, DEVICE_B);
-    const tokenA = await tokenFor(DEVICE_A);
-
-    const left = await request(LEAVE_GROUP, tokenB);
-    expect(left.status).toBe(200);
-
-    const stale = await request(PULL, tokenB);
-    const active = await request(PULL, tokenA);
-
-    expect(stale.status).toBe(401);
-    expect(active.status).toBe(200);
-  });
-});
-
-describe("authMiddleware with a device credential", () => {
   it.each(AUTHED_ROUTES)(
     "accepts $method $path from a device that proves its secret",
     async (route) => {
@@ -122,15 +85,16 @@ describe("authMiddleware with a device credential", () => {
     const res = await request(PULL, CREDENTIAL_C);
 
     expect(res.status).toBe(401);
+    expect(await errorOf(res)).toBe("invalid_device_credential");
   });
 
-  it("returns 401 for a deleted device", async () => {
+  it("returns 401 to a token from before device secrets", async () => {
     await pairWith(CREDENTIAL_A, CREDENTIAL_B);
-    await db.delete(devices).where(eq(devices.id, DEVICE_B));
 
-    const res = await request(PULL, CREDENTIAL_B);
+    const res = await request(PULL, LEGACY_TOKEN);
 
     expect(res.status).toBe(401);
+    expect(await errorOf(res)).toBe("missing_device_credential");
   });
 
   it("serves the device's own group and no other", async () => {
@@ -160,47 +124,6 @@ describe("authMiddleware with a device credential", () => {
     expect(left.status).toBe(200);
     expect(stale.status).toBe(401);
     expect(active.status).toBe(200);
-  });
-});
-
-describe("authMiddleware for a device paired before secrets existed", () => {
-  it("adopts the first secret the device presents", async () => {
-    await pair(DEVICE_A, DEVICE_B);
-
-    const res = await request(PULL, CREDENTIAL_B);
-
-    expect(res.status).toBe(200);
-    expect(await secretHashOf(DEVICE_B)).toBe(hashDeviceSecret(SECRET_B));
-  });
-
-  it("refuses any other secret after adopting one", async () => {
-    await pair(DEVICE_A, DEVICE_B);
-    await request(PULL, CREDENTIAL_B);
-
-    const res = await request(PULL, B_WITH_ANOTHER_SECRET);
-
-    expect(res.status).toBe(401);
-    expect(await secretHashOf(DEVICE_B)).toBe(hashDeviceSecret(SECRET_B));
-  });
-
-  it("refuses the device's old token once it has a secret", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
-    await request(PULL, CREDENTIAL_B);
-
-    const res = await request(PULL, token);
-
-    expect(res.status).toBe(401);
-  });
-
-  it("keeps accepting the token of a partner that has no secret yet", async () => {
-    await pair(DEVICE_A, DEVICE_B);
-    const tokenA = await tokenFor(DEVICE_A);
-    await request(PULL, CREDENTIAL_B);
-
-    const res = await request(PULL, tokenA);
-
-    expect(res.status).toBe(200);
-    expect(await secretHashOf(DEVICE_A)).toBeNull();
   });
 });
 

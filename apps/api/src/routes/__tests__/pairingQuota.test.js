@@ -10,6 +10,7 @@ import {
 } from "../../db/schema.js";
 import { MAX_NEW_GROUPS_PER_HOUR } from "../../lib/groupQuota.js";
 import {
+  CREDENTIAL_A,
   DEVICE_A,
   DEVICE_B,
   DEVICE_C,
@@ -42,14 +43,14 @@ describe("POST /api/pair/initiate new-group quota", () => {
   it("creates groups up to the hourly quota", async () => {
     await seedGroups(MAX_NEW_GROUPS_PER_HOUR - 1);
 
-    const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
+    const res = await post("/api/pair/initiate", {}, CREDENTIAL_A);
     expect(res.status).toBe(200);
   });
 
   it("answers 429 once the hourly quota is spent", async () => {
     await seedGroups(MAX_NEW_GROUPS_PER_HOUR);
 
-    const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
+    const res = await post("/api/pair/initiate", {}, CREDENTIAL_A);
     expect(res.status).toBe(429);
     expect(await res.json()).toEqual({ error: "too_many_new_groups" });
     expect(await groupOf(DEVICE_A)).toBeNull();
@@ -59,7 +60,7 @@ describe("POST /api/pair/initiate new-group quota", () => {
     await initiate(DEVICE_A);
     await seedGroups(MAX_NEW_GROUPS_PER_HOUR);
 
-    const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
+    const res = await post("/api/pair/initiate", {}, CREDENTIAL_A);
     expect(res.status).toBe(200);
   });
 
@@ -67,7 +68,7 @@ describe("POST /api/pair/initiate new-group quota", () => {
     await seedGroups(MAX_NEW_GROUPS_PER_HOUR);
     await ageGroups("61 minutes");
 
-    const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
+    const res = await post("/api/pair/initiate", {}, CREDENTIAL_A);
     expect(res.status).toBe(200);
   });
 });

@@ -10,42 +10,35 @@ export const SECRET_A = "a".repeat(64);
 export const SECRET_B = "b".repeat(64);
 export const SECRET_C = "c".repeat(64);
 
-export const CREDENTIAL_A = credentialOf(DEVICE_A, SECRET_A);
-export const CREDENTIAL_B = credentialOf(DEVICE_B, SECRET_B);
-export const CREDENTIAL_C = credentialOf(DEVICE_C, SECRET_C);
+const OWN_SECRETS = {
+  [DEVICE_A]: SECRET_A,
+  [DEVICE_B]: SECRET_B,
+  [DEVICE_C]: SECRET_C,
+  [DEVICE_D]: "d".repeat(64),
+};
 
-export function credentialOf(deviceId, secret) {
+// Pass a secret to forge the credential of a device that registered another.
+export function credentialOf(deviceId, secret = OWN_SECRETS[deviceId]) {
   return formatDeviceCredential({ deviceId, secret });
 }
 
-export function post(path, body, token) {
+export const CREDENTIAL_A = credentialOf(DEVICE_A);
+export const CREDENTIAL_B = credentialOf(DEVICE_B);
+export const CREDENTIAL_C = credentialOf(DEVICE_C);
+
+// Shaped like the bearer that clients sent before device secrets.
+export const LEGACY_TOKEN =
+  "eyJhbGciOiJIUzI1NiJ9.eyJkZXZpY2VJZCI6IjExMTEifQ.c2lnbmF0dXJl";
+
+export function post(path, body, credential) {
   return app.request(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
     },
     body: JSON.stringify(body),
   });
-}
-
-export async function initiate(deviceId) {
-  const res = await post("/api/pair/initiate", { deviceId });
-  const body = await res.json();
-  return body.code;
-}
-
-export async function pair(deviceA, deviceB) {
-  const code = await initiate(deviceA);
-  const res = await post("/api/pair/join", { deviceId: deviceB, code });
-  const body = await res.json();
-  return { token: body.token, syncGroupId: body.syncGroupId };
-}
-
-export async function tokenFor(deviceId) {
-  const res = await post("/api/pair/token", { deviceId });
-  const body = await res.json();
-  return body.token;
 }
 
 export async function initiateWith(credential) {
@@ -54,9 +47,23 @@ export async function initiateWith(credential) {
   return body.code;
 }
 
+export function initiate(deviceId) {
+  return initiateWith(credentialOf(deviceId));
+}
+
+export function join(deviceId, code) {
+  return post("/api/pair/join", { code }, credentialOf(deviceId));
+}
+
 export async function pairWith(hostCredential, joinerCredential) {
   const code = await initiateWith(hostCredential);
   const res = await post("/api/pair/join", { code }, joinerCredential);
   const body = await res.json();
   return body.syncGroupId;
+}
+
+export async function pair(hostId, joinerId) {
+  const credential = credentialOf(joinerId);
+  const syncGroupId = await pairWith(credentialOf(hostId), credential);
+  return { credential, syncGroupId };
 }

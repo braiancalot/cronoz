@@ -2,12 +2,11 @@ import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { devices, projects, settings, syncGroups } from "../../db/schema.js";
-import { verifyToken } from "../../lib/jwt.js";
 import {
   DEVICE_A,
   DEVICE_B,
   initiate,
-  post,
+  join,
 } from "../../../test/pairingFixtures.js";
 import { makeProject } from "../../../test/projectFixtures.js";
 
@@ -25,7 +24,7 @@ async function joinAfterOwnCode(seedOwnGroup = async () => {}) {
   const ownGroupId = await groupOf(DEVICE_A);
   await seedOwnGroup(ownGroupId);
   const code = await initiate(DEVICE_B);
-  const res = await post("/api/pair/join", { deviceId: DEVICE_A, code });
+  const res = await join(DEVICE_A, code);
   return { res, ownGroupId };
 }
 
@@ -34,10 +33,9 @@ describe("POST /api/pair/join from a device that generated a code first", () => 
     const { res } = await joinAfterOwnCode();
 
     expect(res.status).toBe(200);
-    const { token, syncGroupId } = await res.json();
+    const { syncGroupId } = await res.json();
     expect(syncGroupId).toBe(await groupOf(DEVICE_B));
     expect(await groupOf(DEVICE_A)).toBe(syncGroupId);
-    expect((await verifyToken(token)).syncGroupId).toBe(syncGroupId);
   });
 
   it("deletes the group the device left behind", async () => {

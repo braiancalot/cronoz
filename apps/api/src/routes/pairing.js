@@ -1,13 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { and, eq, gt, isNull, lt, lte, sql } from "drizzle-orm";
-import {
-  parseDeviceCredential,
-  pairInitiateRequestSchema,
-  pairJoinRequestSchema,
-  pairStatusRequestSchema,
-  pairTokenRequestSchema,
-} from "@cronoz/shared";
+import { pairJoinRequestSchema, pairStatusRequestSchema } from "@cronoz/shared";
 import { db } from "../db/index.js";
 import { devices, pairingCodes, syncGroups } from "../db/schema.js";
 import {
@@ -16,18 +10,17 @@ import {
   purgeAbandonedGroups,
 } from "../lib/groupQuota.js";
 import {
-  acceptDeviceSecret,
+  deviceSecretMatches,
   findDevice,
   hashDeviceSecret,
 } from "../lib/deviceSecret.js";
-import { signToken } from "../lib/jwt.js";
 import {
   PAIRING_CODE_MAX_FAILED_JOINS,
   computeExpiresAt,
   generateCode,
   pairingStatusOf,
 } from "../lib/pairingCode.js";
-import { readBearer } from "../middleware/auth.js";
+import { readDeviceCredential } from "../middleware/auth.js";
 
 class PairError extends Error {
   constructor(status, code) {
@@ -39,47 +32,37 @@ class PairError extends Error {
 
 const pairingRouter = new Hono();
 
-// A caller from before device secrets names itself in the body and carries a
-// null secret.
 function pairingCaller(c) {
-  const credential = parseDeviceCredential(readBearer(c));
-  if (credential) return credential;
-
-  const { deviceId } = c.req.valid("json");
-  if (!deviceId) throw new PairError(401, "missing_device_credential");
-  return { deviceId, secret: null };
+  const credential = readDeviceCredential(c);
+  if (!credential) throw new PairError(401, "missing_device_credential");
+  return credential;
 }
 
 // Undefined for a device the server has never seen.
 async function provenDevice(tx, { deviceId, secret }) {
   const device = await findDevice(tx, deviceId);
-  if (device && !(await acceptDeviceSecret(tx, device, secret))) {
+  if (device && !deviceSecretMatches(device, secret)) {
     throw new PairError(401, "invalid_device_credential");
   }
   return device;
 }
 
 function newDeviceRow({ deviceId, secret }, syncGroupId) {
-  const secretHash = secret ? hashDeviceSecret(secret) : null;
-  return { id: deviceId, syncGroupId, secretHash };
+  return { id: deviceId, syncGroupId, secretHash: hashDeviceSecret(secret) };
 }
 
-pairingRouter.post(
-  "/initiate",
-  zValidator("json", pairInitiateRequestSchema),
-  async (c) => {
-    try {
-      const caller = pairingCaller(c);
-      const issued = await db.transaction((tx) => issueCode(tx, caller));
-      return c.json({
-        code: issued.code,
-        expiresAt: issued.expiresAt.toISOString(),
-      });
-    } catch (err) {
-      return pairErrorResponse(c, err);
-    }
-  },
-);
+pairingRouter.post("/initiate", async (c) => {
+  try {
+    const caller = pairingCaller(c);
+    const issued = await db.transaction((tx) => issueCode(tx, caller));
+    return c.json({
+      code: issued.code,
+      expiresAt: issued.expiresAt.toISOString(),
+    });
+  } catch (err) {
+    return pairErrorResponse(c, err);
+  }
+});
 
 function pairErrorResponse(c, err) {
   if (!(err instanceof PairError)) throw err;
@@ -155,8 +138,7 @@ pairingRouter.post(
       if (!syncGroupId) {
         return c.json({ error: "invalid_or_expired_code" }, 400);
       }
-      const token = await signToken({ deviceId: caller.deviceId, syncGroupId });
-      return c.json({ token, syncGroupId });
+      return c.json({ syncGroupId });
     } catch (err) {
       return pairErrorResponse(c, err);
     }
@@ -228,27 +210,5 @@ async function provenCaller(c) {
   await provenDevice(db, caller);
   return caller;
 }
-
-// A device with a secret proves itself on every request. A token issued here
-// would hand its group to anyone who knows its id, so it gets the same answer
-// as an unknown device.
-pairingRouter.post(
-  "/token",
-  zValidator("json", pairTokenRequestSchema),
-  async (c) => {
-    const { deviceId } = c.req.valid("json");
-    const device = await findDevice(db, deviceId);
-
-    if (!device || device.secretHash) {
-      return c.json({ error: "device_not_found" }, 404);
-    }
-
-    const token = await signToken({
-      deviceId,
-      syncGroupId: device.syncGroupId,
-    });
-    return c.json({ token, syncGroupId: device.syncGroupId });
-  },
-);
 
 export default pairingRouter;

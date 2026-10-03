@@ -9,10 +9,10 @@ import {
   CREDENTIAL_C,
   DEVICE_A,
   DEVICE_B,
+  LEGACY_TOKEN,
   SECRET_A,
   SECRET_B,
   credentialOf,
-  initiate,
   initiateWith,
   post,
 } from "../../../test/pairingFixtures.js";
@@ -61,21 +61,20 @@ describe("POST /api/pair/initiate with a device credential", () => {
     expect(codes.map((row) => row.code)).toEqual([code]);
   });
 
-  it("answers 401 to a bare device id once the device has a secret", async () => {
-    await initiateWith(CREDENTIAL_A);
+  it.each([
+    ["no credential", {}, undefined],
+    ["a device id in the body", { deviceId: DEVICE_A }, undefined],
+    ["a token from before device secrets", {}, LEGACY_TOKEN],
+  ])(
+    "answers 401 to %s and registers nothing",
+    async (_label, body, bearer) => {
+      const res = await post("/api/pair/initiate", body, bearer);
 
-    const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
-
-    expect(res.status).toBe(401);
-    expect(await errorOf(res)).toBe("invalid_device_credential");
-  });
-
-  it("answers 401 when the caller names no device", async () => {
-    const res = await post("/api/pair/initiate", {});
-
-    expect(res.status).toBe(401);
-    expect(await errorOf(res)).toBe("missing_device_credential");
-  });
+      expect(res.status).toBe(401);
+      expect(await errorOf(res)).toBe("missing_device_credential");
+      expect(await db.select().from(devices)).toHaveLength(0);
+    },
+  );
 });
 
 describe("POST /api/pair/join with a device credential", () => {
@@ -107,6 +106,17 @@ describe("POST /api/pair/join with a device credential", () => {
     expect(honest.status).toBe(200);
   });
 
+  it("answers 401 to a device id in the body and leaves the code usable", async () => {
+    const code = await initiateWith(CREDENTIAL_A);
+
+    const bare = await post("/api/pair/join", { deviceId: DEVICE_B, code });
+    const honest = await post("/api/pair/join", { code }, CREDENTIAL_B);
+
+    expect(bare.status).toBe(401);
+    expect(await errorOf(bare)).toBe("missing_device_credential");
+    expect(honest.status).toBe(200);
+  });
+
   it("keeps the secret of a device that leaves its own unused group", async () => {
     await initiateWith(CREDENTIAL_A);
     const code = await initiateWith(CREDENTIAL_B);
@@ -121,24 +131,6 @@ describe("POST /api/pair/join with a device credential", () => {
 });
 
 describe("POST /api/pair/status with a device credential", () => {
-  it("reports the code to the device that proves its secret", async () => {
-    const code = await initiateWith(CREDENTIAL_A);
-
-    const res = await post("/api/pair/status", { code }, CREDENTIAL_A);
-
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: "waiting" });
-  });
-
-  it("reports joined once the other device used the code", async () => {
-    const code = await initiateWith(CREDENTIAL_A);
-    await post("/api/pair/join", { code }, CREDENTIAL_B);
-
-    const res = await post("/api/pair/status", { code }, CREDENTIAL_A);
-
-    expect(await res.json()).toEqual({ status: "joined" });
-  });
-
   it("answers 401 to another secret", async () => {
     const code = await initiateWith(CREDENTIAL_A);
 
@@ -147,55 +139,12 @@ describe("POST /api/pair/status with a device credential", () => {
     expect(res.status).toBe(401);
   });
 
-  it("answers 401 to a bare device id once the device has a secret", async () => {
+  it("answers 401 to a device id in the body", async () => {
     const code = await initiateWith(CREDENTIAL_A);
 
     const res = await post("/api/pair/status", { deviceId: DEVICE_A, code });
 
     expect(res.status).toBe(401);
-  });
-});
-
-describe("POST /api/pair/token for a device with a secret", () => {
-  it("answers 404, same as for an unknown device", async () => {
-    await initiateWith(CREDENTIAL_A);
-
-    const res = await post("/api/pair/token", { deviceId: DEVICE_A });
-
-    expect(res.status).toBe(404);
-    expect(await errorOf(res)).toBe("device_not_found");
-  });
-});
-
-describe("pairing routes for a device paired before secrets existed", () => {
-  it("adopts the first secret presented on /pair/status", async () => {
-    const code = await initiate(DEVICE_A);
-
-    const res = await post("/api/pair/status", { code }, CREDENTIAL_A);
-
-    expect(res.status).toBe(200);
-    expect((await deviceRow(DEVICE_A)).secretHash).toBe(
-      hashDeviceSecret(SECRET_A),
-    );
-  });
-
-  it("adopts the first secret presented on /pair/initiate", async () => {
-    await initiate(DEVICE_A);
-
-    const res = await post("/api/pair/initiate", {}, CREDENTIAL_A);
-
-    expect(res.status).toBe(200);
-    expect((await deviceRow(DEVICE_A)).secretHash).toBe(
-      hashDeviceSecret(SECRET_A),
-    );
-  });
-
-  it("refuses any other secret after adopting one", async () => {
-    const code = await initiate(DEVICE_A);
-    await post("/api/pair/status", { code }, CREDENTIAL_A);
-
-    const res = await post("/api/pair/status", { code }, A_WITH_ANOTHER_SECRET);
-
-    expect(res.status).toBe(401);
+    expect(await errorOf(res)).toBe("missing_device_credential");
   });
 });

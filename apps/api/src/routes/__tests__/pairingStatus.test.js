@@ -7,12 +7,14 @@ import {
   DEVICE_A,
   DEVICE_B,
   DEVICE_C,
+  credentialOf,
   initiate,
+  join,
   post,
 } from "../../../test/pairingFixtures.js";
 
 async function statusOf(deviceId, code) {
-  const res = await post("/api/pair/status", { deviceId, code });
+  const res = await post("/api/pair/status", { code }, credentialOf(deviceId));
   expect(res.status).toBe(200);
   return (await res.json()).status;
 }
@@ -32,7 +34,7 @@ describe("POST /api/pair/status", () => {
 
   it("reports joined once another device used the code", async () => {
     const code = await initiate(DEVICE_A);
-    await post("/api/pair/join", { deviceId: DEVICE_B, code });
+    await join(DEVICE_B, code);
 
     expect(await statusOf(DEVICE_A, code)).toBe("joined");
   });
@@ -62,10 +64,11 @@ describe("POST /api/pair/status", () => {
   });
 
   it("returns 400 for a malformed code", async () => {
-    const res = await post("/api/pair/status", {
-      deviceId: DEVICE_A,
-      code: "0000OOOO",
-    });
+    const res = await post(
+      "/api/pair/status",
+      { code: "0000OOOO" },
+      credentialOf(DEVICE_A),
+    );
     expect(res.status).toBe(400);
   });
 });

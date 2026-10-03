@@ -195,9 +195,9 @@ including the pure `src/lib` ones: `pretest` fails before Vitest starts.
 The test connection string lives only in `apps/api/test/databaseUrl.js`.
 `vitest.config.js` and `test/globalSetup.js` import it.
 
-Route tests share `apps/api/test/pairingFixtures.js` (device ids, `post`, `initiate`, `pair`,
-`tokenFor`) and `test/projectFixtures.js` (`makeProject`). Import from there instead of
-redefining them per file. Sync tests are split by endpoint (`syncPush`, `syncPull`,
+Route tests share `apps/api/test/pairingFixtures.js` (device ids and secrets, `credentialOf`,
+`post`, `initiate`, `join`, `pair`) and `test/projectFixtures.js` (`makeProject`). Import from
+there instead of redefining them per file. Sync tests are split by endpoint (`syncPush`, `syncPull`,
 `syncDevices`) to stay under the 500-line ceiling.
 
 ### CORS allowlist
@@ -216,25 +216,18 @@ included (`packages/shared/src/deviceCredential.js`). The device generates the s
 random bytes, hex) and the server stores only its SHA-256 in `devices.secret_hash`
 (`src/lib/deviceSecret.js`). Nothing is issued, refreshed or expired.
 
-A device id alone proves nothing. Once a row has a hash, only that secret speaks for the
-device, on `/sync/*` and `/pair/*` alike. A pairing route answers 401
-`invalid_device_credential` to anything else.
+A device id alone proves nothing: only the secret a device registered speaks for it, on
+`/sync/*` and `/pair/*` alike. A device id sent in a body is ignored.
 
-The secret MUST NOT appear in an exception message or a log line.
+- 401 `missing_device_credential`: no header, or a bearer that is not a credential.
+- 401 `invalid_device_credential`: a known device with another secret and, on `/sync/*`, a
+  device the server has never seen.
 
-**Legacy clients (temporary).** Web builds from before the credential send a JWT to
-`/sync/*` and name themselves with `deviceId` in the pairing bodies. The API still accepts
-that, only for a device row without a hash:
+The pairing routes register an unknown device with the secret it presents, so a first
+`/pair/initiate` or `/pair/join` needs no earlier step.
 
-- `authMiddleware` takes a JWT for a hashless device and refuses it for any other.
-- A hashless device adopts the first secret presented for it (`adoptSecret`), on any route.
-  From then on its JWT is refused and `/pair/token` answers 404 for it.
-- `deviceId` stays optional in the pairing request schemas.
-
-All of it leaves together once every device still in use has a hash: the JWT branch,
-`/pair/token`, `lib/jwt.js`, `lib/jwtSecret.js`, the `jose` dependency, the body `deviceId`
-and the adoption. The same migration deletes the hashless rows and makes the column
-`NOT NULL`.
+The secret MUST NOT appear in an exception message or a log line. This is the one exception
+to the "include the offending value" rule in Code Style.
 
 ### Revocation
 
@@ -271,18 +264,6 @@ so the brakes live in Postgres and are global: there is no caller identity to me
 it: by code alone it would answer whether any code exists without tripping the wrong-code
 brake. An unknown pair answers `expired`, same as a real expired code. The device proves
 itself with its credential like on any other route.
-
-### JWT secret guard
-
-`src/lib/jwtSecret.js` aborts boot when `JWT_SECRET` is missing, is a known placeholder
-(`dev-secret-change-me`, `test-secret`, `changeme`), or is shorter than 32 characters
-under `NODE_ENV=production`. Short secrets stay legal in dev.
-
-It signs the tokens of legacy clients only and leaves with them (see Device credential).
-
-Exception messages MUST NOT include the secret; the length error reports the length only.
-This and the device secret are the exceptions to the "include the offending value" rule in
-Code Style.
 
 ## Project Vision
 

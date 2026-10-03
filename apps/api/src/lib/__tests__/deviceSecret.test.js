@@ -1,16 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { db } from "../../db/index.js";
-import {
-  DEVICE_A,
-  SECRET_A,
-  SECRET_B,
-  initiate,
-} from "../../../test/pairingFixtures.js";
-import {
-  acceptDeviceSecret,
-  findDevice,
-  hashDeviceSecret,
-} from "../deviceSecret.js";
+import { SECRET_A, SECRET_B } from "../../../test/pairingFixtures.js";
+import { deviceSecretMatches, hashDeviceSecret } from "../deviceSecret.js";
 
 describe("hashDeviceSecret", () => {
   it("returns the SHA-256 of the secret as hex", () => {
@@ -24,25 +14,14 @@ describe("hashDeviceSecret", () => {
   });
 });
 
-describe("acceptDeviceSecret for a row read before another request adopted", () => {
-  async function staleRowAfterAdoption() {
-    await initiate(DEVICE_A);
-    const stale = await findDevice(db, DEVICE_A);
-    await acceptDeviceSecret(db, stale, SECRET_A);
-    return stale;
-  }
+describe("deviceSecretMatches", () => {
+  const device = { secretHash: hashDeviceSecret(SECRET_A) };
 
-  it("accepts the secret the other request stored", async () => {
-    const stale = await staleRowAfterAdoption();
-
-    expect(await acceptDeviceSecret(db, stale, SECRET_A)).toBe(true);
+  it("accepts the secret the device registered", () => {
+    expect(deviceSecretMatches(device, SECRET_A)).toBe(true);
   });
 
-  it("refuses a different secret and keeps the stored one", async () => {
-    const stale = await staleRowAfterAdoption();
-
-    expect(await acceptDeviceSecret(db, stale, SECRET_B)).toBe(false);
-    const { secretHash } = await findDevice(db, DEVICE_A);
-    expect(secretHash).toBe(hashDeviceSecret(SECRET_A));
+  it("refuses any other secret", () => {
+    expect(deviceSecretMatches(device, SECRET_B)).toBe(false);
   });
 });

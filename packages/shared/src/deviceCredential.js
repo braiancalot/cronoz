@@ -20,7 +20,7 @@ export function formatDeviceCredential({ deviceId, secret }) {
   return `${deviceId}.${secret}`;
 }
 
-// Null for anything else, a token from before device secrets included.
+// Null for anything that is not `<deviceId>.<secret>`.
 export function parseDeviceCredential(text) {
   if (typeof text !== "string") return null;
 

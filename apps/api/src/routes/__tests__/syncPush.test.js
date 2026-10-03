@@ -28,37 +28,41 @@ describe("POST /api/sync/push", () => {
   });
 
   it("returns 400 for invalid body", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     const res = await post(
       "/api/sync/push",
       { projects: [{ id: "not-a-uuid" }], settings: [] },
-      token,
+      credential,
     );
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when the push carries more projects than the limit", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     const projects = Array.from({ length: MAX_PUSH_PROJECTS + 1 }, () =>
       makeProject({ id: crypto.randomUUID() }),
     );
-    const res = await post("/api/sync/push", { projects, settings: [] }, token);
+    const res = await post(
+      "/api/sync/push",
+      { projects, settings: [] },
+      credential,
+    );
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when a project name is over the limit", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     const name = "a".repeat(MAX_PROJECT_NAME_LENGTH + 1);
     const res = await post(
       "/api/sync/push",
       { projects: [makeProject({ name })], settings: [] },
-      token,
+      credential,
     );
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when a lap name is over the limit", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     const lap = {
       id: crypto.randomUUID(),
       name: "a".repeat(MAX_LAP_NAME_LENGTH + 1),
@@ -70,41 +74,41 @@ describe("POST /api/sync/push", () => {
     const res = await post(
       "/api/sync/push",
       { projects: [project], settings: [] },
-      token,
+      credential,
     );
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when a setting value is not a number or boolean", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     const res = await post(
       "/api/sync/push",
       { projects: [], settings: [{ key: "hourlyPrice", value: { a: 1 } }] },
-      token,
+      credential,
     );
     expect(res.status).toBe(400);
   });
 
   it("returns 413 when the body is over the byte limit", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     const padding = "a".repeat(MAX_PUSH_BODY_BYTES);
     const res = await post(
       "/api/sync/push",
       { projects: [], settings: [], padding },
-      token,
+      credential,
     );
     expect(res.status).toBe(413);
   });
 
   it("inserts a new project with serverUpdatedAt set", async () => {
-    const { token, syncGroupId } = await pair(DEVICE_A, DEVICE_B);
+    const { credential, syncGroupId } = await pair(DEVICE_A, DEVICE_B);
     const project = makeProject();
 
     const before = Date.now();
     const res = await post(
       "/api/sync/push",
       { projects: [project], settings: [] },
-      token,
+      credential,
     );
     const after = Date.now();
 
@@ -126,7 +130,7 @@ describe("POST /api/sync/push", () => {
   });
 
   it("inserts a new setting", async () => {
-    const { token, syncGroupId } = await pair(DEVICE_A, DEVICE_B);
+    const { credential, syncGroupId } = await pair(DEVICE_A, DEVICE_B);
 
     const res = await post(
       "/api/sync/push",
@@ -134,7 +138,7 @@ describe("POST /api/sync/push", () => {
         projects: [],
         settings: [{ key: "hourlyPrice", value: 80, updatedAt: 500 }],
       },
-      token,
+      credential,
     );
     expect(res.status).toBe(200);
 
@@ -146,14 +150,14 @@ describe("POST /api/sync/push", () => {
   });
 
   it("LWW: ignores incoming when existing.updatedAt is greater", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     await post(
       "/api/sync/push",
       {
         projects: [makeProject({ updatedAt: 2000, name: "newer" })],
         settings: [],
       },
-      token,
+      credential,
     );
 
     await post(
@@ -162,7 +166,7 @@ describe("POST /api/sync/push", () => {
         projects: [makeProject({ updatedAt: 1000, name: "older" })],
         settings: [],
       },
-      token,
+      credential,
     );
 
     const [row] = await db
@@ -174,14 +178,14 @@ describe("POST /api/sync/push", () => {
   });
 
   it("LWW: overwrites when incoming.updatedAt is greater", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     await post(
       "/api/sync/push",
       {
         projects: [makeProject({ updatedAt: 1000, name: "older" })],
         settings: [],
       },
-      token,
+      credential,
     );
     await post(
       "/api/sync/push",
@@ -189,7 +193,7 @@ describe("POST /api/sync/push", () => {
         projects: [makeProject({ updatedAt: 2000, name: "newer" })],
         settings: [],
       },
-      token,
+      credential,
     );
 
     const [row] = await db
@@ -201,11 +205,11 @@ describe("POST /api/sync/push", () => {
   });
 
   it("persists soft delete (deletedAt populated)", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
     await post(
       "/api/sync/push",
       { projects: [makeProject({ updatedAt: 1000 })], settings: [] },
-      token,
+      credential,
     );
 
     await post(
@@ -214,7 +218,7 @@ describe("POST /api/sync/push", () => {
         projects: [makeProject({ updatedAt: 2000, deletedAt: 2000 })],
         settings: [],
       },
-      token,
+      credential,
     );
 
     const [row] = await db
@@ -225,18 +229,18 @@ describe("POST /api/sync/push", () => {
   });
 
   it("returns 409 when a project id already belongs to another sync group", async () => {
-    const { token: tokenA } = await pair(DEVICE_A, DEVICE_B);
+    const { credential: credentialA } = await pair(DEVICE_A, DEVICE_B);
     await post(
       "/api/sync/push",
       { projects: [makeProject()], settings: [] },
-      tokenA,
+      credentialA,
     );
 
-    const { token: tokenC } = await pair(DEVICE_C, DEVICE_D);
+    const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
     const res = await post(
       "/api/sync/push",
       { projects: [makeProject()], settings: [] },
-      tokenC,
+      credentialC,
     );
     expect(res.status).toBe(409);
   });

@@ -3,19 +3,20 @@ import { eq } from "drizzle-orm";
 import { PAIRING_CODE_ALPHABET } from "@cronoz/shared";
 import { db } from "../../db/index.js";
 import { pairingCodes, devices, syncGroups } from "../../db/schema.js";
-import { verifyToken } from "../../lib/jwt.js";
 import {
   DEVICE_A,
   DEVICE_B,
   DEVICE_C,
   DEVICE_D,
+  credentialOf,
   initiate,
+  join,
   post,
 } from "../../../test/pairingFixtures.js";
 
 describe("POST /api/pair/initiate", () => {
   it("creates sync_group, device, and pairing code for a new device", async () => {
-    const res = await post("/api/pair/initiate", { deviceId: DEVICE_A });
+    const res = await post("/api/pair/initiate", {}, credentialOf(DEVICE_A));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.code).toMatch(new RegExp(`^[${PAIRING_CODE_ALPHABET}]{8}$`));
@@ -55,20 +56,12 @@ describe("POST /api/pair/initiate", () => {
     expect(codes[0].code).toBe(secondCode);
   });
 
-  it("returns 400 for invalid deviceId", async () => {
-    const res = await post("/api/pair/initiate", { deviceId: "not-a-uuid" });
-    expect(res.status).toBe(400);
-  });
-
   it("allows a paired device to invite a third one without creating a new sync_group", async () => {
     const code1 = await initiate(DEVICE_A);
-    await post("/api/pair/join", { deviceId: DEVICE_B, code: code1 });
+    await join(DEVICE_B, code1);
 
     const code2 = await initiate(DEVICE_A);
-    const res = await post("/api/pair/join", {
-      deviceId: DEVICE_C,
-      code: code2,
-    });
+    const res = await join(DEVICE_C, code2);
     expect(res.status).toBe(200);
 
     const groups = await db.select().from(syncGroups);
@@ -82,39 +75,34 @@ describe("POST /api/pair/initiate", () => {
 });
 
 describe("POST /api/pair/join", () => {
-  it("joins device B to device A's group and returns a valid JWT", async () => {
+  it("joins device B to device A's group and answers with the group alone", async () => {
     const code = await initiate(DEVICE_A);
 
-    const res = await post("/api/pair/join", { deviceId: DEVICE_B, code });
+    const res = await join(DEVICE_B, code);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.token).toBeTruthy();
-    expect(body.syncGroupId).toBeTruthy();
 
-    const payload = await verifyToken(body.token);
-    expect(payload.deviceId).toBe(DEVICE_B);
-    expect(payload.syncGroupId).toBe(body.syncGroupId);
-
+    const [deviceA] = await db
+      .select()
+      .from(devices)
+      .where(eq(devices.id, DEVICE_A));
     const [deviceB] = await db
       .select()
       .from(devices)
       .where(eq(devices.id, DEVICE_B));
-    expect(deviceB.syncGroupId).toBe(body.syncGroupId);
+    expect(deviceB.syncGroupId).toBe(deviceA.syncGroupId);
+    expect(await res.json()).toEqual({ syncGroupId: deviceA.syncGroupId });
   });
 
   it("returns 400 for non-existent code", async () => {
-    const res = await post("/api/pair/join", {
-      deviceId: DEVICE_B,
-      code: "22222222",
-    });
+    const res = await join(DEVICE_B, "22222222");
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when code has already been used", async () => {
     const code = await initiate(DEVICE_A);
-    await post("/api/pair/join", { deviceId: DEVICE_B, code });
+    await join(DEVICE_B, code);
 
-    const res = await post("/api/pair/join", { deviceId: DEVICE_C, code });
+    const res = await join(DEVICE_C, code);
     expect(res.status).toBe(400);
   });
 
@@ -125,40 +113,30 @@ describe("POST /api/pair/join", () => {
       .set({ expiresAt: new Date(Date.now() - 1000) })
       .where(eq(pairingCodes.code, code));
 
-    const res = await post("/api/pair/join", { deviceId: DEVICE_B, code });
+    const res = await join(DEVICE_B, code);
     expect(res.status).toBe(400);
   });
 
   it("returns 409 when device already belongs to a different group", async () => {
     const code1 = await initiate(DEVICE_A);
-    await post("/api/pair/join", { deviceId: DEVICE_B, code: code1 });
+    await join(DEVICE_B, code1);
 
     const code2 = await initiate(DEVICE_C);
-    const res = await post("/api/pair/join", {
-      deviceId: DEVICE_B,
-      code: code2,
-    });
+    const res = await join(DEVICE_B, code2);
     expect(res.status).toBe(409);
   });
 
   it("is idempotent when device rejoins its own group", async () => {
     const code = await initiate(DEVICE_A);
-    await post("/api/pair/join", { deviceId: DEVICE_B, code });
+    await join(DEVICE_B, code);
 
     const code2 = await initiate(DEVICE_A);
-    const res = await post("/api/pair/join", {
-      deviceId: DEVICE_B,
-      code: code2,
-    });
+    const res = await join(DEVICE_B, code2);
     expect(res.status).toBe(200);
   });
 });
 
 describe("POST /api/pair/join failed-attempt brake", () => {
-  function join(deviceId, code) {
-    return post("/api/pair/join", { deviceId, code });
-  }
-
   function codeOutside(liveCodes) {
     return ["22222222", "33333333", "44444444"].find(
       (candidate) => !liveCodes.includes(candidate),
@@ -202,24 +180,5 @@ describe("POST /api/pair/join failed-attempt brake", () => {
 
     const res = await join(DEVICE_B, code);
     expect(res.status).toBe(200);
-  });
-});
-
-describe("POST /api/pair/token", () => {
-  it("returns a valid token for an existing device", async () => {
-    const code = await initiate(DEVICE_A);
-    await post("/api/pair/join", { deviceId: DEVICE_B, code });
-
-    const res = await post("/api/pair/token", { deviceId: DEVICE_B });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    const payload = await verifyToken(body.token);
-    expect(payload.deviceId).toBe(DEVICE_B);
-    expect(payload.syncGroupId).toBe(body.syncGroupId);
-  });
-
-  it("returns 404 for non-existent device", async () => {
-    const res = await post("/api/pair/token", { deviceId: DEVICE_A });
-    expect(res.status).toBe(404);
   });
 });

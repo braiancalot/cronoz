@@ -8,10 +8,11 @@ import {
   DEVICE_B,
   DEVICE_C,
   DEVICE_D,
+  credentialOf,
   initiate,
+  join,
   pair,
   post,
-  tokenFor,
 } from "../../../test/pairingFixtures.js";
 
 describe("GET /api/sync/devices", () => {
@@ -21,10 +22,10 @@ describe("GET /api/sync/devices", () => {
   });
 
   it("returns the device count for the sync group", async () => {
-    const { token } = await pair(DEVICE_A, DEVICE_B);
+    const { credential } = await pair(DEVICE_A, DEVICE_B);
 
     const res = await app.request("/api/sync/devices", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${credential}` },
     });
 
     expect(res.status).toBe(200);
@@ -33,35 +34,35 @@ describe("GET /api/sync/devices", () => {
   });
 
   it("isolates count per sync group", async () => {
-    const { token: tokenAB } = await pair(DEVICE_A, DEVICE_B);
+    const { credential: credentialAB } = await pair(DEVICE_A, DEVICE_B);
     await pair(DEVICE_C, DEVICE_D);
 
     const res = await app.request("/api/sync/devices", {
-      headers: { Authorization: `Bearer ${tokenAB}` },
+      headers: { Authorization: `Bearer ${credentialAB}` },
     });
     const body = await res.json();
     expect(body.count).toBe(2);
   });
 
   it("returns 1 right after initiate (before any join)", async () => {
-    await post("/api/pair/initiate", { deviceId: DEVICE_A });
-    const token = await tokenFor(DEVICE_A);
+    await initiate(DEVICE_A);
+    const credential = credentialOf(DEVICE_A);
 
     const res = await app.request("/api/sync/devices", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${credential}` },
     });
     const body = await res.json();
     expect(body.count).toBe(1);
   });
 
   it("returns 3 after a third device joins the same group", async () => {
-    const { token: tokenAB } = await pair(DEVICE_A, DEVICE_B);
+    const { credential: credentialAB } = await pair(DEVICE_A, DEVICE_B);
     const code = await initiate(DEVICE_A);
-    const joinRes = await post("/api/pair/join", { deviceId: DEVICE_C, code });
+    const joinRes = await join(DEVICE_C, code);
     expect(joinRes.status).toBe(200);
 
     const res = await app.request("/api/sync/devices", {
-      headers: { Authorization: `Bearer ${tokenAB}` },
+      headers: { Authorization: `Bearer ${credentialAB}` },
     });
     const body = await res.json();
     expect(body.count).toBe(3);
@@ -75,11 +76,11 @@ describe("DELETE /api/sync/device", () => {
   });
 
   it("removes the calling device and lets it pair into another group afterwards", async () => {
-    const { token: tokenB } = await pair(DEVICE_A, DEVICE_B);
+    const { credential: credentialB } = await pair(DEVICE_A, DEVICE_B);
 
     const del = await app.request("/api/sync/device", {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${tokenB}` },
+      headers: { Authorization: `Bearer ${credentialB}` },
     });
     expect(del.status).toBe(200);
 
@@ -96,16 +97,19 @@ describe("DELETE /api/sync/device", () => {
     expect(cursors).toHaveLength(0);
 
     const code = await initiate(DEVICE_C);
-    const join = await post("/api/pair/join", { deviceId: DEVICE_B, code });
-    expect(join.status).toBe(200);
+    const rejoin = await join(DEVICE_B, code);
+    expect(rejoin.status).toBe(200);
   });
 
   it("keeps the sync group when other devices remain", async () => {
-    const { token: tokenB, syncGroupId } = await pair(DEVICE_A, DEVICE_B);
+    const { credential: credentialB, syncGroupId } = await pair(
+      DEVICE_A,
+      DEVICE_B,
+    );
 
     await app.request("/api/sync/device", {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${tokenB}` },
+      headers: { Authorization: `Bearer ${credentialB}` },
     });
 
     const groups = await db
@@ -123,12 +127,12 @@ describe("DELETE /api/sync/device", () => {
   });
 
   it("deletes the sync group when last device leaves", async () => {
-    await post("/api/pair/initiate", { deviceId: DEVICE_A });
-    const tokenA = await tokenFor(DEVICE_A);
+    await initiate(DEVICE_A);
+    const credentialA = credentialOf(DEVICE_A);
 
     const del = await app.request("/api/sync/device", {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${tokenA}` },
+      headers: { Authorization: `Bearer ${credentialA}` },
     });
     expect(del.status).toBe(200);
 
