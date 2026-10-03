@@ -30,3 +30,11 @@ export function computeExpiresAt(now = Date.now()) {
 export function isExpired(expiresAt, now = Date.now()) {
   return expiresAt.getTime() <= now;
 }
+
+export function pairingStatusOf(pairing, now = Date.now()) {
+  if (!pairing) return "expired";
+  if (pairing.usedAt) return "joined";
+  if (isExpired(pairing.expiresAt, now)) return "expired";
+  if (pairing.failedJoins >= PAIRING_CODE_MAX_FAILED_JOINS) return "burned";
+  return "waiting";
+}

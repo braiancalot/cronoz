@@ -220,6 +220,13 @@ so the brakes live in Postgres and are global: there is no caller identity to me
   code. There is no cron. A table that hangs off `sync_groups` and holds user content MUST be
   added to that check, or the purge deletes it by cascade.
 
+### Pairing status
+
+`POST /pair/status` tells the device that generated a code whether it is `waiting`,
+`joined`, `expired` or `burned`. The lookup demands the code AND the device that generated
+it: by code alone it would answer whether any code exists without tripping the wrong-code
+brake. An unknown pair answers `expired`, same as a real expired code.
+
 ### JWT secret guard
 
 `src/lib/jwtSecret.js` aborts boot when `JWT_SECRET` is missing, is a known placeholder

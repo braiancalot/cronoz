@@ -4,6 +4,7 @@ import { and, eq, gt, isNull, lt, lte, sql } from "drizzle-orm";
 import {
   pairInitiateRequestSchema,
   pairJoinRequestSchema,
+  pairStatusRequestSchema,
   pairTokenRequestSchema,
 } from "@cronoz/shared";
 import { db } from "../db/index.js";
@@ -17,6 +18,7 @@ import {
   PAIRING_CODE_MAX_FAILED_JOINS,
   computeExpiresAt,
   generateCode,
+  pairingStatusOf,
 } from "../lib/pairingCode.js";
 
 class PairError extends Error {
@@ -169,6 +171,23 @@ async function joinGroup(tx, deviceId, syncGroupId) {
     await tx.insert(devices).values({ id: deviceId, syncGroupId });
   }
 }
+
+// The code alone would let anyone probe codes without tripping the failed-join
+// brake, so the lookup also demands the device that generated it.
+pairingRouter.post(
+  "/status",
+  zValidator("json", pairStatusRequestSchema),
+  async (c) => {
+    const { deviceId, code } = c.req.valid("json");
+    const [pairing] = await db
+      .select()
+      .from(pairingCodes)
+      .where(
+        and(eq(pairingCodes.code, code), eq(pairingCodes.deviceId, deviceId)),
+      );
+    return c.json({ status: pairingStatusOf(pairing) });
+  },
+);
 
 pairingRouter.post(
   "/token",

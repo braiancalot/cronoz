@@ -24,6 +24,17 @@ export const pairJoinResponseSchema = z.object({
   syncGroupId: z.string().uuid(),
 });
 
+export const PAIRING_STATUSES = ["waiting", "joined", "expired", "burned"];
+
+export const pairStatusRequestSchema = z.object({
+  deviceId: z.string().uuid(),
+  code: pairingCodeSchema,
+});
+
+export const pairStatusResponseSchema = z.object({
+  status: z.enum(PAIRING_STATUSES),
+});
+
 export const pairTokenRequestSchema = z.object({
   deviceId: z.string().uuid(),
 });

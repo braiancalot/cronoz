@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PAIRING_CODE_ALPHABET, PAIRING_CODE_TTL_MS } from "@cronoz/shared";
-import { generateCode, computeExpiresAt, isExpired } from "../pairingCode.js";
+import {
+  PAIRING_CODE_MAX_FAILED_JOINS,
+  computeExpiresAt,
+  generateCode,
+  isExpired,
+  pairingStatusOf,
+} from "../pairingCode.js";
 
 class FakeRandomSource {
   constructor(bytes) {
@@ -51,5 +57,35 @@ describe("isExpired", () => {
 
   it("returns false for future dates", () => {
     expect(isExpired(new Date(Date.now() + 60_000))).toBe(false);
+  });
+});
+
+describe("pairingStatusOf", () => {
+  const live = {
+    usedAt: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    failedJoins: 0,
+  };
+
+  it("treats a missing code as expired", () => {
+    expect(pairingStatusOf(undefined)).toBe("expired");
+  });
+
+  it("puts joined ahead of expiry, so a late poll still sees the join", () => {
+    const usedThenExpired = {
+      ...live,
+      usedAt: new Date(),
+      expiresAt: new Date(Date.now() - 1000),
+    };
+    expect(pairingStatusOf(usedThenExpired)).toBe("joined");
+  });
+
+  it("reports burned at the failed-join limit", () => {
+    const burned = { ...live, failedJoins: PAIRING_CODE_MAX_FAILED_JOINS };
+    expect(pairingStatusOf(burned)).toBe("burned");
+  });
+
+  it("reports waiting for a live code", () => {
+    expect(pairingStatusOf(live)).toBe("waiting");
   });
 });
