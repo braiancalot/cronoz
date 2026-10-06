@@ -165,6 +165,8 @@ Schema lives in `src/db/schema.js`. The connection in `src/db/index.js` uses a *
 
 In production (Vercel), `DATABASE_URL` is the Neon connection string (use the `-pooler` host variant — a pooled connection, recommended for serverless).
 
+`src/lib/databaseTarget.js` refuses a loopback host under `NODE_ENV=production`: the dev user and password are versioned (`docker-compose.yml`, `.env.example`, `test/databaseUrl.js`), so production MUST NOT run on the database they open. Its messages name the host only, never the whole URL, which carries the password.
+
 ### Migrations (Drizzle)
 
 Schema changes go through versioned migrations in `apps/api/drizzle/`, committed to git.
