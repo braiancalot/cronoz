@@ -102,7 +102,7 @@ export function ProjectCard({
             onSelect={() => onDelete(project)}
           >
             <TrashIcon />
-            Deletar
+            Apagar
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

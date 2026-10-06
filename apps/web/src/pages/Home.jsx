@@ -176,7 +176,7 @@ export default function Home() {
     setOptimisticDeletedIds((prev) => new Set(prev).add(id));
     await projectRepository.remove(id);
     showUndoToast(
-      `Projeto "${name}" excluído`,
+      `Projeto "${name}" apagado`,
       () => {
         // Clear the override so Undo's restore shows even before the cleanup runs.
         setOptimisticDeletedIds((prev) => {

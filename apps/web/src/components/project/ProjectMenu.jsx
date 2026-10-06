@@ -66,7 +66,7 @@ export function ProjectMenu({
         </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onSelect={onDelete}>
           <TrashIcon />
-          Deletar
+          Apagar
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

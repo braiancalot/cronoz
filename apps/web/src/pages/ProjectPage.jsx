@@ -110,7 +110,7 @@ export default function ProjectPage() {
     const { undo } = await deleteProject();
     navigate("/");
     // Fires after the navigate, so this one lands on the list, not here.
-    showUndoToast(`Projeto "${projectName}" excluído`, undo, UNDO_ON_LIST);
+    showUndoToast(`Projeto "${projectName}" apagado`, undo, UNDO_ON_LIST);
   }
 
   function handleStartAdjust() {

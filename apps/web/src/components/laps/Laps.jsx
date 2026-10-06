@@ -47,7 +47,7 @@ export function Laps({
     const { id, name } = pendingDelete;
     setPendingDelete(null);
     const { undo } = await onDeleteLap(id);
-    showUndoToast(`Volta "${name}" excluída`, undo);
+    showUndoToast(`Volta "${name}" apagada`, undo);
   }
 
   return (
