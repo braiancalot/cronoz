@@ -204,6 +204,17 @@ Route tests share `apps/api/test/pairingFixtures.js` (device ids and secrets, `c
 there instead of redefining them per file. Sync tests are split by endpoint (`syncPush`, `syncPull`,
 `syncDevices`) to stay under the 500-line ceiling.
 
+### Secret scan
+
+The `secrets` job in `.github/workflows/ci.yml` runs gitleaks over the pushed commits.
+`.gitleaks.toml` extends the default rules and allowlists the JWT-shaped test fixtures by
+their exact shape. A new fixture that looks like a credential needs an entry there. Keep each
+entry as narrow as the string itself: a path-wide exception would hide a real key committed
+to the same file.
+
+To scan the whole history locally:
+`docker run --rm -v "$PWD":/repo:ro ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo -c /repo/.gitleaks.toml --redact`
+
 ### CORS allowlist
 
 `src/lib/corsOrigins.js` turns `CORS_ALLOWED_ORIGINS` into the array Hono's `cors` matches

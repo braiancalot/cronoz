@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+# Unsigned JWT-shaped fixtures: they stand for the bearer that clients sent
+# before device secrets. The payload is a fake device id and the signature is
+# the word "signature".
+[[allowlists]]
+description = "JWT-shaped test fixtures"
+regexes = ['''eyJhbGciOiJIUzI1NiJ9\.eyJkZXZpY2VJZCI6[A-Za-z0-9]+\.c2lnbmF0dXJl''']
