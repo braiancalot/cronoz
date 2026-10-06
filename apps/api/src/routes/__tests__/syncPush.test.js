@@ -19,7 +19,11 @@ import {
   pair,
   post,
 } from "../../../test/pairingFixtures.js";
-import { PROJECT_1, makeProject } from "../../../test/projectFixtures.js";
+import {
+  PROJECT_1,
+  PROJECT_2,
+  makeProject,
+} from "../../../test/projectFixtures.js";
 
 describe("POST /api/sync/push", () => {
   it("returns 401 without Authorization", async () => {
@@ -243,5 +247,61 @@ describe("POST /api/sync/push", () => {
       credentialC,
     );
     expect(res.status).toBe(409);
+  });
+
+  it("keeps another group's project intact when the push carries a newer updatedAt", async () => {
+    const { credential: credentialA } = await pair(DEVICE_A, DEVICE_B);
+    await post(
+      "/api/sync/push",
+      {
+        projects: [makeProject({ updatedAt: 1000, name: "from A" })],
+        settings: [],
+      },
+      credentialA,
+    );
+
+    const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
+    const res = await post(
+      "/api/sync/push",
+      {
+        projects: [makeProject({ updatedAt: 9000, name: "from C" })],
+        settings: [],
+      },
+      credentialC,
+    );
+
+    expect(res.status).toBe(409);
+    const [row] = await db
+      .select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, PROJECT_1));
+    expect(row.updatedAt).toBe(1000);
+    expect(row.data.name).toBe("from A");
+  });
+
+  it("rolls back the whole push when one project belongs to another group", async () => {
+    const { credential: credentialA } = await pair(DEVICE_A, DEVICE_B);
+    await post(
+      "/api/sync/push",
+      { projects: [makeProject()], settings: [] },
+      credentialA,
+    );
+
+    const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
+    const res = await post(
+      "/api/sync/push",
+      {
+        projects: [makeProject({ id: PROJECT_2 }), makeProject()],
+        settings: [],
+      },
+      credentialC,
+    );
+
+    expect(res.status).toBe(409);
+    const stored = await db
+      .select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, PROJECT_2));
+    expect(stored).toEqual([]);
   });
 });

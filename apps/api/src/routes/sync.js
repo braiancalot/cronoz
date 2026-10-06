@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { zValidator } from "@hono/zod-validator";
-import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, count, eq, gt, sql } from "drizzle-orm";
 import { pullRequestSchema, pushRequestSchema } from "@cronoz/shared";
 import { db } from "../db/index.js";
 import {
@@ -12,6 +12,10 @@ import {
   syncGroups as syncGroupsTable,
 } from "../db/schema.js";
 import { authMiddleware } from "../middleware/auth.js";
+import {
+  findForeignProjectIds,
+  upsertGroupProjects,
+} from "../lib/projectUpsert.js";
 
 class SyncError extends Error {
   constructor(status, code) {
@@ -46,44 +50,19 @@ syncRouter.post(
 
     try {
       await db.transaction(async (tx) => {
-        if (incomingProjects.length > 0) {
-          const ids = incomingProjects.map((p) => p.id);
-          const existing = await tx
-            .select({
-              id: projects.id,
-              syncGroupId: projects.syncGroupId,
-            })
-            .from(projects)
-            .where(inArray(projects.id, ids));
-
-          for (const row of existing) {
-            if (row.syncGroupId !== syncGroupId) {
-              throw new SyncError(409, "project_belongs_to_other_group");
-            }
-          }
-        }
-
-        for (const project of incomingProjects) {
-          await tx
-            .insert(projects)
-            .values({
-              id: project.id,
-              syncGroupId,
-              data: project,
-              updatedAt: project.updatedAt ?? 0,
-              serverUpdatedAt: serverTimestamp,
-              deletedAt: project.deletedAt ?? null,
-            })
-            .onConflictDoUpdate({
-              target: projects.id,
-              set: {
-                data: sql`excluded.data`,
-                updatedAt: sql`excluded.updated_at`,
-                serverUpdatedAt: sql`excluded.server_updated_at`,
-                deletedAt: sql`excluded.deleted_at`,
-              },
-              setWhere: sql`${projects.updatedAt} < excluded.updated_at`,
-            });
+        const skippedIds = await upsertGroupProjects(tx, {
+          syncGroupId,
+          incomingProjects,
+          serverTimestamp,
+        });
+        // Checked after the write, which locks the conflicting row, so the
+        // owner read here cannot change before the transaction ends.
+        const foreignIds = await findForeignProjectIds(tx, {
+          syncGroupId,
+          ids: skippedIds,
+        });
+        if (foreignIds.length > 0) {
+          throw new SyncError(409, "project_belongs_to_other_group");
         }
 
         for (const setting of incomingSettings) {

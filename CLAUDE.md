@@ -238,6 +238,16 @@ The web client needs no special case: the next sync gets 401, drops its paired m
 sets `SYNC_REVOKED_KEY`, which the sync card turns into a notice until the device pairs
 again or unpairs. It keeps its secret and presents the same one when it pairs again.
 
+### Cross-group writes
+
+Project ids come from the client, so two groups can present the same one. The group check
+MUST sit in the write itself (`setWhere` in `src/lib/projectUpsert.js`). A SELECT before
+the upsert misses a row another group commits in between, and the upsert then overwrites
+it. `/sync/push` still answers 409 `project_belongs_to_other_group`, read after the write:
+`ON CONFLICT DO UPDATE` locks the conflicting row even when its `WHERE` rejects the update.
+
+A new synced table keyed by a client-generated id needs the same condition.
+
 ### Pairing brakes
 
 `/pair/initiate` and `/pair/join` are anonymous and Vercel Hobby has no firewall rate limit,
