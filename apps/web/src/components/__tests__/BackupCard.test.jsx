@@ -77,6 +77,27 @@ describe("BackupCard", () => {
     expect(screen.getByText(/1 configuração/)).toBeTruthy();
   });
 
+  // "configuração" + "ões" used to render as "configuraçãoões".
+  it("pluralises the counts in the confirm dialog", async () => {
+    backupService.parseBackup.mockReturnValue({
+      schemaVersion: 1,
+      exportedAt: 1,
+      projects: [{ id: "p1" }],
+      settings: [{ key: "a" }, { key: "b" }, { key: "c" }],
+    });
+
+    const { container } = render(<BackupCard />);
+    const input = container.querySelector('input[type="file"]');
+
+    await userEvent.upload(input, makeFile('{"schemaVersion":1}'));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Contém 1 projeto e 3 configurações\./),
+      ).toBeTruthy(),
+    );
+  });
+
   it("toasts error and does not open dialog when file is invalid", async () => {
     backupService.parseBackup.mockImplementation(() => {
       throw new BackupError("Arquivo inválido: não é um JSON.", {

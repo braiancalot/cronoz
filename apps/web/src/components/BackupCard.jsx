@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { DownloadSimpleIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { countLabel } from "@/lib/countLabel.js";
 import backupService, { BackupError } from "@/services/backupService.js";
 import {
   Card,
@@ -65,7 +66,15 @@ export function BackupCard() {
   function importDescription() {
     if (!pendingImport) return null;
     const { data, filename } = pendingImport;
-    return `Arquivo: ${filename}. Contém ${data.projects.length} projeto${data.projects.length === 1 ? "" : "s"} e ${data.settings.length} configuração${data.settings.length === 1 ? "" : "ões"}. Isso vai substituir todos os projetos e configurações deste dispositivo. Não pode ser desfeito.`;
+    const projects = countLabel(data.projects.length, {
+      one: "projeto",
+      many: "projetos",
+    });
+    const settings = countLabel(data.settings.length, {
+      one: "configuração",
+      many: "configurações",
+    });
+    return `Arquivo: ${filename}. Contém ${projects} e ${settings}. Isso vai substituir todos os projetos e configurações deste dispositivo. Não pode ser desfeito.`;
   }
 
   return (
