@@ -2,7 +2,7 @@
 
 ## O Problema
 
-Minha esposa trabalha com crochê e lida com várias peças ao mesmo tempo. Para controlar o tempo de cada peça, ela precisa criar cronômetros em diferentes apps e lugares. O Cronoz centraliza tudo em uma aplicação só — simples, offline e instalável no celular.
+É difícil controlar o tempo de vários projetos ao mesmo tempo. Cada um acaba com um cronômetro em um app diferente. O Cronoz guarda todos em um lugar só. Funciona sem internet e dá para instalar no celular.
 
 ## Requisitos Principais
 

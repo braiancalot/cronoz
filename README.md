@@ -2,6 +2,8 @@
 
 PWA offline-first para gerenciar múltiplos cronômetros de projetos de crochê. Cada projeto tem seu próprio cronômetro independente com controle de voltas.
 
+Site: https://cronoz.teshi.com.br
+
 ## Stack
 
 - **Monorepo** — Turborepo + npm workspaces
