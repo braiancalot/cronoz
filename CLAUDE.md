@@ -151,6 +151,8 @@ The device count is refetched whenever `lastSyncedAt` changes. A device joining 
 
 **Sync payload limits** live in `packages/shared/src/constants.js`. The push schema rejects anything above them, so the client MUST enforce the same numbers: a record over a limit fails every push and sync stalls for good. A new user-editable text field needs a `maxLength` from there, and a new list that grows without bound needs a cap in its repository. `syncManager` already splits pushes into batches of `MAX_PUSH_PROJECTS`.
 
+Backup import is the other way a record enters IndexedDB without passing through a repository. `backupService.parseBackup` runs each record through `projectSchema` and `settingSchema` and hands on Zod's output, so the file is refused before anything is written and undeclared keys are dropped. A field added to the local record MUST be added to the shared schema too, or import silently loses it (the round-trip test in `backupService.test.js` catches that).
+
 **Content-Security-Policy** is set in `apps/web/vercel.json` and only applies on Vercel. Dev and tests never see it, so a new external origin (API host, font, image) passes locally and gets blocked in production. Add it to the matching directive in the same change. `style-src` keeps `'unsafe-inline'` because Radix, Sonner and the PiP window inject `<style>` tags.
 
 ## apps/api

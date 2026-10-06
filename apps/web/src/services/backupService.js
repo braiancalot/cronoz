@@ -1,3 +1,4 @@
+import { projectSchema, settingSchema } from "@cronoz/shared";
 import db from "./db.js";
 
 export const SCHEMA_VERSION = 1;
@@ -21,15 +22,17 @@ async function exportData() {
   };
 }
 
-function parseBackup(text) {
-  let parsed;
+function parseJson(text) {
   try {
-    parsed = JSON.parse(text);
+    return JSON.parse(text);
   } catch {
     throw new BackupError("Arquivo inválido: não é um JSON.", {
       code: "invalid_json",
     });
   }
+}
+
+function assertBackupEnvelope(parsed) {
   if (!parsed || typeof parsed !== "object") {
     throw new BackupError("Arquivo inválido.", { code: "invalid_shape" });
   }
@@ -44,10 +47,45 @@ function parseBackup(text) {
       code: "invalid_shape",
     });
   }
-  return parsed;
 }
 
-// Replace semantics: clear local data, then bulk-write the backup as-is.
+function invalidRecordError({ label, index, fieldPath }) {
+  const field = fieldPath.length > 0 ? `, campo ${fieldPath.join(".")}` : "";
+  return new BackupError(`Arquivo inválido: ${label} ${index + 1}${field}.`, {
+    code: "invalid_shape",
+  });
+}
+
+// Returns Zod's output, which drops the keys the schema does not declare.
+function validateRecords(records, { label, schema }) {
+  return records.map((record, index) => {
+    const result = schema.safeParse(record);
+    if (result.success) return result.data;
+    const fieldPath = result.error.issues[0].path;
+    throw invalidRecordError({ label, index, fieldPath });
+  });
+}
+
+// A record the push schema refuses would fail every push from then on, so
+// the import holds the same schemas the API does.
+function parseBackup(text) {
+  const parsed = parseJson(text);
+  assertBackupEnvelope(parsed);
+  return {
+    schemaVersion: parsed.schemaVersion,
+    exportedAt: parsed.exportedAt,
+    projects: validateRecords(parsed.projects, {
+      label: "projeto",
+      schema: projectSchema,
+    }),
+    settings: validateRecords(parsed.settings, {
+      label: "configuração",
+      schema: settingSchema,
+    }),
+  };
+}
+
+// Replace semantics: clear local data, then bulk-write the parsed backup.
 // Wrapped in a single Dexie transaction so a failure mid-way leaves the
 // DB untouched. Does not touch db.internal — pairing/device state stays.
 async function applyBackup(data) {

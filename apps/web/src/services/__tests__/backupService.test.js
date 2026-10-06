@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { MAX_LAPS_PER_PROJECT, MAX_PROJECT_NAME_LENGTH } from "@cronoz/shared";
 import db from "@/services/db.js";
+import projectRepository from "@/services/projectRepository.js";
+import settingsRepository from "@/services/settingsRepository.js";
 import backupService, {
   BackupError,
   SCHEMA_VERSION,
@@ -136,6 +139,146 @@ describe("parseBackup", () => {
   });
 });
 
+describe("parseBackup record validation", () => {
+  const PROJECT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+  function makeLap(overrides = {}) {
+    return {
+      id: crypto.randomUUID(),
+      name: "Base",
+      lapTime: 1000,
+      createdAt: 50,
+      ...overrides,
+    };
+  }
+
+  function makeProject(overrides = {}) {
+    return {
+      id: PROJECT_ID,
+      name: "Cliente X",
+      completedAt: null,
+      createdAt: 100,
+      updatedAt: 100,
+      stopwatch: {
+        startTimestamp: null,
+        currentLapTime: 0,
+        isRunning: false,
+        lastActiveAt: null,
+        laps: [],
+      },
+      ...overrides,
+    };
+  }
+
+  function backupWith({ projects = [], settings = [] }) {
+    return JSON.stringify({
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: 1,
+      projects,
+      settings,
+    });
+  }
+
+  function parseFailure(text) {
+    try {
+      backupService.parseBackup(text);
+    } catch (err) {
+      return err;
+    }
+    throw new Error("parseBackup should have thrown");
+  }
+
+  it("rejects a project name over the limit and names the record and field", () => {
+    const name = "a".repeat(MAX_PROJECT_NAME_LENGTH + 1);
+    const err = parseFailure(
+      backupWith({ projects: [makeProject(), makeProject({ name })] }),
+    );
+
+    expect(err).toBeInstanceOf(BackupError);
+    expect(err.code).toBe("invalid_shape");
+    expect(err.message).toBe("Arquivo inválido: projeto 2, campo name.");
+  });
+
+  it("rejects a project without id", () => {
+    const { id: _omitted, ...withoutId } = makeProject();
+    const err = parseFailure(backupWith({ projects: [withoutId] }));
+
+    expect(err.code).toBe("invalid_shape");
+    expect(err.message).toBe("Arquivo inválido: projeto 1, campo id.");
+  });
+
+  it("rejects a field with the wrong type", () => {
+    const err = parseFailure(
+      backupWith({ projects: [makeProject({ createdAt: "yesterday" })] }),
+    );
+
+    expect(err.code).toBe("invalid_shape");
+    expect(err.message).toBe("Arquivo inválido: projeto 1, campo createdAt.");
+  });
+
+  it("rejects a project with more laps than the limit", () => {
+    const project = makeProject();
+    project.stopwatch.laps = Array.from(
+      { length: MAX_LAPS_PER_PROJECT + 1 },
+      () => makeLap(),
+    );
+    const err = parseFailure(backupWith({ projects: [project] }));
+
+    expect(err.code).toBe("invalid_shape");
+    expect(err.message).toBe(
+      "Arquivo inválido: projeto 1, campo stopwatch.laps.",
+    );
+  });
+
+  it("rejects a record that is not an object", () => {
+    const err = parseFailure(backupWith({ projects: ["oops"] }));
+
+    expect(err.code).toBe("invalid_shape");
+    expect(err.message).toBe("Arquivo inválido: projeto 1.");
+  });
+
+  it("rejects a setting with a value of the wrong type", () => {
+    const err = parseFailure(
+      backupWith({ settings: [{ key: "hourlyPrice", value: { a: 1 } }] }),
+    );
+
+    expect(err.code).toBe("invalid_shape");
+    expect(err.message).toBe("Arquivo inválido: configuração 1, campo value.");
+  });
+
+  it("drops unknown fields at every level", () => {
+    const project = makeProject({ injected: "x" });
+    project.stopwatch.injected = "x";
+    project.stopwatch.laps = [makeLap({ injected: "x" })];
+    const setting = { key: "hourlyPrice", value: 50, injected: "x" };
+
+    const parsed = backupService.parseBackup(
+      backupWith({ projects: [project], settings: [setting] }),
+    );
+
+    expect(JSON.stringify(parsed)).not.toContain("injected");
+    expect(parsed.projects[0].name).toBe("Cliente X");
+    expect(parsed.settings).toEqual([{ key: "hourlyPrice", value: 50 }]);
+  });
+
+  it("drops unknown top-level fields", () => {
+    const text = JSON.stringify({
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: 1,
+      projects: [],
+      settings: [],
+      internal: [{ key: "deviceSecret", value: "x" }],
+    });
+
+    expect(backupService.parseBackup(text)).toEqual({
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: 1,
+      projects: [],
+      settings: [],
+    });
+  });
+});
+
 describe("applyBackup", () => {
   it("replaces all local projects and settings", async () => {
     await db.projects.put({ id: "old", name: "Old", updatedAt: 1 });
@@ -252,5 +395,28 @@ describe("round-trip", () => {
 
     expect(projectsAfter).toEqual(original);
     expect(settingsAfter).toEqual(originalSettings);
+  });
+
+  // Records come from the real repositories: a field the schema does not
+  // declare would be dropped on import with no error anywhere.
+  it("export → parseBackup → applyBackup keeps what the app itself wrote", async () => {
+    const { id } = await projectRepository.create();
+    await projectRepository.addTag({ id, name: "Crochê" });
+    await projectRepository.addLap({ id, lapTime: 5000, name: "Base" });
+    await projectRepository.complete(id);
+    const removed = await projectRepository.create();
+    await projectRepository.remove(removed.id);
+    await settingsRepository.set("hourlyPrice", 42);
+    await settingsRepository.set("hideTags", true);
+
+    const projectsBefore = await db.projects.toArray();
+    const settingsBefore = await db.settings.toArray();
+    const text = JSON.stringify(await backupService.exportData());
+    await db.projects.clear();
+    await db.settings.clear();
+    await backupService.applyBackup(backupService.parseBackup(text));
+
+    expect(await db.projects.toArray()).toEqual(projectsBefore);
+    expect(await db.settings.toArray()).toEqual(settingsBefore);
   });
 });
