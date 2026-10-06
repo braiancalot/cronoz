@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     env: {
       DATABASE_URL: TEST_DATABASE_URL,
-      CORS_ALLOWED_ORIGINS: "http://localhost:5173,https://cronoz.teshi.com.br",
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,https://cronoz.example",
     },
     globalSetup: ["./test/globalSetup.js"],
     setupFiles: ["./test/setup.js"],

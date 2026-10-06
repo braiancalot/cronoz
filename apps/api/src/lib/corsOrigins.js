@@ -1,7 +1,7 @@
 const DEV_ORIGINS = ["http://localhost:5173"];
 
 const EXPECTED_FORMAT =
-  'a comma-separated list like "https://cronoz.teshi.com.br,http://localhost:5173"';
+  'a comma-separated list like "https://cronoz.example,http://localhost:5173"';
 
 // A trailing slash or a path never matches the browser's Origin header.
 function assertBareOrigin(entry) {
