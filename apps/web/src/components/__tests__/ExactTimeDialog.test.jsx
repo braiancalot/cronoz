@@ -3,8 +3,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { formatHms } from "@/lib/stopwatch.js";
 import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
+import { useHidePrice } from "@/hooks/useHidePrice.js";
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
+vi.mock("@/hooks/useHidePrice.js", () => ({
+  useHidePrice: vi.fn(() => false),
+}));
 
 const writeText = vi.fn().mockResolvedValue(undefined);
 Object.defineProperty(window.Navigator.prototype, "clipboard", {
@@ -39,6 +43,7 @@ function renderOpen() {
 describe("ExactTimeDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useHidePrice).mockReturnValue(false);
   });
 
   it("renders the rounded, exact and difference rows when open", () => {
@@ -93,6 +98,17 @@ describe("ExactTimeDialog", () => {
     expect(writeText).toHaveBeenCalledWith(
       `${formatHms(3998, { fraction: true })} (${price})`,
     );
+  });
+
+  it("shows and copies the time alone when hidePrice is set", () => {
+    vi.mocked(useHidePrice).mockReturnValue(true);
+    renderOpen();
+
+    expect(screen.queryByText(/R\$/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle("Copiar tempo exato"));
+
+    expect(writeText).toHaveBeenCalledWith(formatHms(3998, { fraction: true }));
   });
 
   it("has no copy button on the difference row", () => {

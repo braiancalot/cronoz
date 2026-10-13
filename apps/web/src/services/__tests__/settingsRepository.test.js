@@ -30,6 +30,7 @@ describe("getResolved", () => {
       hourlyPrice: 10,
       ignoreMilliseconds: false,
       hideTags: false,
+      hidePrice: false,
     });
   });
 
@@ -40,6 +41,7 @@ describe("getResolved", () => {
       hourlyPrice: 10,
       ignoreMilliseconds: true,
       hideTags: false,
+      hidePrice: false,
     });
   });
 

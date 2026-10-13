@@ -5,6 +5,7 @@ import settingsRepository from "@/services/settingsRepository.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useHideTags } from "@/hooks/useHideTags.js";
+import { useHidePrice } from "@/hooks/useHidePrice.js";
 import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Switch } from "@/components/ui/switch.jsx";
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const hourlyPrice = useHourlyPrice();
   const ignoreMilliseconds = useIgnoreMilliseconds();
   const hideTags = useHideTags();
+  const hidePrice = useHidePrice();
 
   async function handlePriceChange(e) {
     const value = parseFloat(e.target.value);
@@ -33,6 +35,10 @@ export default function SettingsPage() {
 
   async function handleIgnoreMillisecondsChange(checked) {
     await settingsRepository.set("ignoreMilliseconds", checked);
+  }
+
+  async function handleHidePriceChange(checked) {
+    await settingsRepository.set("hidePrice", checked);
   }
 
   async function handleHideTagsChange(checked) {
@@ -60,6 +66,21 @@ export default function SettingsPage() {
           <CardContent className="flex flex-col gap-8">
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
+                <Label htmlFor="hide-price">Esconder valor</Label>
+                <p className="text-xs text-muted-foreground">
+                  Mostra só o tempo, sem o valor calculado. O valor por hora
+                  continua salvo.
+                </p>
+              </div>
+              <Switch
+                id="hide-price"
+                checked={hidePrice}
+                onCheckedChange={handleHidePriceChange}
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
                 <Label htmlFor="hourly-price">Valor por hora</Label>
                 <p className="text-xs text-muted-foreground">
                   Usado para calcular o valor de cada projeto com base no tempo.
@@ -74,6 +95,7 @@ export default function SettingsPage() {
                 inputMode="decimal"
                 value={hourlyPrice}
                 onChange={handlePriceChange}
+                disabled={hidePrice}
                 className="w-[calc(5ch+1.5rem)] shrink-0 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
             </div>
@@ -84,7 +106,9 @@ export default function SettingsPage() {
                   Ignorar milissegundos
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Remove os milissegundos da exibição e do cálculo de valor.
+                  {hidePrice
+                    ? "Remove os milissegundos da exibição."
+                    : "Remove os milissegundos da exibição e do cálculo de valor."}
                 </p>
               </div>
               <Switch

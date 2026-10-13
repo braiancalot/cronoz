@@ -3,8 +3,12 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { toast } from "sonner";
 import { TimerDisplay } from "@/components/timer/TimerDisplay.jsx";
 import { SIZES } from "@/components/timer/timerDisplaySizes.js";
+import { useHidePrice } from "@/hooks/useHidePrice.js";
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
+vi.mock("@/hooks/useHidePrice.js", () => ({
+  useHidePrice: vi.fn(() => false),
+}));
 
 const writeText = vi.fn().mockResolvedValue(undefined);
 Object.defineProperty(window.Navigator.prototype, "clipboard", {
@@ -15,6 +19,7 @@ Object.defineProperty(window.Navigator.prototype, "clipboard", {
 describe("TimerDisplay", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useHidePrice).mockReturnValue(false);
   });
   it("renders formatted time with milliseconds", () => {
     const { container } = render(<TimerDisplay time={61000} />);
@@ -120,5 +125,38 @@ describe("TimerDisplay", () => {
 
     const time = container.querySelector(".tabular-nums");
     expect(time.className).toContain("vmin");
+  });
+
+  it("keeps showing a zero price: only the setting hides it", () => {
+    render(<TimerDisplay time={3600000} hourlyPrice={0} />);
+
+    expect(screen.getByText(/R\$\s0,00/)).toBeInTheDocument();
+  });
+
+  it("drops the price, the separator and the combined copy when hidePrice is set", () => {
+    vi.mocked(useHidePrice).mockReturnValue(true);
+    render(<TimerDisplay time={1000} totalTime={3600000} hourlyPrice={100} />);
+
+    expect(screen.queryByText(/R\$/)).not.toBeInTheDocument();
+    expect(screen.queryByText("•")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Copiar tempo e valor")).not.toBeInTheDocument();
+  });
+
+  it("holds the meta line of a lapless timer when hidePrice is set", () => {
+    vi.mocked(useHidePrice).mockReturnValue(true);
+    const { container } = render(<TimerDisplay time={1000} size="compact" />);
+
+    // Without it the first lap would bring the total in and shift the stage.
+    const filler = container.querySelector(".group [aria-hidden]");
+    expect(filler).toHaveClass("invisible", SIZES.compact.price);
+  });
+
+  it("reserves nothing where the price was never shown (PiP)", () => {
+    vi.mocked(useHidePrice).mockReturnValue(true);
+    const { container } = render(
+      <TimerDisplay time={1000} showPrice={false} />,
+    );
+
+    expect(container.querySelector(".group [aria-hidden]")).toBeNull();
   });
 });

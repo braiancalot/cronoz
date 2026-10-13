@@ -1,4 +1,5 @@
 import { FormattedTime } from "@/components/FormattedTime.jsx";
+import { useHidePrice } from "@/hooks/useHidePrice.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { copyFromEvent } from "@/lib/clipboard.js";
 import { formatTimeCompact, calculateTotalPrice } from "@/lib/stopwatch.js";
@@ -19,6 +20,7 @@ export function TimerDisplay({
 }) {
   const s = SIZES[size];
   const ignoreMs = useIgnoreMilliseconds();
+  const hidePrice = useHidePrice();
 
   const priceBase = totalTime !== null ? totalTime : time;
   const priceFormatted = new Intl.NumberFormat("pt-BR", {
@@ -65,7 +67,8 @@ export function TimerDisplay({
       <TimerMeta
         totalTime={totalTime}
         priceFormatted={priceFormatted}
-        showPrice={showPrice}
+        showPrice={showPrice && !hidePrice}
+        reserveEmptyLine={showPrice && hidePrice}
         enableCopy={enableCopy}
         isRunning={isRunning}
         metaClass={fluid ? FLUID.meta : s.meta}

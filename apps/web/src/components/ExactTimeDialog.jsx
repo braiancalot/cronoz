@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { useHidePrice } from "@/hooks/useHidePrice.js";
 import { copyWithToast } from "@/lib/clipboard.js";
 import { formatHms, summarizeExactTime } from "@/lib/stopwatch.js";
 import { cn } from "@/lib/utils.js";
@@ -26,7 +27,10 @@ function Row({
   emphasized = false,
   copyLabel,
 }) {
+  const hidePrice = useHidePrice();
   const valueClass = emphasized ? "font-medium" : "text-muted-foreground";
+  const timeText = formatHms(time, { fraction });
+  const copyText = hidePrice ? timeText : `${timeText} (${brl.format(price)})`;
 
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -36,24 +40,19 @@ function Row({
       </div>
 
       <div className="flex items-center gap-3 tabular-nums">
-        <span className={valueClass}>
-          {`${prefix}${formatHms(time, { fraction })}`}
-        </span>
-        <span className={cn(valueClass, emphasized && "text-primary")}>
-          {`${prefix}${brl.format(price)}`}
-        </span>
+        <span className={valueClass}>{`${prefix}${timeText}`}</span>
+        {!hidePrice && (
+          <span className={cn(valueClass, emphasized && "text-primary")}>
+            {`${prefix}${brl.format(price)}`}
+          </span>
+        )}
 
         {copyLabel ? (
           <Button
             variant="ghost"
             size="icon-xs"
             title={`Copiar ${copyLabel.toLowerCase()}`}
-            onClick={() =>
-              copyWithToast(
-                `${formatHms(time, { fraction })} (${brl.format(price)})`,
-                copyLabel,
-              )
-            }
+            onClick={() => copyWithToast(copyText, copyLabel)}
           >
             <CopyIcon />
           </Button>

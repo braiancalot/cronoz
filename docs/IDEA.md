@@ -12,7 +12,7 @@
 - Deletar uma volta reduz o tempo total do projeto (voltas são a fonte de verdade)
 - Projetos ativos separados dos concluídos na tela inicial
 - Sincronização entre dispositivos sem login (código de pareamento)
-- Cálculo de valor da peça por preço/hora
+- Cálculo de valor da peça por preço/hora, que pode ser escondido para quem só quer medir tempo
 - Offline-first, PWA instalável
 
 ## Stack
@@ -44,7 +44,7 @@ A versão 1.0 está entregue e em uso em produção.
 - Cronômetro com start/pause por projeto
 - Voltas com modal + pausa automática ao marcar; renomear e excluir voltas
 - Nomenclatura "Volta" (não "Lap")
-- Cálculo de valor por hora
+- Cálculo de valor por hora, com opção de esconder o valor
 - Projetos ativos separados dos concluídos
 - PWA offline instalável
 - Design system com shadcn/ui + página demo (`/design`)

@@ -11,6 +11,7 @@ export function TimerMeta({
   totalTime,
   priceFormatted,
   showPrice,
+  reserveEmptyLine = false,
   enableCopy,
   isRunning,
   metaClass,
@@ -27,6 +28,14 @@ export function TimerMeta({
       )}
     >
       <div className="flex gap-2 items-center justify-center">
+        {/* With the price hidden a lapless timer has nothing to show here.
+            Holding the line keeps the first lap from shifting the stage. */}
+        {reserveEmptyLine && !hasTotal && (
+          <span aria-hidden className={cn("invisible", priceClass)}>
+            &nbsp;
+          </span>
+        )}
+
         {hasTotal && (
           <div
             onClick={

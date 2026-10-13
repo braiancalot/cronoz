@@ -5,6 +5,7 @@ export const DEFAULTS = {
   hourlyPrice: 10,
   ignoreMilliseconds: false,
   hideTags: false,
+  hidePrice: false,
 };
 
 async function get(key) {
