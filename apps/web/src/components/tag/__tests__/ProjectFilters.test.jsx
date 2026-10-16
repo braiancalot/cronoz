@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProjectFilters } from "@/components/tag/ProjectFilters.jsx";
 
@@ -38,7 +38,17 @@ function FilterHarness({ showCompletedFilter }) {
   );
 }
 
+function setScrollGeometry(element, { scrollLeft, scrollWidth, clientWidth }) {
+  Object.defineProperty(element, "scrollWidth", { value: scrollWidth });
+  Object.defineProperty(element, "clientWidth", { value: clientWidth });
+  element.scrollLeft = scrollLeft;
+}
+
 describe("ProjectFilters", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("toggles tag and completed filters, then clears both", async () => {
     const user = userEvent.setup();
     render(<FilterHarness />);
@@ -78,5 +88,48 @@ describe("ProjectFilters", () => {
       screen.queryByRole("button", { name: "Concluídos" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Crochê" })).toBeInTheDocument();
+  });
+
+  it("marks the edges that still hide chips as the list scrolls", () => {
+    const { container } = render(<FilterHarness />);
+    const scroller = container.querySelector(".overflow-x-auto");
+
+    setScrollGeometry(scroller, {
+      scrollLeft: 0,
+      scrollWidth: 500,
+      clientWidth: 200,
+    });
+    fireEvent.scroll(scroller);
+
+    expect(scroller).not.toHaveAttribute("data-overflow-start");
+    expect(scroller).toHaveAttribute("data-overflow-end");
+
+    scroller.scrollLeft = 300;
+    fireEvent.scroll(scroller);
+
+    expect(scroller).toHaveAttribute("data-overflow-start");
+    expect(scroller).not.toHaveAttribute("data-overflow-end");
+  });
+
+  it("scrolls the tapped chip into view once Limpar has appeared", async () => {
+    const user = userEvent.setup();
+    const reveals = [];
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, "scrollIntoView")
+      .mockImplementation(function recordReveal() {
+        reveals.push({
+          chip: this,
+          clearShown: Boolean(screen.queryByRole("button", { name: "Limpar" })),
+        });
+      });
+    render(<FilterHarness />);
+    const tag = screen.getByRole("button", { name: "Encomenda" });
+
+    await user.click(tag);
+
+    expect(reveals).toEqual([{ chip: tag, clearShown: true }]);
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ inline: "nearest", block: "nearest" }),
+    );
   });
 });

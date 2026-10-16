@@ -110,3 +110,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Fades only the side that still has chips to scroll to. A hard cut at the
+   edge doesn't tell whether the list ends there. */
+.scroll-edge-fade {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+}
+
+.scroll-edge-fade[data-overflow-start] {
+  --fade-start: 1.5rem;
+}
+
+.scroll-edge-fade[data-overflow-end] {
+  --fade-end: 1.5rem;
+}

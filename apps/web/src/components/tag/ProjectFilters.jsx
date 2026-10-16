@@ -2,6 +2,8 @@ import { CheckCircleIcon, XIcon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button.jsx";
 import { FilterChip } from "@/components/ui/filter-chip.jsx";
+import { useRevealAfterRender } from "@/hooks/useRevealAfterRender.js";
+import { useScrollEdges } from "@/hooks/useScrollEdges.js";
 import { tagColor } from "@/lib/tagColors.js";
 import { cn } from "@/lib/utils.js";
 
@@ -16,13 +18,39 @@ export function ProjectFilters({
   className,
 }) {
   const hasFilters = selectedTagKeys.length > 0 || completedOnly;
+  const { scrollerRef, edges } = useScrollEdges();
+  const revealAfterRender = useRevealAfterRender();
 
+  // Selecting brings in "Limpar", which narrows the scroller and can push the
+  // chip just tapped under the edge.
+  function toggleAndReveal(event, toggle) {
+    revealAfterRender(event.currentTarget);
+    toggle();
+  }
+
+  // Bleeds past the page gutter so chips scroll to the screen edge.
   return (
-    <div className={cn("flex min-w-0 items-center gap-2", className)}>
-      <div className="min-w-0 flex-1 overflow-x-auto pb-1 [scrollbar-width:thin]">
+    <div
+      className={cn(
+        "-mx-4 flex min-w-0 items-center gap-2 md:-mx-8",
+        className,
+      )}
+    >
+      <div
+        ref={scrollerRef}
+        data-overflow-start={edges.start || undefined}
+        data-overflow-end={edges.end || undefined}
+        className={cn(
+          "scroll-edge-fade scroll-px-8 min-w-0 flex-1 overflow-x-auto overscroll-x-contain pl-4 [scrollbar-width:none] md:pl-8 [&::-webkit-scrollbar]:hidden",
+          !hasFilters && "pr-4 md:pr-8",
+        )}
+      >
         <div className="flex w-max items-center gap-2">
           {showCompletedFilter && (
-            <FilterChip selected={completedOnly} onClick={onToggleCompleted}>
+            <FilterChip
+              selected={completedOnly}
+              onClick={(event) => toggleAndReveal(event, onToggleCompleted)}
+            >
               <CheckCircleIcon
                 className="size-3.5"
                 weight={completedOnly ? "fill" : "regular"}
@@ -36,7 +64,9 @@ export function ProjectFilters({
               key={tag.key}
               color={tagColor(tag.name)}
               selected={selectedTagKeys.includes(tag.key)}
-              onClick={() => onToggleTag(tag.key)}
+              onClick={(event) =>
+                toggleAndReveal(event, () => onToggleTag(tag.key))
+              }
             >
               {tag.name}
             </FilterChip>
@@ -49,7 +79,7 @@ export function ProjectFilters({
           variant="ghost"
           size="xs"
           pressEffect="none"
-          className="h-[30px]! px-2! text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="mr-4 h-[30px]! px-2! text-muted-foreground md:mr-8 focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onClear}
         >
           <span className="flex items-center gap-1 leading-none">

@@ -11,6 +11,9 @@ class ResizeObserverStub {
 }
 globalThis.ResizeObserver ??= ResizeObserverStub;
 
+// jsdom has no scrollIntoView. ProjectFilters calls it on every chip tap.
+Element.prototype.scrollIntoView ??= function scrollIntoViewStub() {};
+
 afterEach(() => {
   cleanup();
 });
