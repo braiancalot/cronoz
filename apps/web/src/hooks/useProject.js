@@ -26,22 +26,25 @@ export function useProject(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
   const [splitDisplayTime, setSplitDisplayTime] = useState(0);
 
-  const [lapOverride, setLapOverride] = useState(null);
+  const [stopwatchOverride, setStopwatchOverride] = useState(null);
 
   const liveProject = useLiveQuery(
     () => projectRepository.getById(projectId),
     [projectId],
   );
 
-  // A lap write resolves before useLiveQuery re-emits. Without the override
-  // the add form closes on a list that lacks the new lap, and the lap pops in
-  // a frame later. Any newer live stopwatch wins over it.
+  // A write resolves before useLiveQuery re-emits. Without the override the
+  // add form closed on a list that lacked the new lap, and play/pause reacted
+  // a frame late. Any newer live stopwatch wins over it.
   const project = useMemo(() => {
-    if (!lapOverride || liveProject?.stopwatch !== lapOverride.base) {
+    if (
+      !stopwatchOverride ||
+      liveProject?.stopwatch !== stopwatchOverride.base
+    ) {
       return liveProject;
     }
-    return { ...liveProject, stopwatch: lapOverride.next };
-  }, [liveProject, lapOverride]);
+    return { ...liveProject, stopwatch: stopwatchOverride.next };
+  }, [liveProject, stopwatchOverride]);
 
   const isLoading = liveProject === undefined;
   // Read at write time: the delete undo runs from a toast, renders later.
@@ -113,25 +116,32 @@ export function useProject(projectId) {
     setSplitDisplayTime(calculateSplitTime(sw, { ignoreMs }));
   }
 
+  function holdStopwatch(base, next) {
+    setStopwatchOverride({ base, next });
+    showStopwatch(next);
+  }
+
+  // The lap id is minted inside the repository, so the override waits for it.
   async function writeLap(write) {
     const base = liveStopwatchRef.current;
     const change = await write();
-    if (!change) return;
-    setLapOverride({ base, next: change.next });
-    showStopwatch(change.next);
+    if (change) holdStopwatch(base, change.next);
+  }
+
+  // Same `now` on both sides, so the live record lands on the shown value.
+  function runTransition(transition) {
+    const now = Date.now();
+    holdStopwatch(liveStopwatchRef.current, transition(project.stopwatch, now));
+    projectRepository.updateStopwatch(project.id, (sw) => transition(sw, now));
   }
 
   function start() {
-    projectRepository.updateStopwatch(project.id, (sw) =>
-      startRun(sw, Date.now()),
-    );
+    runTransition(startRun);
   }
 
   function pause() {
     if (!project?.stopwatch?.isRunning) return;
-    projectRepository.updateStopwatch(project.id, (sw) =>
-      pauseRun(sw, Date.now()),
-    );
+    runTransition(pauseRun);
   }
 
   // The undo adds the discarded time back on top of the stored record, so a

@@ -915,4 +915,31 @@ describe("useProject", () => {
       expect(result.current.project).toBe(project);
     });
   });
+
+  describe("play and pause before the live query catches up", () => {
+    it("shows the clock running as soon as start is called", () => {
+      load(createProject({ currentLapTime: 3000 }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      act(() => result.current.start());
+
+      expect(result.current.project.stopwatch.isRunning).toBe(true);
+      expect(store.last.startTimestamp).toBe(
+        result.current.project.stopwatch.startTimestamp,
+      );
+    });
+
+    it("freezes the clock on the paused value as soon as pause is called", () => {
+      const now = Date.now();
+      load(createProject({ isRunning: true, startTimestamp: now - 5000 }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      act(() => result.current.pause());
+
+      const shown = result.current.project.stopwatch;
+      expect(shown.isRunning).toBe(false);
+      expect(shown.currentLapTime).toBe(store.last.currentLapTime);
+      expect(result.current.displayTime).toBe(store.last.currentLapTime);
+    });
+  });
 });
