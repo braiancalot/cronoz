@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 
 import db from "@/services/db.js";
 import settingsRepository from "@/services/settingsRepository.js";
@@ -7,6 +7,7 @@ import {
   SettingsProvider,
   useSettings,
   useHourlyPrice,
+  useSetSetting,
 } from "@/providers/SettingsProvider.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 
@@ -21,6 +22,23 @@ function Probe() {
       <span data-testid="ignore-ms">{String(ignoreMs)}</span>
     </div>
   );
+}
+
+// Resolves once settings loaded, with the setter the provider hands out.
+async function renderWithWriter() {
+  let setSetting;
+  function Writer() {
+    setSetting = useSetSetting();
+    return null;
+  }
+  render(
+    <SettingsProvider>
+      <Probe />
+      <Writer />
+    </SettingsProvider>,
+  );
+  await waitFor(() => expect(screen.getByTestId("price")).toBeVisible());
+  return (key, value) => setSetting(key, value);
 }
 
 describe("SettingsProvider", () => {
@@ -64,5 +82,26 @@ describe("SettingsProvider", () => {
 
     expect(screen.getByTestId("price")).toHaveTextContent("10");
     expect(screen.getByTestId("ignore-ms")).toHaveTextContent("false");
+  });
+
+  it("shows a written setting before the live query re-emits", async () => {
+    const setSetting = await renderWithWriter();
+
+    // Synchronous act: Dexie cannot have re-emitted yet.
+    act(() => {
+      setSetting("ignoreMilliseconds", true);
+    });
+    expect(screen.getByTestId("ignore-ms")).toHaveTextContent("true");
+  });
+
+  it("lets a newer stored value win over the pending one", async () => {
+    const setSetting = await renderWithWriter();
+
+    await act(() => setSetting("hourlyPrice", 20));
+    await act(() => settingsRepository.set("hourlyPrice", 30));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("price")).toHaveTextContent("30"),
+    );
   });
 });

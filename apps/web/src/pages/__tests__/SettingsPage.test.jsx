@@ -50,4 +50,34 @@ describe("SettingsPage", () => {
     expect(screen.getByLabelText("Valor por hora")).toBeDisabled();
     expect(screen.queryByText(/cálculo de valor/)).not.toBeInTheDocument();
   });
+
+  it("saves the hourly price as it is typed", () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText("Valor por hora"), {
+      target: { value: "25" },
+    });
+
+    expect(settingsRepository.set).toHaveBeenCalledWith("hourlyPrice", 25);
+  });
+
+  it("lets the hourly price be emptied to type a new one", () => {
+    renderPage();
+    const input = screen.getByLabelText("Valor por hora");
+
+    fireEvent.change(input, { target: { value: "" } });
+
+    expect(input).toHaveValue(null);
+    expect(settingsRepository.set).not.toHaveBeenCalled();
+  });
+
+  it("shows the stored price again when an emptied field loses focus", () => {
+    renderPage();
+    const input = screen.getByLabelText("Valor por hora");
+
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.blur(input);
+
+    expect(input).toHaveValue(10);
+  });
 });

@@ -1,8 +1,11 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
-import settingsRepository from "@/services/settingsRepository.js";
-import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
+import {
+  useHourlyPrice,
+  useSetSetting,
+} from "@/providers/SettingsProvider.jsx";
+import { useHourlyPriceDraft } from "@/hooks/useHourlyPriceDraft.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useHideTags } from "@/hooks/useHideTags.js";
 import { useHidePrice } from "@/hooks/useHidePrice.js";
@@ -26,24 +29,11 @@ export default function SettingsPage() {
   const hideTags = useHideTags();
   const hidePrice = useHidePrice();
 
-  async function handlePriceChange(e) {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      await settingsRepository.set("hourlyPrice", value);
-    }
-  }
-
-  async function handleIgnoreMillisecondsChange(checked) {
-    await settingsRepository.set("ignoreMilliseconds", checked);
-  }
-
-  async function handleHidePriceChange(checked) {
-    await settingsRepository.set("hidePrice", checked);
-  }
-
-  async function handleHideTagsChange(checked) {
-    await settingsRepository.set("hideTags", checked);
-  }
+  const setSetting = useSetSetting();
+  const priceField = useHourlyPriceDraft({
+    storedPrice: hourlyPrice,
+    onSave: (value) => setSetting("hourlyPrice", value),
+  });
 
   return (
     <PageContainer className="max-w-300 mx-auto">
@@ -75,7 +65,7 @@ export default function SettingsPage() {
               <Switch
                 id="hide-price"
                 checked={hidePrice}
-                onCheckedChange={handleHidePriceChange}
+                onCheckedChange={(checked) => setSetting("hidePrice", checked)}
               />
             </div>
 
@@ -93,8 +83,7 @@ export default function SettingsPage() {
                 max="9999"
                 step="0.5"
                 inputMode="decimal"
-                value={hourlyPrice}
-                onChange={handlePriceChange}
+                {...priceField}
                 disabled={hidePrice}
                 className="w-[calc(5ch+1.5rem)] shrink-0 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
@@ -114,7 +103,9 @@ export default function SettingsPage() {
               <Switch
                 id="ignore-milliseconds"
                 checked={ignoreMilliseconds}
-                onCheckedChange={handleIgnoreMillisecondsChange}
+                onCheckedChange={(checked) =>
+                  setSetting("ignoreMilliseconds", checked)
+                }
               />
             </div>
 
@@ -130,7 +121,7 @@ export default function SettingsPage() {
               <Switch
                 id="hide-tags"
                 checked={hideTags}
-                onCheckedChange={handleHideTagsChange}
+                onCheckedChange={(checked) => setSetting("hideTags", checked)}
               />
             </div>
           </CardContent>
