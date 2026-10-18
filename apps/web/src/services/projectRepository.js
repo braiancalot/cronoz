@@ -184,7 +184,7 @@ async function removeTag({ id, name }) {
   await updateTags(id, (tags) => removeTagFromList(tags, name));
 }
 
-// User-final stopwatch transitions (start/pause/reset/recovery). Unlike
+// User-final stopwatch transitions (start/pause/recovery). Unlike
 // save(), this bumps updatedAt and emits a mutation event so the change
 // reaches other devices via push.
 async function setStopwatch(id, stopwatch) {

@@ -137,57 +137,6 @@ describe("useProject", () => {
     expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
   });
 
-  it("reset saves project with DEFAULT_STOPWATCH", () => {
-    const project = createProject({ currentLapTime: 5000 });
-    mockUseLiveQuery.mockReturnValue(project);
-
-    const { result } = renderHook(() => useProject("test-id"));
-
-    act(() => {
-      result.current.reset();
-    });
-
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-      "test-id",
-      DEFAULT_STOPWATCH,
-    );
-  });
-
-  it("reset returns an undo that restores the previous stopwatch (paused)", () => {
-    const laps = [{ id: "l1", name: "Volta 1", lapTime: 1000 }];
-    const project = createProject({
-      currentLapTime: 5000,
-      isRunning: true,
-      startTimestamp: 1000,
-      lastActiveAt: 2000,
-      laps,
-    });
-    mockUseLiveQuery.mockReturnValue(project);
-
-    const { result } = renderHook(() => useProject("test-id"));
-
-    let undoer;
-    act(() => {
-      undoer = result.current.reset();
-    });
-    expect(undoer).toEqual(
-      expect.objectContaining({ undo: expect.any(Function) }),
-    );
-
-    mockRepository.setStopwatch.mockClear();
-
-    act(() => {
-      undoer.undo();
-    });
-
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith("test-id", {
-      ...project.stopwatch,
-      isRunning: false,
-      startTimestamp: null,
-      lastActiveAt: null,
-    });
-  });
-
   it("discardCurrentTime zeroes currentLapTime and pauses", () => {
     const project = createProject({
       isRunning: true,

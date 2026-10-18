@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
-import projectRepository, {
-  DEFAULT_STOPWATCH,
-} from "@/services/projectRepository.js";
+import projectRepository from "@/services/projectRepository.js";
 import {
   calculateSplitTime,
   calculateTotalTime,
@@ -121,26 +119,6 @@ export function useProject(projectId) {
     });
   }
 
-  function reset() {
-    const snapshot = { ...project.stopwatch };
-    const next = { ...DEFAULT_STOPWATCH };
-    projectRepository.setStopwatch(project.id, next);
-    showStopwatch(next);
-    return {
-      undo: () => {
-        // No optimistic display: reset cleared the laps, so the live project
-        // reports hasLaps=false for a frame and the total would show as the
-        // "current" time. Let the live query drive it consistently.
-        projectRepository.setStopwatch(project.id, {
-          ...snapshot,
-          isRunning: false,
-          startTimestamp: null,
-          lastActiveAt: null,
-        });
-      },
-    };
-  }
-
   function discardCurrentTime() {
     const snapshot = { ...project.stopwatch };
     const next = {
@@ -218,7 +196,6 @@ export function useProject(projectId) {
     splitDisplayTime,
     start,
     pause,
-    reset,
     discardCurrentTime,
     setCurrentTime,
     toggle,
