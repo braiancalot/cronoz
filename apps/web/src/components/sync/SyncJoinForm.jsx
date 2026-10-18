@@ -30,7 +30,7 @@ export function SyncJoinForm({
         autoComplete="off"
         spellCheck={false}
         value={value}
-        onChange={(e) => onChange(normalizePairingCode(e.target.value))}
+        onChange={(event) => onChange(normalizePairingCode(event.target.value))}
         placeholder="XXXXXXXX"
         aria-invalid={!!error}
         aria-describedby={error ? "pair-code-error" : undefined}

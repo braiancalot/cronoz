@@ -15,7 +15,9 @@ async function get(key) {
 
 async function getResolved() {
   const entries = await db.settings.toArray();
-  const stored = Object.fromEntries(entries.map((e) => [e.key, e.value]));
+  const stored = Object.fromEntries(
+    entries.map((entry) => [entry.key, entry.value]),
+  );
   return Object.fromEntries(
     Object.keys(DEFAULTS).map((key) => [
       key,

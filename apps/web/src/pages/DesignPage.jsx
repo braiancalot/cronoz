@@ -168,7 +168,7 @@ export default function DesignPage() {
                 id="demo-input"
                 placeholder="Ex: Bolsa de crochê"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(event) => setInputValue(event.target.value)}
               />
             </div>
             <Input disabled placeholder="Desabilitado" />

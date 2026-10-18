@@ -12,9 +12,9 @@ export function useInstallPrompt() {
   useEffect(() => {
     if (isInstalled) return;
 
-    function handleBeforeInstallPrompt(e) {
-      e.preventDefault();
-      setPromptEvent(e);
+    function handleBeforeInstallPrompt(event) {
+      event.preventDefault();
+      setPromptEvent(event);
     }
 
     function handleAppInstalled() {

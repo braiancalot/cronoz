@@ -47,7 +47,8 @@ export function TimerDisplay({
         <div
           onClick={
             enableCopy
-              ? (e) => copyFromEvent(e, formatTimeCompact(time), "Tempo")
+              ? (event) =>
+                  copyFromEvent(event, formatTimeCompact(time), "Tempo")
               : undefined
           }
           className={enableCopy ? "cursor-pointer" : undefined}

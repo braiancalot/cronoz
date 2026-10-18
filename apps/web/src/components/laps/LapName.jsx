@@ -31,7 +31,7 @@ export function LapName({ children }) {
         <span
           ref={ref}
           className="min-w-0 flex-1 truncate select-none [-webkit-touch-callout:none]"
-          onContextMenu={(e) => e.preventDefault()}
+          onContextMenu={(event) => event.preventDefault()}
           {...longPressHandlers}
         >
           {children}

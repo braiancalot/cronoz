@@ -16,7 +16,7 @@ export function LapNameForm({ value, onChange, onSubmit, onCancel }) {
     <form {...formProps} className="flex items-center gap-2 -my-1 w-full">
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         {...fieldProps}
         maxLength={MAX_LAP_NAME_LENGTH}
         className="flex-1 min-w-0 bg-transparent outline-none"

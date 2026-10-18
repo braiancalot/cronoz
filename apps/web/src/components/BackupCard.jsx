@@ -33,9 +33,9 @@ export function BackupCard() {
     fileInputRef.current?.click();
   }
 
-  async function handleFileSelected(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  async function handleFileSelected(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
     try {

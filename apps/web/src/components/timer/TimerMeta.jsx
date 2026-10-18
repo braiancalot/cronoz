@@ -40,9 +40,9 @@ export function TimerMeta({
           <div
             onClick={
               canCopy
-                ? (e) =>
+                ? (event) =>
                     copyFromEvent(
-                      e,
+                      event,
                       formatTimeCompact(totalTime),
                       "Tempo total",
                     )
@@ -66,7 +66,7 @@ export function TimerMeta({
             <span
               onClick={
                 canCopy
-                  ? (e) => copyFromEvent(e, priceFormatted, "Valor")
+                  ? (event) => copyFromEvent(event, priceFormatted, "Valor")
                   : undefined
               }
               className={cn(
@@ -82,9 +82,9 @@ export function TimerMeta({
               <Button
                 variant="ghost"
                 size="icon-xs"
-                onClick={(e) =>
+                onClick={(event) =>
                   copyFromEvent(
-                    e,
+                    event,
                     `${formatTimeCompact(totalTime)} (${priceFormatted})`,
                     "Tempo e valor",
                     { plural: true },

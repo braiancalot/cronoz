@@ -156,7 +156,7 @@ describe("syncService error handling", () => {
 
     const err = await syncService
       .pairJoin({ credential: "cred", code: "x" })
-      .catch((e) => e);
+      .catch((error) => error);
 
     expect(err).toBeInstanceOf(SyncError);
     expect(err.status).toBe(400);
@@ -171,7 +171,7 @@ describe("syncService error handling", () => {
 
     const err = await syncService
       .pull({ credential: "bad", cursor: 0 })
-      .catch((e) => e);
+      .catch((error) => error);
 
     expect(err).toBeInstanceOf(SyncError);
     expect(err.status).toBe(401);
@@ -182,7 +182,7 @@ describe("syncService error handling", () => {
 
     const err = await syncService
       .pairInitiate({ credential: "cred" })
-      .catch((e) => e);
+      .catch((error) => error);
 
     expect(err).toBeInstanceOf(SyncError);
     expect(err.status).toBeUndefined();
@@ -203,7 +203,9 @@ describe("syncService error handling", () => {
     const { default: svc, SyncError: SE } =
       await import("@/services/syncService.js");
 
-    const err = await svc.pairInitiate({ credential: "cred" }).catch((e) => e);
+    const err = await svc
+      .pairInitiate({ credential: "cred" })
+      .catch((error) => error);
     expect(err).toBeInstanceOf(SE);
     expect(err.message).toMatch(/VITE_API_URL/);
   });
