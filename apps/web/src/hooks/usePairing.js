@@ -45,8 +45,16 @@ async function readHostStatus({ code, expiresAt }) {
   }
 }
 
-async function settleHostStatus({ code, expiresAt, dispatch, onPaired }) {
+async function settleHostStatus({
+  code,
+  expiresAt,
+  dispatch,
+  onPaired,
+  isActive,
+}) {
   const status = await readHostStatus({ code, expiresAt });
+  // Left mid-request: the next mount resumes from PENDING_PAIRING_KEY.
+  if (!isActive()) return;
   if (status !== "joined") {
     dispatch({ type: "host_status", code, status });
     return;
@@ -59,25 +67,32 @@ async function settleHostStatus({ code, expiresAt, dispatch, onPaired }) {
   onPaired();
 }
 
+function startHostPolling({ pollMs, ...host }) {
+  let settling = false;
+  let active = true;
+  const isActive = () => active;
+  const poll = async () => {
+    if (settling) return;
+    settling = true;
+    // A failed local write leaves the code as joined; the next poll retries.
+    await settleHostStatus({ ...host, isActive }).catch(() => {});
+    settling = false;
+  };
+  poll();
+  const id = setInterval(poll, pollMs);
+  return () => {
+    active = false;
+    clearInterval(id);
+  };
+}
+
 function useHostPolling({ flow, dispatch, onPaired, pollMs }) {
   const { code, expiresAt } = flow;
   const isWaiting = flow.screen === "hosting" && flow.hostState === "waiting";
 
   useEffect(() => {
     if (!isWaiting) return;
-    let settling = false;
-    const poll = async () => {
-      if (settling) return;
-      settling = true;
-      // A failed local write leaves the code as joined; the next poll retries.
-      await settleHostStatus({ code, expiresAt, dispatch, onPaired }).catch(
-        () => {},
-      );
-      settling = false;
-    };
-    poll();
-    const id = setInterval(poll, pollMs);
-    return () => clearInterval(id);
+    return startHostPolling({ code, expiresAt, dispatch, onPaired, pollMs });
   }, [isWaiting, code, expiresAt, dispatch, onPaired, pollMs]);
 }
 

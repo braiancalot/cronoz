@@ -147,6 +147,22 @@ describe("usePairing host polling", () => {
     await waitFor(() => expect(onPaired).toHaveBeenCalledOnce());
   });
 
+  it("drops a poll answered after the page was left", async () => {
+    issueCode();
+    let answer;
+    syncService.pairStatus.mockReturnValue(
+      new Promise((resolve) => (answer = resolve)),
+    );
+    const { unmount } = await renderHosting();
+    await waitFor(() => expect(syncService.pairStatus).toHaveBeenCalled());
+
+    unmount();
+    await act(async () => answer({ status: "joined" }));
+
+    expect(syncManager.adoptPairing).not.toHaveBeenCalled();
+    expect(onPaired).not.toHaveBeenCalled();
+  });
+
   it("retries on the next poll when marking the pairing fails", async () => {
     issueCode();
     answerStatus("joined");
