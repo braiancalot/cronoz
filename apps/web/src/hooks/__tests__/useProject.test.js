@@ -841,15 +841,17 @@ describe("useProject", () => {
 
     function stubLapWrites() {
       mockRepository.addLap.mockImplementation(({ id, name }) =>
-        store.update(id, (sw) =>
-          appendLap(sw, { id: "lap-2", name, createdAt: 2 }, Date.now()),
+        store.update(id, (stopwatch) =>
+          appendLap(stopwatch, { id: "lap-2", name, createdAt: 2 }, Date.now()),
         ),
       );
       mockRepository.removeLap.mockImplementation(({ id, lapId }) =>
-        store.update(id, (sw) => markLapDeleted(sw, lapId, Date.now())),
+        store.update(id, (stopwatch) =>
+          markLapDeleted(stopwatch, lapId, Date.now()),
+        ),
       );
       mockRepository.undeleteLap.mockImplementation(({ id, lapId }) =>
-        store.update(id, (sw) => restoreLap(sw, lapId)),
+        store.update(id, (stopwatch) => restoreLap(stopwatch, lapId)),
       );
     }
 

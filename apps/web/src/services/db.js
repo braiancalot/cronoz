@@ -21,14 +21,17 @@ db.version(2)
       .table("projects")
       .toCollection()
       .modify((project) => {
-        const sw = project.stopwatch;
-        if (sw && "totalTime" in sw) {
-          const lastLapTotalTime = sw.laps?.[0]?.totalTime ?? 0;
-          sw.currentLapTime = Math.max(0, sw.totalTime - lastLapTotalTime);
-          delete sw.totalTime;
+        const stopwatch = project.stopwatch;
+        if (stopwatch && "totalTime" in stopwatch) {
+          const lastLapTotalTime = stopwatch.laps?.[0]?.totalTime ?? 0;
+          stopwatch.currentLapTime = Math.max(
+            0,
+            stopwatch.totalTime - lastLapTotalTime,
+          );
+          delete stopwatch.totalTime;
 
-          if (sw.laps) {
-            for (const lap of sw.laps) {
+          if (stopwatch.laps) {
+            for (const lap of stopwatch.laps) {
               delete lap.totalTime;
             }
           }

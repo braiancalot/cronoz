@@ -609,33 +609,35 @@ describe("runningElapsed", () => {
   });
 
   it("measures from the start to now while the heartbeat is fresh", () => {
-    const sw = {
+    const stopwatch = {
       isRunning: true,
       startTimestamp: NOW - 4000,
       lastActiveAt: NOW,
     };
-    expect(runningElapsed(sw, NOW)).toBe(4000);
+    expect(runningElapsed(stopwatch, NOW)).toBe(4000);
   });
 
   it("stops at the last heartbeat once it goes stale", () => {
-    const sw = {
+    const stopwatch = {
       isRunning: true,
       startTimestamp: NOW - 100_000,
       lastActiveAt: NOW - RECOVERY_GRACE_PERIOD,
     };
-    expect(runningElapsed(sw, NOW)).toBe(100_000 - RECOVERY_GRACE_PERIOD);
+    expect(runningElapsed(stopwatch, NOW)).toBe(
+      100_000 - RECOVERY_GRACE_PERIOD,
+    );
   });
 
   it("feeds calculateTotalTime and calculateSplitTime the same `now`", () => {
-    const sw = {
+    const stopwatch = {
       isRunning: true,
       startTimestamp: NOW - 4000,
       lastActiveAt: NOW,
       currentLapTime: 1000,
       laps: [{ lapTime: 2000 }],
     };
-    expect(calculateSplitTime(sw, { now: NOW })).toBe(5000);
-    expect(calculateTotalTime(sw, { now: NOW })).toBe(7000);
+    expect(calculateSplitTime(stopwatch, { now: NOW })).toBe(5000);
+    expect(calculateTotalTime(stopwatch, { now: NOW })).toBe(7000);
   });
 });
 

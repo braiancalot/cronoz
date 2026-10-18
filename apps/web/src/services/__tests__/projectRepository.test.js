@@ -11,8 +11,8 @@ const RUN_START = 1_000_000;
 
 // Runs the clock for `lapTime` and closes it into a lap, the way the app does.
 async function addTimedLap(id, lapTime, name) {
-  await projectRepository.updateStopwatch(id, (sw) =>
-    pauseRun(startRun(sw, RUN_START), RUN_START + lapTime),
+  await projectRepository.updateStopwatch(id, (stopwatch) =>
+    pauseRun(startRun(stopwatch, RUN_START), RUN_START + lapTime),
   );
   await projectRepository.addLap({ id, name });
 }
@@ -400,8 +400,8 @@ describe("updateStopwatch", () => {
 
     const change = await projectRepository.updateStopwatch(
       project.id,
-      (sw) => ({
-        ...sw,
+      (stopwatch) => ({
+        ...stopwatch,
         currentLapTime: 5000,
       }),
     );
@@ -419,9 +419,9 @@ describe("updateStopwatch", () => {
     });
 
     const seen = [];
-    await projectRepository.updateStopwatch(project.id, (sw) => {
-      seen.push(sw.currentLapTime);
-      return sw;
+    await projectRepository.updateStopwatch(project.id, (stopwatch) => {
+      seen.push(stopwatch.currentLapTime);
+      return stopwatch;
     });
 
     expect(seen).toEqual([9000]);
@@ -431,8 +431,8 @@ describe("updateStopwatch", () => {
     const project = await projectRepository.create();
     await db.projects.update(project.id, { updatedAt: 1 });
 
-    await projectRepository.updateStopwatch(project.id, (sw) => ({
-      ...sw,
+    await projectRepository.updateStopwatch(project.id, (stopwatch) => ({
+      ...stopwatch,
       currentLapTime: 1,
     }));
 
@@ -445,7 +445,7 @@ describe("updateStopwatch", () => {
 
     const change = await projectRepository.updateStopwatch(
       project.id,
-      (sw) => sw,
+      (stopwatch) => stopwatch,
     );
 
     expect(change).toBeNull();
@@ -454,7 +454,10 @@ describe("updateStopwatch", () => {
 
   it("serializes concurrent updates so neither is lost", async () => {
     const project = await projectRepository.create();
-    const addOne = (sw) => ({ ...sw, currentLapTime: sw.currentLapTime + 1 });
+    const addOne = (stopwatch) => ({
+      ...stopwatch,
+      currentLapTime: stopwatch.currentLapTime + 1,
+    });
 
     await Promise.all(
       Array.from({ length: 10 }, () =>
@@ -469,7 +472,7 @@ describe("updateStopwatch", () => {
 
   it("returns null for a non-existent project", async () => {
     await expect(
-      projectRepository.updateStopwatch("missing-id", (sw) => sw),
+      projectRepository.updateStopwatch("missing-id", (stopwatch) => stopwatch),
     ).resolves.toBeNull();
     expect(await db.projects.get("missing-id")).toBeUndefined();
   });

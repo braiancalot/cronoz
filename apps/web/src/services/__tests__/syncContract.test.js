@@ -13,8 +13,8 @@ import {
 const RUN_START = 1_000_000;
 
 async function runFor(id, ms) {
-  await projectRepository.updateStopwatch(id, (sw) =>
-    pauseRun(startRun(sw, RUN_START), RUN_START + ms),
+  await projectRepository.updateStopwatch(id, (stopwatch) =>
+    pauseRun(startRun(stopwatch, RUN_START), RUN_START + ms),
   );
 }
 
@@ -40,8 +40,8 @@ describe("sync contract: local records survive the push schema", () => {
     await addTimedLap(id, 5000, "Base");
     await addTimedLap(id, 3000, "Acabamento");
     await runFor(id, 1200);
-    await projectRepository.updateStopwatch(id, (sw) =>
-      startRun(sw, Date.now()),
+    await projectRepository.updateStopwatch(id, (stopwatch) =>
+      startRun(stopwatch, Date.now()),
     );
     await projectRepository.complete(id);
 
@@ -71,13 +71,13 @@ describe("sync contract: local records survive the push schema", () => {
     const { id } = await projectRepository.create();
     await addTimedLap(id, 5000, "Base");
     await runFor(id, 2000);
-    await projectRepository.updateStopwatch(id, (sw) =>
-      adjustCurrent(sw, 60_000, Date.now()),
+    await projectRepository.updateStopwatch(id, (stopwatch) =>
+      adjustCurrent(stopwatch, 60_000, Date.now()),
     );
     await addTimedLap(id, 0, "Ajustada");
     await runFor(id, 700);
-    await projectRepository.updateStopwatch(id, (sw) =>
-      discardCurrent(sw, Date.now()),
+    await projectRepository.updateStopwatch(id, (stopwatch) =>
+      discardCurrent(stopwatch, Date.now()),
     );
 
     const projects = await projectRepository.getAllForSync();

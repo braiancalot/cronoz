@@ -86,61 +86,62 @@ function pick(laps, index) {
 // Plays the ops through the real transitions. `discards` mirrors the undo
 // toasts: each discard leaves an amount that a later undo can give back.
 function play(ops, { onStep } = {}) {
-  let sw = freshStopwatch();
+  let stopwatch = freshStopwatch();
   let now = T0;
   let lapCount = 0;
   const discards = [];
 
   for (const op of ops) {
-    const before = sw;
+    const before = stopwatch;
     switch (op.type) {
       case "wait":
         now += op.ms;
         break;
       case "start":
-        sw = startRun(sw, now);
+        stopwatch = startRun(stopwatch, now);
         break;
       case "pause":
-        sw = pauseRun(sw, now);
+        stopwatch = pauseRun(stopwatch, now);
         break;
       case "heartbeat":
-        sw = heartbeat(sw, now);
+        stopwatch = heartbeat(stopwatch, now);
         break;
       case "recover":
-        sw = recoverStaleRun(sw, now);
+        stopwatch = recoverStaleRun(stopwatch, now);
         break;
       case "lap":
-        sw = appendLap(
-          sw,
+        stopwatch = appendLap(
+          stopwatch,
           { id: `lap-${lapCount++}`, name: "v", createdAt: now },
           now,
         );
         break;
       case "deleteLap": {
-        const target = pick(sw.laps, op.index);
-        if (target) sw = markLapDeleted(sw, target.id, now);
+        const target = pick(stopwatch.laps, op.index);
+        if (target) stopwatch = markLapDeleted(stopwatch, target.id, now);
         break;
       }
       case "restoreLap": {
-        const target = pick(sw.laps, op.index);
-        if (target) sw = restoreLap(sw, target.id);
+        const target = pick(stopwatch.laps, op.index);
+        if (target) stopwatch = restoreLap(stopwatch, target.id);
         break;
       }
       case "adjust":
-        sw = adjustCurrent(sw, op.value, now);
+        stopwatch = adjustCurrent(stopwatch, op.value, now);
         break;
       case "discard":
-        discards.push(pauseRun(sw, now).currentLapTime);
-        sw = discardCurrent(sw, now);
+        discards.push(pauseRun(stopwatch, now).currentLapTime);
+        stopwatch = discardCurrent(stopwatch, now);
         break;
       case "undoDiscard":
-        if (discards.length > 0) sw = restoreDiscarded(sw, discards.pop());
+        if (discards.length > 0)
+          stopwatch = restoreDiscarded(stopwatch, discards.pop());
         break;
     }
-    onStep?.({ op, before, after: sw, now });
+    onStep?.({ op, before, after: stopwatch, now });
   }
 
-  return { sw, now };
+  return { stopwatch, now };
 }
 
 // What the real time must be, derived only from when the clock ran, with no
@@ -197,8 +198,8 @@ function withoutEdits(ops) {
     .map((op) => (EDITS.has(op.type) ? { type: "pause" } : op));
 }
 
-function activeLapSum(sw) {
-  return sw.laps
+function activeLapSum(stopwatch) {
+  return stopwatch.laps
     .filter((l) => !l.deletedAt)
     .reduce((sum, l) => sum + l.lapTime, 0);
 }
@@ -207,10 +208,10 @@ describe("real time under any sequence of operations", () => {
   it("matches a reference that only knows when the clock ran", () => {
     fc.assert(
       fc.property(opsArb, (ops) => {
-        const { sw, now } = play(ops);
+        const { stopwatch, now } = play(ops);
         const expected = referenceModel(ops);
-        expect(sw.realTime).toBe(expected.stored);
-        expect(calculateRealTime(sw, now)).toBe(expected.shown);
+        expect(stopwatch.realTime).toBe(expected.stored);
+        expect(calculateRealTime(stopwatch, now)).toBe(expected.shown);
       }),
       { numRuns: NUM_RUNS },
     );
@@ -222,8 +223,8 @@ describe("real time under any sequence of operations", () => {
         const edited = play(ops);
         const plain = play(withoutEdits(ops));
         expect(edited.now).toBe(plain.now);
-        expect(calculateRealTime(edited.sw, edited.now)).toBe(
-          calculateRealTime(plain.sw, plain.now),
+        expect(calculateRealTime(edited.stopwatch, edited.now)).toBe(
+          calculateRealTime(plain.stopwatch, plain.now),
         );
       }),
       { numRuns: NUM_RUNS },
@@ -236,10 +237,10 @@ describe("real time under any sequence of operations", () => {
     );
     fc.assert(
       fc.property(noEditsArb, (ops) => {
-        const { sw, now } = play(ops);
-        expect(sw.editedTime).toBe(0);
-        expect(calculateRealTime(sw, now)).toBe(
-          calculateTotalTime(sw, { now }),
+        const { stopwatch, now } = play(ops);
+        expect(stopwatch.editedTime).toBe(0);
+        expect(calculateRealTime(stopwatch, now)).toBe(
+          calculateTotalTime(stopwatch, { now }),
         );
       }),
       { numRuns: NUM_RUNS },
@@ -298,29 +299,38 @@ describe("real time under any sequence of operations", () => {
     fc.assert(
       fc.property(opsArb, (ops) => {
         const { realTime: _r, editedTime: _e, ...legacy } = freshStopwatch();
-        let sw = { ...legacy, currentLapTime: 5000 };
+        let stopwatch = { ...legacy, currentLapTime: 5000 };
         let now = T0;
         for (const op of ops) {
           if (op.type === "wait") now += op.ms;
-          if (op.type === "start") sw = startRun(sw, now);
-          if (op.type === "pause") sw = pauseRun(sw, now);
+          if (op.type === "start") stopwatch = startRun(stopwatch, now);
+          if (op.type === "pause") stopwatch = pauseRun(stopwatch, now);
           if (op.type === "lap")
-            sw = appendLap(
-              sw,
+            stopwatch = appendLap(
+              stopwatch,
               { id: crypto.randomUUID(), name: "v", createdAt: now },
               now,
             );
-          if (op.type === "adjust") sw = adjustCurrent(sw, op.value, now);
-          if (op.type === "discard") sw = discardCurrent(sw, now);
-          if (op.type === "undoDiscard") sw = restoreDiscarded(sw, 1000);
-          if (op.type === "deleteLap" && sw.laps.length > 0)
-            sw = markLapDeleted(sw, pick(sw.laps, op.index).id, now);
-          if (op.type === "restoreLap" && sw.laps.length > 0)
-            sw = restoreLap(sw, pick(sw.laps, op.index).id);
+          if (op.type === "adjust")
+            stopwatch = adjustCurrent(stopwatch, op.value, now);
+          if (op.type === "discard") stopwatch = discardCurrent(stopwatch, now);
+          if (op.type === "undoDiscard")
+            stopwatch = restoreDiscarded(stopwatch, 1000);
+          if (op.type === "deleteLap" && stopwatch.laps.length > 0)
+            stopwatch = markLapDeleted(
+              stopwatch,
+              pick(stopwatch.laps, op.index).id,
+              now,
+            );
+          if (op.type === "restoreLap" && stopwatch.laps.length > 0)
+            stopwatch = restoreLap(
+              stopwatch,
+              pick(stopwatch.laps, op.index).id,
+            );
         }
-        expect(sw).not.toHaveProperty("realTime");
-        expect(sw).not.toHaveProperty("editedTime");
-        expect(getRealTimeStatus(sw)).toBe(REAL_TIME_STATUS.untracked);
+        expect(stopwatch).not.toHaveProperty("realTime");
+        expect(stopwatch).not.toHaveProperty("editedTime");
+        expect(getRealTimeStatus(stopwatch)).toBe(REAL_TIME_STATUS.untracked);
       }),
       { numRuns: 500 },
     );
@@ -329,7 +339,7 @@ describe("real time under any sequence of operations", () => {
 
 describe("real time: hand-picked sessions", () => {
   it("delete a minute, give back 30 seconds: real time is untouched", () => {
-    const { sw } = play([
+    const { stopwatch } = play([
       { type: "start" },
       { type: "wait", ms: 120_000 },
       { type: "heartbeat" },
@@ -337,13 +347,13 @@ describe("real time: hand-picked sessions", () => {
       { type: "adjust", value: 60_000 },
       { type: "adjust", value: 90_000 },
     ]);
-    expect(sw.currentLapTime).toBe(90_000);
-    expect(sw.realTime).toBe(120_000);
-    expect(sw.editedTime).toBe(-30_000);
+    expect(stopwatch.currentLapTime).toBe(90_000);
+    expect(stopwatch.realTime).toBe(120_000);
+    expect(stopwatch.editedTime).toBe(-30_000);
   });
 
   it("a deleted lap still counts as real time, and undo does not double it", () => {
-    const { sw } = play([
+    const { stopwatch } = play([
       { type: "start" },
       { type: "wait", ms: 10_000 },
       { type: "lap" },
@@ -354,12 +364,12 @@ describe("real time: hand-picked sessions", () => {
       { type: "restoreLap", index: 1 },
       { type: "deleteLap", index: 1 },
     ]);
-    expect(sw.realTime).toBe(15_000);
-    expect(activeLapSum(sw) + sw.currentLapTime).toBe(5000);
+    expect(stopwatch.realTime).toBe(15_000);
+    expect(activeLapSum(stopwatch) + stopwatch.currentLapTime).toBe(5000);
   });
 
   it("discard while running, run again, undo: no second is lost", () => {
-    const { sw } = play([
+    const { stopwatch } = play([
       { type: "start" },
       { type: "wait", ms: 8000 },
       { type: "discard" },
@@ -368,20 +378,20 @@ describe("real time: hand-picked sessions", () => {
       { type: "pause" },
       { type: "undoDiscard" },
     ]);
-    expect(sw.currentLapTime).toBe(11_000);
-    expect(sw.realTime).toBe(11_000);
-    expect(sw.editedTime).toBe(0);
+    expect(stopwatch.currentLapTime).toBe(11_000);
+    expect(stopwatch.realTime).toBe(11_000);
+    expect(stopwatch.editedTime).toBe(0);
   });
 
   it("a device that died stops counting at its last heartbeat", () => {
-    const { sw } = play([
+    const { stopwatch } = play([
       { type: "start" },
       { type: "wait", ms: 20_000 },
       { type: "heartbeat" },
       { type: "wait", ms: 600_000 },
       { type: "recover" },
     ]);
-    expect(sw.realTime).toBe(20_000);
-    expect(sw.isRunning).toBe(false);
+    expect(stopwatch.realTime).toBe(20_000);
+    expect(stopwatch.isRunning).toBe(false);
   });
 });

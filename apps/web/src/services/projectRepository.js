@@ -126,22 +126,26 @@ async function updateStopwatch(id, transform) {
 async function addLap({ id, name }) {
   const now = Date.now();
   const lap = { id: crypto.randomUUID(), name, createdAt: now };
-  return updateStopwatch(id, (sw) => appendLap(sw, lap, now));
+  return updateStopwatch(id, (stopwatch) => appendLap(stopwatch, lap, now));
 }
 
 async function renameLap({ id, lapId, name }) {
-  await updateStopwatch(id, (sw) => ({
-    ...sw,
-    laps: sw.laps.map((lap) => (lap.id === lapId ? { ...lap, name } : lap)),
+  await updateStopwatch(id, (stopwatch) => ({
+    ...stopwatch,
+    laps: stopwatch.laps.map((lap) =>
+      lap.id === lapId ? { ...lap, name } : lap,
+    ),
   }));
 }
 
 async function removeLap({ id, lapId }) {
-  return updateStopwatch(id, (sw) => markLapDeleted(sw, lapId, Date.now()));
+  return updateStopwatch(id, (stopwatch) =>
+    markLapDeleted(stopwatch, lapId, Date.now()),
+  );
 }
 
 async function undeleteLap({ id, lapId }) {
-  return updateStopwatch(id, (sw) => restoreLap(sw, lapId));
+  return updateStopwatch(id, (stopwatch) => restoreLap(stopwatch, lapId));
 }
 
 async function updateTags(id, transform) {

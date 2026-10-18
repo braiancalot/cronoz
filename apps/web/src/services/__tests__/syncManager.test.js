@@ -276,8 +276,8 @@ describe("syncManager.sync, paired", () => {
 
     // Mimic the exact write useProject.pause() performs after the user runs
     // the timer for 60s and pauses (without adding a lap).
-    await projectRepository.updateStopwatch(projectId, (sw) => ({
-      ...sw,
+    await projectRepository.updateStopwatch(projectId, (stopwatch) => ({
+      ...stopwatch,
       currentLapTime: 60_000,
     }));
 

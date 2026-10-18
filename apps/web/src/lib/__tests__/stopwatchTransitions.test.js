@@ -49,8 +49,8 @@ function running(startedAgo, overrides = {}) {
   });
 }
 
-function expectTracked(sw) {
-  expect(getRealTimeStatus(sw)).toBe(REAL_TIME_STATUS.tracked);
+function expectTracked(stopwatch) {
+  expect(getRealTimeStatus(stopwatch)).toBe(REAL_TIME_STATUS.tracked);
 }
 
 describe("startRun", () => {
@@ -67,8 +67,8 @@ describe("startRun", () => {
   });
 
   it("is a no-op on a clock that is already running, so the open run is kept", () => {
-    const sw = running(5000);
-    expect(startRun(sw, NOW + 1000)).toBe(sw);
+    const stopwatch = running(5000);
+    expect(startRun(stopwatch, NOW + 1000)).toBe(stopwatch);
   });
 
   it("does not add the fields to an untracked stopwatch", () => {
@@ -95,43 +95,43 @@ describe("pauseRun", () => {
   });
 
   it("is a no-op on a paused clock", () => {
-    const sw = tracked({ currentLapTime: 1000, realTime: 1000 });
-    expect(pauseRun(sw, NOW)).toBe(sw);
+    const stopwatch = tracked({ currentLapTime: 1000, realTime: 1000 });
+    expect(pauseRun(stopwatch, NOW)).toBe(stopwatch);
   });
 
   it("counts the whole run, even past a stale heartbeat (same as before)", () => {
-    const sw = running(120_000, { lastActiveAt: NOW - 100_000 });
-    const next = pauseRun(sw, NOW);
+    const stopwatch = running(120_000, { lastActiveAt: NOW - 100_000 });
+    const next = pauseRun(stopwatch, NOW);
     expect(next.currentLapTime).toBe(120_000);
     expect(next.realTime).toBe(120_000);
   });
 
   it("clamps a run that ends before it starts to zero (clock skew)", () => {
-    const sw = tracked({
+    const stopwatch = tracked({
       isRunning: true,
       startTimestamp: NOW + 5000,
       lastActiveAt: NOW,
       currentLapTime: 1000,
       realTime: 1000,
     });
-    const next = pauseRun(sw, NOW);
+    const next = pauseRun(stopwatch, NOW);
     expect(next.currentLapTime).toBe(1000);
     expect(next.realTime).toBe(1000);
   });
 
   it("adds nothing for a running flag without a start timestamp", () => {
-    const sw = tracked({
+    const stopwatch = tracked({
       isRunning: true,
       currentLapTime: 1000,
       realTime: 1000,
     });
-    const next = pauseRun(sw, NOW);
+    const next = pauseRun(stopwatch, NOW);
     expect(next).toEqual(tracked({ currentLapTime: 1000, realTime: 1000 }));
   });
 
   it("pausing twice from the same snapshot does not count the run twice", () => {
-    const sw = running(2000);
-    const first = pauseRun(sw, NOW);
+    const stopwatch = running(2000);
+    const first = pauseRun(stopwatch, NOW);
     expect(pauseRun(first, NOW + 5000)).toBe(first);
   });
 
@@ -145,66 +145,71 @@ describe("pauseRun", () => {
   });
 
   it("does not mutate the input", () => {
-    const sw = running(2000);
-    const copy = structuredClone(sw);
-    pauseRun(sw, NOW);
-    expect(sw).toEqual(copy);
+    const stopwatch = running(2000);
+    const copy = structuredClone(stopwatch);
+    pauseRun(stopwatch, NOW);
+    expect(stopwatch).toEqual(copy);
   });
 });
 
 describe("recoverStaleRun", () => {
   it("settles a dead run at its last heartbeat", () => {
-    const sw = running(120_000, {
+    const stopwatch = running(120_000, {
       lastActiveAt: NOW - 100_000,
       currentLapTime: 500,
       realTime: 500,
     });
-    const next = recoverStaleRun(sw, NOW);
+    const next = recoverStaleRun(stopwatch, NOW);
     expect(next).toEqual(tracked({ currentLapTime: 20_500, realTime: 20_500 }));
     expectTracked(next);
   });
 
   it("is a no-op while the heartbeat is fresh", () => {
-    const sw = running(120_000, {
+    const stopwatch = running(120_000, {
       lastActiveAt: NOW - RECOVERY_GRACE_PERIOD + 1,
     });
-    expect(recoverStaleRun(sw, NOW)).toBe(sw);
+    expect(recoverStaleRun(stopwatch, NOW)).toBe(stopwatch);
   });
 
   it("recovers exactly at the grace period", () => {
-    const sw = running(60_000, { lastActiveAt: NOW - RECOVERY_GRACE_PERIOD });
-    expect(recoverStaleRun(sw, NOW).realTime).toBe(
+    const stopwatch = running(60_000, {
+      lastActiveAt: NOW - RECOVERY_GRACE_PERIOD,
+    });
+    expect(recoverStaleRun(stopwatch, NOW).realTime).toBe(
       60_000 - RECOVERY_GRACE_PERIOD,
     );
   });
 
   it("is a no-op on a paused clock", () => {
-    const sw = tracked({ currentLapTime: 5 });
-    expect(recoverStaleRun(sw, NOW)).toBe(sw);
+    const stopwatch = tracked({ currentLapTime: 5 });
+    expect(recoverStaleRun(stopwatch, NOW)).toBe(stopwatch);
   });
 
   it("is a no-op on a run without a heartbeat", () => {
-    const sw = running(5000, { lastActiveAt: null });
-    expect(recoverStaleRun(sw, NOW)).toBe(sw);
+    const stopwatch = running(5000, { lastActiveAt: null });
+    expect(recoverStaleRun(stopwatch, NOW)).toBe(stopwatch);
   });
 });
 
 describe("heartbeat", () => {
   it("moves lastActiveAt on a running clock and nothing else", () => {
-    const sw = running(5000, { lastActiveAt: NOW - 10_000 });
-    expect(heartbeat(sw, NOW)).toEqual({ ...sw, lastActiveAt: NOW });
+    const stopwatch = running(5000, { lastActiveAt: NOW - 10_000 });
+    expect(heartbeat(stopwatch, NOW)).toEqual({
+      ...stopwatch,
+      lastActiveAt: NOW,
+    });
   });
 
   it("is a no-op on a paused clock, so it cannot undo a pause", () => {
-    const sw = tracked({ currentLapTime: 5000, realTime: 5000 });
-    expect(heartbeat(sw, NOW)).toBe(sw);
+    const stopwatch = tracked({ currentLapTime: 5000, realTime: 5000 });
+    expect(heartbeat(stopwatch, NOW)).toBe(stopwatch);
   });
 });
 
 describe("discardCurrent", () => {
   it("zeroes the current time and records it as an edit", () => {
-    const sw = tracked({ currentLapTime: 4000, realTime: 4000 });
-    const next = discardCurrent(sw, NOW);
+    const stopwatch = tracked({ currentLapTime: 4000, realTime: 4000 });
+    const next = discardCurrent(stopwatch, NOW);
     expect(next).toEqual(
       tracked({ currentLapTime: 0, realTime: 4000, editedTime: -4000 }),
     );
@@ -212,8 +217,8 @@ describe("discardCurrent", () => {
   });
 
   it("closes a running interval into the real time before discarding", () => {
-    const sw = running(3000, { currentLapTime: 1000, realTime: 1000 });
-    const next = discardCurrent(sw, NOW);
+    const stopwatch = running(3000, { currentLapTime: 1000, realTime: 1000 });
+    const next = discardCurrent(stopwatch, NOW);
     expect(next).toEqual(
       tracked({ currentLapTime: 0, realTime: 4000, editedTime: -4000 }),
     );
@@ -222,13 +227,13 @@ describe("discardCurrent", () => {
 
   it("keeps the laps", () => {
     const laps = [lap("a", 1000)];
-    const sw = tracked({ laps, currentLapTime: 500, realTime: 1500 });
-    expect(discardCurrent(sw, NOW).laps).toBe(laps);
+    const stopwatch = tracked({ laps, currentLapTime: 500, realTime: 1500 });
+    expect(discardCurrent(stopwatch, NOW).laps).toBe(laps);
   });
 
   it("discarding nothing changes nothing", () => {
-    const sw = tracked({ realTime: 300, editedTime: -300 });
-    expect(discardCurrent(sw, NOW)).toEqual(sw);
+    const stopwatch = tracked({ realTime: 300, editedTime: -300 });
+    expect(discardCurrent(stopwatch, NOW)).toEqual(stopwatch);
   });
 
   it("keeps an untracked stopwatch untracked", () => {
@@ -279,8 +284,8 @@ describe("restoreDiscarded", () => {
   });
 
   it("is a no-op for an amount of zero", () => {
-    const sw = tracked();
-    expect(restoreDiscarded(sw, 0)).toBe(sw);
+    const stopwatch = tracked();
+    expect(restoreDiscarded(stopwatch, 0)).toBe(stopwatch);
   });
 
   it("keeps an untracked stopwatch untracked", () => {
@@ -292,8 +297,8 @@ describe("restoreDiscarded", () => {
 
 describe("adjustCurrent", () => {
   it("records a raise as a positive edit", () => {
-    const sw = tracked({ currentLapTime: 1000, realTime: 1000 });
-    const next = adjustCurrent(sw, 61_000, NOW);
+    const stopwatch = tracked({ currentLapTime: 1000, realTime: 1000 });
+    const next = adjustCurrent(stopwatch, 61_000, NOW);
     expect(next).toEqual(
       tracked({ currentLapTime: 61_000, realTime: 1000, editedTime: 60_000 }),
     );
@@ -301,17 +306,17 @@ describe("adjustCurrent", () => {
   });
 
   it("records a cut as a negative edit", () => {
-    const sw = tracked({ currentLapTime: 90_000, realTime: 90_000 });
-    const next = adjustCurrent(sw, 30_000, NOW);
+    const stopwatch = tracked({ currentLapTime: 90_000, realTime: 90_000 });
+    const next = adjustCurrent(stopwatch, 30_000, NOW);
     expect(next.editedTime).toBe(-60_000);
     expect(next.realTime).toBe(90_000);
     expectTracked(next);
   });
 
   it("accumulates successive adjustments", () => {
-    const sw = tracked({ currentLapTime: 10_000, realTime: 10_000 });
+    const stopwatch = tracked({ currentLapTime: 10_000, realTime: 10_000 });
     const next = adjustCurrent(
-      adjustCurrent(adjustCurrent(sw, 70_000, NOW), 5000, NOW),
+      adjustCurrent(adjustCurrent(stopwatch, 70_000, NOW), 5000, NOW),
       20_000,
       NOW,
     );
@@ -322,21 +327,21 @@ describe("adjustCurrent", () => {
   });
 
   it("clamps a negative value to zero and records only what was removed", () => {
-    const sw = tracked({ currentLapTime: 1000, realTime: 1000 });
-    const next = adjustCurrent(sw, -5000, NOW);
+    const stopwatch = tracked({ currentLapTime: 1000, realTime: 1000 });
+    const next = adjustCurrent(stopwatch, -5000, NOW);
     expect(next.currentLapTime).toBe(0);
     expect(next.editedTime).toBe(-1000);
     expectTracked(next);
   });
 
   it("adjusting to the same value records no edit", () => {
-    const sw = tracked({ currentLapTime: 1000, realTime: 1000 });
-    expect(adjustCurrent(sw, 1000, NOW)).toEqual(sw);
+    const stopwatch = tracked({ currentLapTime: 1000, realTime: 1000 });
+    expect(adjustCurrent(stopwatch, 1000, NOW)).toEqual(stopwatch);
   });
 
   it("settles a run that is still open before adjusting", () => {
-    const sw = running(5000, { currentLapTime: 1000, realTime: 1000 });
-    const next = adjustCurrent(sw, 0, NOW);
+    const stopwatch = running(5000, { currentLapTime: 1000, realTime: 1000 });
+    const next = adjustCurrent(stopwatch, 0, NOW);
     expect(next).toEqual(
       tracked({ currentLapTime: 0, realTime: 6000, editedTime: -6000 }),
     );
@@ -352,8 +357,12 @@ describe("adjustCurrent", () => {
 describe("appendLap", () => {
   it("closes the current time into a new lap on top of the list", () => {
     const old = lap("a", 1000);
-    const sw = tracked({ laps: [old], currentLapTime: 2500, realTime: 3500 });
-    const next = appendLap(sw, NEW_LAP, NOW);
+    const stopwatch = tracked({
+      laps: [old],
+      currentLapTime: 2500,
+      realTime: 3500,
+    });
+    const next = appendLap(stopwatch, NEW_LAP, NOW);
     expect(next.laps).toEqual([{ ...NEW_LAP, lapTime: 2500 }, old]);
     expect(next.currentLapTime).toBe(0);
     expect(next.realTime).toBe(3500);
@@ -361,12 +370,12 @@ describe("appendLap", () => {
   });
 
   it("takes the stored time, so an adjusted current time becomes the lap", () => {
-    const sw = adjustCurrent(
+    const stopwatch = adjustCurrent(
       tracked({ currentLapTime: 1000, realTime: 1000 }),
       60_000,
       NOW,
     );
-    const next = appendLap(sw, NEW_LAP, NOW);
+    const next = appendLap(stopwatch, NEW_LAP, NOW);
     expect(next.laps[0].lapTime).toBe(60_000);
     expect(next.realTime).toBe(1000);
     expect(next.editedTime).toBe(59_000);
@@ -374,8 +383,8 @@ describe("appendLap", () => {
   });
 
   it("pauses an open run first instead of counting it twice", () => {
-    const sw = running(3000, { currentLapTime: 1000, realTime: 1000 });
-    const next = appendLap(sw, NEW_LAP, NOW);
+    const stopwatch = running(3000, { currentLapTime: 1000, realTime: 1000 });
+    const next = appendLap(stopwatch, NEW_LAP, NOW);
     expect(next.laps[0].lapTime).toBe(4000);
     expect(next).toMatchObject({
       isRunning: false,
@@ -390,8 +399,8 @@ describe("appendLap", () => {
     const laps = Array.from({ length: MAX_LAPS_PER_PROJECT }, (_, i) =>
       lap(`l${i}`, 0, { deletedAt: i === 0 ? 1 : null }),
     );
-    const sw = tracked({ laps, currentLapTime: 1000 });
-    expect(appendLap(sw, NEW_LAP, NOW)).toBe(sw);
+    const stopwatch = tracked({ laps, currentLapTime: 1000 });
+    expect(appendLap(stopwatch, NEW_LAP, NOW)).toBe(stopwatch);
   });
 
   it("keeps an untracked stopwatch untracked", () => {
@@ -436,15 +445,15 @@ describe("markLapDeleted / restoreLap", () => {
   });
 
   it("keeps a running clock running", () => {
-    const sw = running(1000, { laps, realTime: 5000 });
-    const next = markLapDeleted(sw, "a", NOW);
+    const stopwatch = running(1000, { laps, realTime: 5000 });
+    const next = markLapDeleted(stopwatch, "a", NOW);
     expect(next).toMatchObject({ isRunning: true, startTimestamp: NOW - 1000 });
     expectTracked(next);
   });
 
   it("keeps an untracked stopwatch untracked", () => {
-    const sw = untracked({ laps });
-    const next = restoreLap(markLapDeleted(sw, "a", NOW), "a");
+    const stopwatch = untracked({ laps });
+    const next = restoreLap(markLapDeleted(stopwatch, "a", NOW), "a");
     expect(next.laps[0].deletedAt).toBeNull();
     expect(next).not.toHaveProperty("editedTime");
   });

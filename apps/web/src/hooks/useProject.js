@@ -66,9 +66,9 @@ export function useProject(projectId) {
   useEffect(() => {
     if (!project) return;
 
-    const sw = project.stopwatch;
+    const stopwatch = project.stopwatch;
 
-    if (isStopwatchStale(sw)) {
+    if (isStopwatchStale(stopwatch)) {
       projectRepository.updateStopwatch(project.id, (stored) =>
         recoverStaleRun(stored, Date.now()),
       );
@@ -111,9 +111,9 @@ export function useProject(projectId) {
 
   // Reflect a stopwatch write in the display immediately, bridging the gap
   // until useLiveQuery re-emits, otherwise the old time flashes for a frame.
-  function showStopwatch(sw) {
-    setDisplayTime(calculateTotalTime(sw, { ignoreMs }));
-    setSplitDisplayTime(calculateSplitTime(sw, { ignoreMs }));
+  function showStopwatch(stopwatch) {
+    setDisplayTime(calculateTotalTime(stopwatch, { ignoreMs }));
+    setSplitDisplayTime(calculateSplitTime(stopwatch, { ignoreMs }));
   }
 
   function holdStopwatch(base, next) {
@@ -132,7 +132,9 @@ export function useProject(projectId) {
   function runTransition(transition) {
     const now = Date.now();
     holdStopwatch(liveStopwatchRef.current, transition(project.stopwatch, now));
-    projectRepository.updateStopwatch(project.id, (sw) => transition(sw, now));
+    projectRepository.updateStopwatch(project.id, (stopwatch) =>
+      transition(stopwatch, now),
+    );
   }
 
   function start() {
@@ -151,15 +153,16 @@ export function useProject(projectId) {
     const now = Date.now();
     showStopwatch(discardCurrent(project.stopwatch, now));
 
-    const change = await projectRepository.updateStopwatch(id, (sw) =>
-      discardCurrent(sw, now),
+    const change = await projectRepository.updateStopwatch(id, (stopwatch) =>
+      discardCurrent(stopwatch, now),
     );
     const amount = change ? pauseRun(change.previous, now).currentLapTime : 0;
 
     return {
       undo: async () => {
-        const restored = await projectRepository.updateStopwatch(id, (sw) =>
-          restoreDiscarded(sw, amount),
+        const restored = await projectRepository.updateStopwatch(
+          id,
+          (stopwatch) => restoreDiscarded(stopwatch, amount),
         );
         if (restored) showStopwatch(restored.next);
       },
@@ -171,8 +174,8 @@ export function useProject(projectId) {
   async function setCurrentTime(value) {
     const now = Date.now();
     showStopwatch(adjustCurrent(project.stopwatch, value, now));
-    await projectRepository.updateStopwatch(project.id, (sw) =>
-      adjustCurrent(sw, value, now),
+    await projectRepository.updateStopwatch(project.id, (stopwatch) =>
+      adjustCurrent(stopwatch, value, now),
     );
   }
 
