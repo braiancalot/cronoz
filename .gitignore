@@ -33,3 +33,6 @@ yarn-error.log*
 # Superpowers brainstorm scratch
 .superpowers/
 
+
+# Working notes (see CLAUDE.md)
+.scratch/

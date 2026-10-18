@@ -6,21 +6,21 @@ Site: https://cronoz.teshi.com.br
 
 ## Stack
 
-- **Monorepo** — Turborepo + npm workspaces
-- **Frontend** (`apps/web`) — Vite + React 19 + React Router + Tailwind CSS 4 + shadcn/ui
-- **API** (`apps/api`) — Hono (serverless) — pareamento e sincronização entre dispositivos
-- **Persistência** — Dexie (IndexedDB) offline-first; Postgres (Neon) via Drizzle ORM para o sync
-- **PWA** — vite-plugin-pwa (Workbox)
+- **Monorepo**: Turborepo + npm workspaces
+- **Frontend** (`apps/web`): Vite + React 19 + React Router + Tailwind CSS 4 + shadcn/ui
+- **API** (`apps/api`): Hono (serverless), pareamento e sincronização entre dispositivos
+- **Persistência**: Dexie (IndexedDB) offline-first; Postgres (Neon) via Drizzle ORM para o sync
+- **PWA**: vite-plugin-pwa (Workbox)
 
 ## Estrutura
 
 ```
 cronoz/
 ├── apps/
-│   ├── web/     — SPA PWA (Vite + React Router)
-│   └── api/     — API Hono (pareamento + sync)
+│   ├── web/     # SPA PWA (Vite + React Router)
+│   └── api/     # API Hono (pareamento + sync)
 ├── packages/
-│   └── shared/  — constantes e schemas compartilhados (sync)
+│   └── shared/  # constantes e schemas compartilhados (sync)
 ├── turbo.json
 └── package.json
 ```

@@ -18,14 +18,14 @@
 ## Stack
 
 - Monorepo com Turborepo + npm workspaces
-  - `apps/web` — Vite + React 19 + React Router (SPA, PWA offline-first)
-  - `apps/api` — Hono (API serverless)
-  - `packages/shared` — constantes e schemas Zod compartilhados (sync)
-- Tailwind CSS 4 + shadcn/ui — design system e componentes de UI
-- Dexie (IndexedDB) — persistência local offline-first
-- Drizzle ORM (driver `drizzle-orm/postgres-js`) + Neon (Postgres serverless) — banco remoto do sync
-- vite-plugin-pwa (Workbox) — PWA / Service Worker
-- Vercel — deploy (web e api)
+  - `apps/web`: Vite + React 19 + React Router (SPA, PWA offline-first)
+  - `apps/api`: Hono (API serverless)
+  - `packages/shared`: constantes e schemas Zod compartilhados (sync)
+- Tailwind CSS 4 + shadcn/ui: design system e componentes de UI
+- Dexie (IndexedDB): persistência local offline-first
+- Drizzle ORM (driver `drizzle-orm/postgres-js`) + Neon (Postgres serverless): banco remoto do sync
+- vite-plugin-pwa (Workbox): PWA / Service Worker
+- Vercel: deploy (web e api)
 - Node 24
 
 Arquitetura de sync: Dexie continua como banco local offline-first, Neon como banco remoto, a API Hono faz a ponte. Acesso ao Postgres via Drizzle ORM. Estratégia de conflito: last-write-wins. Deploy na Vercel, mantendo tudo no free tier.
