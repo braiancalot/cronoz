@@ -20,7 +20,7 @@ const STEPPER_SIZE = {
 //   - "flank" (default): steppers in columns on either side of the timer.
 //   - "row": timer above a single row (narrow phone, fits 360px).
 // Shared by TimerAdjuster and by the slot that reserves its footprint while it
-// is closed — the two MUST measure the same, so the arrangement lives here once
+// is closed. The two MUST measure the same, so the arrangement lives here once
 // instead of being mirrored. `chromeHidden` veils the steppers with
 // `visibility`, which keeps their box while dropping them from the tab order
 // and the a11y tree.

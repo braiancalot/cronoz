@@ -567,7 +567,7 @@ describe("useProject", () => {
     // Regression: cross-device scenario where a phone has a stale local copy
     // (e.g., paused or non-existent) and then a sync pull brings the running
     // stopwatch with a stale heartbeat. Recovery must fire on the post-pull
-    // render — not get gated out by a one-shot guard set on the first render.
+    // render, not get gated out by a one-shot guard set on the first render.
     it("recovers when sync pull brings a stale running stopwatch after a paused initial render", () => {
       // Initial local state: paused (this device hadn't synced yet)
       const pausedProject = createProject({ isRunning: false });
@@ -607,7 +607,7 @@ describe("useProject", () => {
         isRunning: true,
         startTimestamp: 5_000,
         currentLapTime: 2_000,
-        lastActiveAt: 15_000, // ancient — far past grace period
+        lastActiveAt: 15_000, // ancient, far past grace period
       });
       load(project);
 
@@ -633,7 +633,7 @@ describe("useProject", () => {
         isRunning: true,
         startTimestamp: 5_000,
         currentLapTime: 2_000,
-        lastActiveAt: 95_000, // 5s ago — fresh heartbeat
+        lastActiveAt: 95_000, // 5s ago, fresh heartbeat
       });
       load(project);
 
@@ -659,7 +659,7 @@ describe("useProject", () => {
 
       renderHook(() => useProject("test-id"));
 
-      // Trigger first rAF tick — no checkpoint yet (interval not elapsed)
+      // Trigger first rAF tick, no checkpoint yet (interval not elapsed)
       await act(() => vi.advanceTimersByTime(1));
       expect(store.writes).toHaveLength(0);
 

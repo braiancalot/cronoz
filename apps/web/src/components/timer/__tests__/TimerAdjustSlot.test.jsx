@@ -33,7 +33,7 @@ describe("TimerAdjustSlot", () => {
       );
 
       // Any divergence here is a footprint of the wrong height, which is what
-      // moved the digits — and the laps under them — on entering adjust mode.
+      // moved the digits, and the laps under them, on entering adjust mode.
       expect(stepperShape(slot.container)).toEqual(
         stepperShape(adjuster.container),
       );

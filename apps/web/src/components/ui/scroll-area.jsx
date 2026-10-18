@@ -14,7 +14,7 @@ function ScrollArea({ className, children, ...props }) {
         // flex, not h-full: the height usually comes from a max-height clamp
         // upstream, which a percentage can't resolve against.
         // [&>div]:block! overrides the inline display:table Radix puts on its
-        // wrapper — table boxes size to max-content, so nothing inside can
+        // wrapper: table boxes size to max-content, so nothing inside can
         // truncate. Assumes vertical-only scrolling.
         className="w-full flex-1 min-h-0 rounded-[inherit] outline-none [&>div]:block!"
       >

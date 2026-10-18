@@ -3,7 +3,7 @@ import { AdjusterFrame } from "./AdjusterFrame.jsx";
 const ignoreStep = () => {};
 
 // Reserves the adjuster's exact footprint around the plain timer, so opening
-// adjust mode only reveals the steppers — the digits stay put and the laps
+// adjust mode only reveals the steppers: the digits stay put and the laps
 // under them don't shift. Hand-sizing it can't work: the row layout's height
 // rides the display's viewport clamp, the flank one the stepper metrics.
 //

@@ -48,7 +48,7 @@ describe("Laps", () => {
 
     // Radix wraps the children in a div styled inline as a table, which sizes
     // to max-content: rows stretch to fit the longest name instead of the name
-    // truncating. Guard both halves — if Radix ever drops the table, the
+    // truncating. Guard both halves: if Radix ever drops the table, the
     // override below is dead weight and this fails loudly.
     const viewport = container.querySelector(
       "[data-slot='scroll-area-viewport']",
@@ -98,7 +98,7 @@ describe("Laps", () => {
       />,
     );
 
-    // Every row widens, not just the long one — otherwise they stop aligning.
+    // Every row widens, not just the long one, otherwise they stop aligning.
     const widened = lapTimeCells(container);
     expect(widened).toHaveLength(3);
     widened.forEach((cell) => expect(cell).toHaveClass("w-[7ch]"));
@@ -109,7 +109,7 @@ describe("Laps", () => {
       <Laps laps={mockLaps} onRenameLap={vi.fn()} onDeleteLap={vi.fn()} />,
     );
 
-    // jsdom has no layout, so the ellipsis can't be observed directly — assert
+    // jsdom has no layout, so the ellipsis can't be observed directly; assert
     // the rule that produces it. `truncate` is inert on a flex item without
     // min-w-0: the span then refuses to shrink past its longest word, spilling
     // over the card and shoving the times off-screen on a narrow phone.
@@ -182,7 +182,7 @@ describe("Laps", () => {
     await startRename(0);
 
     // -my-1 pulls the icon-xs (28px) Save/Cancel buttons back down to the
-    // resting row's text height — otherwise the card grows entering rename.
+    // resting row's text height, otherwise the card grows entering rename.
     const form = screen.getByDisplayValue("Lap #1").closest("form");
     expect(form).toHaveClass("-my-1");
   });

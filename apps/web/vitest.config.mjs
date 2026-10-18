@@ -27,7 +27,7 @@ export default defineConfig({
         "src/main.jsx",
         "src/App.jsx",
         "src/test/**",
-        // shadcn primitives — copy-pasted, no app logic worth testing
+        // shadcn primitives: copy-pasted, no app logic worth testing
         "src/components/ui/**",
         // layout/presentational components excluded until UI redesign settles
         "src/components/AppHeader.jsx",

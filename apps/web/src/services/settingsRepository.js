@@ -33,7 +33,7 @@ async function getAll() {
   return db.settings.toArray();
 }
 
-// Apply an incoming record from the sync pull. No event — the incoming
+// Apply an incoming record from the sync pull. No event: the incoming
 // updatedAt is the source of truth for LWW.
 async function applyFromSync({ key, value, updatedAt }) {
   await db.settings.put({ key, value, updatedAt });

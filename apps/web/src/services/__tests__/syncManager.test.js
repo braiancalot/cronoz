@@ -62,7 +62,7 @@ describe("syncManager.isPaired", () => {
   });
 });
 
-describe("syncManager.sync — not paired", () => {
+describe("syncManager.sync, not paired", () => {
   it("returns without calling syncService when not paired", async () => {
     await syncManager.sync();
     expect(syncService.push).not.toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe("syncManager.sync — not paired", () => {
   });
 });
 
-describe("syncManager.sync — paired", () => {
+describe("syncManager.sync, paired", () => {
   beforeEach(async () => {
     await internalRepository.set(SYNC_PAIRED_KEY, true);
     syncService.pull.mockResolvedValue({
@@ -249,7 +249,7 @@ describe("syncManager.sync — paired", () => {
 
   // Regression: a project that was started and paused (no laps added) was
   // staying at currentLapTime=0 on other devices because pause() in
-  // useProject called projectRepository.save() (raw write — no updatedAt
+  // useProject called projectRepository.save() (raw write, no updatedAt
   // bump, no mutation event), so the elapsed time never made it past the
   // (updatedAt > lastPushedAt) filter in pushLocalChanges. The fix routes
   // start/pause through projectRepository.updateStopwatch.

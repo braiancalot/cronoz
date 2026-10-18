@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const SHORT_HEIGHT = 600;
-// Below this the laps can't fit without an outer scroll — a split-screen sliver
+// Below this the laps can't fit without an outer scroll; a split-screen sliver
 // lands here. Sits under a landscape phone (~390) so that case keeps its laps.
 const MINIMAL_HEIGHT = 360;
 

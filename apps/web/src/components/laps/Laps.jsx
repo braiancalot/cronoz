@@ -57,7 +57,7 @@ export function Laps({
         <ScrollArea type="auto" className="flex-1 min-h-0">
           {/* pr-3 clears the overlay scrollbar (~10-12px), which floats flush
               against the viewport's true right edge regardless of this div's
-              own padding — without it, the scrollbar sits on top of each
+              own padding. Without it, the scrollbar sits on top of each
               row's floating menu button. */}
           <div className="flex flex-col gap-1.5 py-2 pr-3 w-full">
             {isAddingLap && (

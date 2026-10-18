@@ -30,7 +30,7 @@ describe("useInlineRename", () => {
       await result.current.submit();
     });
 
-    // Prop is still "Old", but display already shows "New" — no flash.
+    // Prop is still "Old", but display already shows "New", no flash.
     expect(result.current.displayName).toBe("New");
     expect(result.current.isEditing).toBe(false);
     expect(onRename).toHaveBeenCalledWith("New");

@@ -41,7 +41,7 @@ describe("ProjectCard box", () => {
   it("keeps the padding on a class the merge can override", () => {
     const { container } = renderCard(makeProject({ isRunning: false }));
 
-    // size="sm" spells its padding as data-[size=sm]:py-4 — an attribute
+    // size="sm" spells its padding as data-[size=sm]:py-4, an attribute
     // selector that outranks a plain py-2 and that cn() won't dedupe. The rule
     // ships in the base class list either way; only data-size keeps it inert.
     const card = container.querySelector("[data-slot='card']");
@@ -151,7 +151,7 @@ describe("ProjectCard menu", () => {
   });
 
   // The menu trigger used to sit inside the row's Link, so pressing it also
-  // hit-tested as pressing the link — the whole card flashed :active.
+  // hit-tested as pressing the link: the whole card flashed :active.
   it("sits outside the row link, not nested inside it", () => {
     const { container } = renderCard(makeProject({ isRunning: false }));
 

@@ -14,7 +14,7 @@ describe("FormattedTime", () => {
   it("shows hours when time is 1 hour or more", () => {
     const { container } = render(<FormattedTime time={3661000} />);
 
-    // 01:01:01 — 3 colon separators (HH:MM:SS)
+    // 01:01:01 has 3 colon separators (HH:MM:SS)
     const colons = container.querySelectorAll("span.opacity-50");
     expect(colons).toHaveLength(2);
   });

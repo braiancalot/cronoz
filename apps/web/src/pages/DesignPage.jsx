@@ -121,21 +121,21 @@ export default function DesignPage() {
         <Section title="Ajuste de tempo">
           <p className="text-sm text-muted-foreground">
             Modo de correção do segmento atual (<code>TimerAdjuster</code> +{" "}
-            <code>AdjustActions</code>). Os steppers clicam de verdade —
-            esquerda diminui, direita aumenta (1m / 10s / 1s). O número grande é
-            a volta atual; abaixo, o total (2h30 de voltas + atual) e o preço a
-            R$20/h atualizam ao vivo. Piso em 0. Edita em rascunho: "Pronto"
-            confirma, "Cancelar" descarta. No PiP o preço fica oculto.
+            <code>AdjustActions</code>). Os steppers clicam de verdade: esquerda
+            diminui, direita aumenta (1m / 10s / 1s). O número grande é a volta
+            atual; abaixo, o total (2h30 de voltas + atual) e o preço a R$20/h
+            atualizam ao vivo. Piso em 0. Edita em rascunho: "Pronto" confirma,
+            "Cancelar" descarta. No PiP o preço fica oculto.
           </p>
 
           <h3 className="text-sm font-medium">
             Flanqueado (telas largas / desktop)
           </h3>
           <div className="flex flex-wrap items-start gap-6">
-            <Frame label="PC — default" width={520}>
+            <Frame label="PC · default" width={520}>
               <AdjustDemo size="default" />
             </Frame>
-            <Frame label="Split — compact" width={420}>
+            <Frame label="Split · compact" width={420}>
               <AdjustDemo size="compact" />
             </Frame>
           </div>
@@ -144,17 +144,17 @@ export default function DesignPage() {
             Linha única (celular estreito, ≤480px)
           </h3>
           <div className="flex flex-wrap items-start gap-6">
-            <Frame label="Celular — default" width={360}>
+            <Frame label="Celular · default" width={360}>
               <AdjustDemo size="default" layout="row" />
             </Frame>
           </div>
 
           <h3 className="text-sm font-medium">PiP (flanqueado)</h3>
           <div className="flex flex-wrap items-start gap-6">
-            <Frame label="PiP — mini (sem preço)" width={280}>
+            <Frame label="PiP · mini (sem preço)" width={280}>
               <AdjustDemo size="mini" showPrice={false} />
             </Frame>
-            <Frame label="PiP — compact (sem preço)" width={320}>
+            <Frame label="PiP · compact (sem preço)" width={320}>
               <AdjustDemo size="compact" showPrice={false} />
             </Frame>
           </div>

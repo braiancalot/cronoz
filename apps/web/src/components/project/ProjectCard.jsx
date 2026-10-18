@@ -47,7 +47,7 @@ export function ProjectCard({
   const isCompleted = project.completedAt !== null;
   const tags = hideTags ? [] : (project.tags ?? []);
   const hasTags = tags.length > 0;
-  // Running with a fresh heartbeat means it's ticking somewhere — almost always
+  // Running with a fresh heartbeat means it's ticking somewhere, almost always
   // another device, since leaving for the Home screen pauses the local run.
   const isLive = isStopwatchLive(project.stopwatch);
 

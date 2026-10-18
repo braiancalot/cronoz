@@ -31,7 +31,7 @@ function copyStyles(pipWindow) {
 }
 
 // onClose fires on every user-triggered close (the PiP's X, Ctrl+W, closePiP),
-// but not on unmount — the owner is tearing down and already handles it.
+// but not on unmount: the owner is tearing down and already handles it.
 export function usePiPWindow(onClose) {
   const [pipWindow, setPipWindow] = useState(null);
   const pipWindowRef = useRef(null);
@@ -52,7 +52,7 @@ export function usePiPWindow(onClose) {
 
     copyStyles(win);
     // pagehide fires while the PiP document is still alive. flushSync unmounts
-    // the portal synchronously here, before the window is destroyed — otherwise
+    // the portal synchronously here, before the window is destroyed, otherwise
     // React commits the removal against a dead document and crashes the main
     // tree (start/pause stop working in the opener window).
     const onPageHide = () => {

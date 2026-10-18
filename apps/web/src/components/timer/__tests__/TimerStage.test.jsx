@@ -167,7 +167,7 @@ describe("TimerStage", () => {
 
     expect(screen.getByText("na janela flutuante")).toBeInTheDocument();
     expect(screen.queryByTitle("Iniciar")).not.toBeInTheDocument();
-    // The laps stay put — that spacer exists so nothing shifts on PiP toggle.
+    // The laps stay put: that spacer exists so nothing shifts on PiP toggle.
     expect(screen.getByText("Primeira volta")).toBeInTheDocument();
   });
 
@@ -212,7 +212,7 @@ describe("TimerStage", () => {
   });
 
   // Regression: the adjuster outgrows the timer it replaces, so opening adjust
-  // mode used to grow the section — pushing the laps down and squeezing the
+  // mode used to grow the section, pushing the laps down and squeezing the
   // list. Both stages that show laps reserve the taller state up front.
   it.each(["stacked", "inline"])(
     "reserves the adjuster's footprint in the %s layout so the laps hold still",

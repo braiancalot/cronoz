@@ -9,7 +9,7 @@ describe("useTapOnlyDropdown", () => {
 
     expect(result.current.menuProps.open).toBe(false);
     // Modal is Radix's default and the reason a tap outside can't reach what
-    // is under the menu — the hook must not opt out of it.
+    // is under the menu; the hook must not opt out of it.
     expect(result.current.menuProps.modal).toBeUndefined();
   });
 

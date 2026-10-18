@@ -98,7 +98,7 @@
   min-height: 2.75rem;
 }
 
-/* One line, ellipsised — a two-line toast would outgrow TOAST_BAND and cover
+/* One line, ellipsised: a two-line toast would outgrow TOAST_BAND and cover
    what the band exists to keep clear. min-width lets the flex child shrink;
    without it the text pushes the action button out instead of truncating. */
 .cn-toast [data-content] {

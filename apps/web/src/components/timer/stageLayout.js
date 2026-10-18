@@ -5,7 +5,7 @@ export const COLUMN = "w-full max-w-150";
 // Space kept clear above the timer, where the toast lands. Sized to the 44px
 // toast plus clearance; shrinking it puts toasts back over the timer, and a tap
 // that dismisses one then falls through to whatever is beneath. Only this page
-// reserves it — the list scrolls, so its undos sit at the bottom instead.
+// reserves it: the list scrolls, so its undos sit at the bottom instead.
 export const TOAST_BAND = "pt-14";
 
 // Kept equal to TOAST_BAND so the timer sits in even space. Two spellings: the

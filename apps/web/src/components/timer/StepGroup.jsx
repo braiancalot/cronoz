@@ -17,7 +17,7 @@ const ROUND_ICON = {
   mini: "size-4",
 };
 
-// Snaps the segment to a whole minute — down (floor) or up (ceil).
+// Snaps the segment to a whole minute, down (floor) or up (ceil).
 function RoundButton({ direction, size, onSnap }) {
   const Icon = direction === "down" ? MinusCircleIcon : PlusCircleIcon;
   return (

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 
-// Radix traps focus inside the open dialog, so Space fires from inside it —
+// Radix traps focus inside the open dialog, so Space fires from inside it,
 // the real condition under test that the synthetic unit tests only simulate.
 function Harness({ onToggle, dialogOpen }) {
   useKeyboardShortcuts({ onToggle });

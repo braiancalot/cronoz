@@ -87,7 +87,7 @@ function parseBackup(text) {
 
 // Replace semantics: clear local data, then bulk-write the parsed backup.
 // Wrapped in a single Dexie transaction so a failure mid-way leaves the
-// DB untouched. Does not touch db.internal — pairing/device state stays.
+// DB untouched. Does not touch db.internal: pairing/device state stays.
 async function applyBackup(data) {
   await db.transaction("rw", db.projects, db.settings, async () => {
     await db.projects.clear();

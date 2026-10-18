@@ -24,7 +24,7 @@ describe("TimerDisplay", () => {
   it("renders formatted time with milliseconds", () => {
     const { container } = render(<TimerDisplay time={61000} />);
 
-    // 01:01.00 — has dot separator for milliseconds
+    // 01:01.00 has a dot separator for milliseconds
     const dotSeparator = container.querySelector("span.opacity-30");
     expect(dotSeparator).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe("TimerDisplay", () => {
     render(<TimerDisplay time={3600000} hourlyPrice={100} isRunning />);
 
     // Collapsing the row instead would shrink the timer, and everything under
-    // it on the stage — the laps — would slide up on every play.
+    // it on the stage (the laps) would slide up on every play.
     const meta = screen.getByText("R$ 100,00").closest(".group");
     expect(meta).toHaveClass("opacity-0");
     expect(meta.className).not.toContain("grid-rows");

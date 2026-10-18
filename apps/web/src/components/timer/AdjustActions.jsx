@@ -7,8 +7,8 @@ import {
 import { Button } from "@/components/ui/button.jsx";
 import { cn } from "@/lib/utils.js";
 
-// Mirrors the TimerControls arrangement it stands in for — same sizes, same
-// gaps, same orientation — so entering adjust mode doesn't move the buttons.
+// Mirrors the TimerControls arrangement it stands in for (same sizes, same
+// gaps, same orientation), so entering adjust mode doesn't move the buttons.
 export function AdjustActions({
   size = "default",
   orientation = "horizontal",

@@ -58,7 +58,7 @@ export function LapItem({
       <div className={cn("flex items-center gap-3", CLEARS_FLOATING_MENU)}>
         <LapName>{displayName}</LapName>
         {/* Flush right, so the lap time's width is what the accumulated one
-            right-aligns against — only that cell needs locking. */}
+            right-aligns against; only that cell needs locking. */}
         <div className="flex items-center gap-5 shrink-0">
           <LapTime
             time={cumulativeTime}

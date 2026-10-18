@@ -30,7 +30,7 @@ beforeEach(async () => {
 
 // The push schema drops keys it does not declare, so a field added to the
 // local record stops syncing with no error anywhere. Hand-written fixtures
-// cannot catch that — these records come from the real repositories.
+// cannot catch that: these records come from the real repositories.
 describe("sync contract: local records survive the push schema", () => {
   it("keeps every field of a completed project with tags and laps", async () => {
     const { id } = await projectRepository.create();

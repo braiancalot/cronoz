@@ -18,7 +18,7 @@ export const CONTROL_ICONS = {
   mini: "size-3",
 };
 
-// Wide enough that a thumb aiming at one can't clip the other — play and lap
+// Wide enough that a thumb aiming at one can't clip the other: play and lap
 // sit next to each other and one of them is destructive to a running timer.
 export const CONTROL_GAPS = {
   default: "gap-20",

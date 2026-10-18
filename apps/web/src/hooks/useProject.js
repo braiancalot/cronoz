@@ -57,11 +57,11 @@ export function useProject(projectId) {
   // is in another effect, the checkpoint loop can fire a stale write before
   // the recovery's pause commits, undoing it.
   //
-  // Recovery uses lastActiveAt as a liveness signal — stale heartbeat means
+  // Recovery uses lastActiveAt as a liveness signal: a stale heartbeat means
   // the run was abandoned. The staleness check itself is the guard: if the
   // user just started the timer or the checkpoint just wrote, lastActiveAt
   // is fresh and no pause fires. So this can run on every render without a
-  // one-shot ref — important so a sync pull that brings a stale running
+  // one-shot ref, which matters so a sync pull that brings a stale running
   // stopwatch after the initial render still triggers recovery.
   useEffect(() => {
     if (!project) return;
@@ -72,7 +72,7 @@ export function useProject(projectId) {
       projectRepository.updateStopwatch(project.id, (stored) =>
         recoverStaleRun(stored, Date.now()),
       );
-      // Don't start the checkpoint loop — useLiveQuery will fire again
+      // Don't start the checkpoint loop: useLiveQuery will fire again
       // with the paused state and this effect will re-run.
       return;
     }
@@ -110,7 +110,7 @@ export function useProject(projectId) {
   useWakeLock(project?.stopwatch?.isRunning ?? false);
 
   // Reflect a stopwatch write in the display immediately, bridging the gap
-  // until useLiveQuery re-emits — otherwise the old time flashes for a frame.
+  // until useLiveQuery re-emits, otherwise the old time flashes for a frame.
   function showStopwatch(sw) {
     setDisplayTime(calculateTotalTime(sw, { ignoreMs }));
     setSplitDisplayTime(calculateSplitTime(sw, { ignoreMs }));

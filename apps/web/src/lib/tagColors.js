@@ -1,6 +1,6 @@
 import { tagKey } from "@/lib/tags.js";
 
-// Neighboring slots alternate hue families. The primary teal range (170–200)
+// Neighboring slots alternate hue families. The primary teal range (170-200)
 // stays empty so a tag never reads as the live-device indicator.
 export const TAG_PALETTE = [
   { label: "Violeta", color: "oklch(0.78 0.14 280)" },

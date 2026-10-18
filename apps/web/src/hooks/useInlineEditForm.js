@@ -1,6 +1,6 @@
 // Interaction for an inline name editor with explicit save/cancel controls;
 // layout stays with each consumer. keepFocus holds focus while a button is
-// pressed so the blur-commit doesn't race the click — otherwise ✕ would commit
+// pressed so the blur-commit doesn't race the click, otherwise ✕ would commit
 // before it could cancel, and ✓ could fire twice.
 export function useInlineEditForm({ value, onSubmit, onCancel }) {
   function handleSubmit(event) {

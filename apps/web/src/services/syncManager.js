@@ -61,7 +61,7 @@ async function adoptPairing() {
 
 // lastPushedAt is a server timestamp, updatedAt a client one: clock skew can
 // let a local edit slip past the (updatedAt > lastPushedAt) filter, or re-push
-// a record. Acceptable for 1–2 personal devices; revisit if it bites.
+// a record. Acceptable for 1-2 personal devices; revisit if it bites.
 async function pushLocalChanges(credential) {
   const lastPushedAt = (await internalRepository.get(LAST_PUSHED_AT_KEY)) ?? 0;
   const pending = await collectPendingChanges(lastPushedAt);

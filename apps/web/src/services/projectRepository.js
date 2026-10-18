@@ -67,7 +67,7 @@ async function getAllForSync() {
 }
 
 // Apply an incoming record from the sync pull. No event, no updatedAt
-// rewrite — the incoming updatedAt is the source of truth for LWW.
+// rewrite: the incoming updatedAt is the source of truth for LWW.
 async function applyFromSync(project) {
   await db.projects.put(project);
 }

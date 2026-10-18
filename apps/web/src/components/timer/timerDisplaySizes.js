@@ -49,7 +49,7 @@ export const SIZES = {
 
 // PiP-only: the timer text scales continuously with the window (vmin) rather
 // than stepping through the tiers, so a small resize nudges the font too. Only
-// the text goes fluid — the indicator and controls stay on `size`.
+// the text goes fluid; the indicator and controls stay on `size`.
 export const FLUID = {
   gap: "gap-[clamp(0.15rem,1.25vmin,0.5rem)]",
   time: "text-[clamp(1.75rem,18vmin,4rem)]",
