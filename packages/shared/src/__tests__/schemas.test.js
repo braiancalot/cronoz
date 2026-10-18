@@ -89,6 +89,58 @@ describe("stopwatchSchema", () => {
     expect(stopwatchSchema.parse(stopwatch)).toEqual(stopwatch);
   });
 
+  it("keeps the real and edited time", () => {
+    const stopwatch = {
+      startTimestamp: null,
+      currentLapTime: 9000,
+      isRunning: false,
+      lastActiveAt: null,
+      laps: [],
+      realTime: 4000,
+      editedTime: 5000,
+    };
+    expect(stopwatchSchema.parse(stopwatch)).toEqual(stopwatch);
+  });
+
+  it("accepts a stopwatch from a build without real time", () => {
+    const parsed = stopwatchSchema.parse({
+      startTimestamp: null,
+      currentLapTime: 0,
+      isRunning: false,
+      lastActiveAt: null,
+      laps: [],
+    });
+    expect(parsed).not.toHaveProperty("realTime");
+    expect(parsed).not.toHaveProperty("editedTime");
+  });
+
+  it("accepts a negative real time instead of stalling the push", () => {
+    const stopwatch = {
+      startTimestamp: null,
+      currentLapTime: 0,
+      isRunning: false,
+      lastActiveAt: null,
+      laps: [],
+      realTime: -1000,
+      editedTime: 1000,
+    };
+    expect(stopwatchSchema.parse(stopwatch)).toEqual(stopwatch);
+  });
+
+  it("rejects a real time that is not a number", () => {
+    expect(() =>
+      stopwatchSchema.parse({
+        startTimestamp: null,
+        currentLapTime: 0,
+        isRunning: false,
+        lastActiveAt: null,
+        laps: [],
+        realTime: "4000",
+        editedTime: 0,
+      }),
+    ).toThrow();
+  });
+
   it("rejects a stopwatch without isRunning", () => {
     expect(() =>
       stopwatchSchema.parse({

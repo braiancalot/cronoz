@@ -22,6 +22,11 @@ export const stopwatchSchema = z.object({
   isRunning: z.boolean(),
   lastActiveAt: z.number().nullable(),
   laps: z.array(lapSchema).max(MAX_LAPS_PER_PROJECT),
+  // Optional: projects created before them, and builds that predate them,
+  // MUST still push. Not bounded either: a rejected record stalls sync for
+  // good, and the client already flags a bad value as inconsistent.
+  realTime: z.number().optional(),
+  editedTime: z.number().optional(),
 });
 
 export const projectSchema = z.object({

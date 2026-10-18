@@ -184,6 +184,43 @@ describe("end-to-end: device A pushes, device B pulls", () => {
     const pulled = bodyB.projects.find((p) => p.id === PROJECT_2);
     expect(pulled.tags).toEqual(["Crochê", "Urgente"]);
   });
+
+  it("propagates the real and edited time from A to B", async () => {
+    const { credential: credentialB } = await pair(DEVICE_A, DEVICE_B);
+    const project = makeProject({ id: PROJECT_2 });
+    project.stopwatch = {
+      ...project.stopwatch,
+      currentLapTime: 9000,
+      realTime: 4000,
+      editedTime: 5000,
+    };
+
+    await post(
+      "/api/sync/push",
+      { projects: [project], settings: [] },
+      credentialOf(DEVICE_A),
+    );
+
+    const pullB = await post("/api/sync/pull", { cursor: 0 }, credentialB);
+    const bodyB = await pullB.json();
+    expect(bodyB.projects.find((p) => p.id === PROJECT_2)).toEqual(project);
+  });
+
+  it("keeps a project pushed by a build without real time untracked", async () => {
+    const { credential: credentialB } = await pair(DEVICE_A, DEVICE_B);
+    const push = await post(
+      "/api/sync/push",
+      { projects: [makeProject({ id: PROJECT_2 })], settings: [] },
+      credentialOf(DEVICE_A),
+    );
+    expect(push.status).toBe(200);
+
+    const pullB = await post("/api/sync/pull", { cursor: 0 }, credentialB);
+    const bodyB = await pullB.json();
+    const { stopwatch } = bodyB.projects.find((p) => p.id === PROJECT_2);
+    expect(stopwatch).not.toHaveProperty("realTime");
+    expect(stopwatch).not.toHaveProperty("editedTime");
+  });
 });
 
 describe("end-to-end: A, B, C in same group", () => {
