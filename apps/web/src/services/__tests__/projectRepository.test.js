@@ -189,7 +189,7 @@ describe("undeleteLap", () => {
   it("does nothing for non-existent project", async () => {
     await expect(
       projectRepository.undeleteLap({ id: "missing", lapId: "x" }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBeNull();
   });
 });
 
@@ -295,7 +295,7 @@ describe("addLap", () => {
   it("does nothing for non-existent project", async () => {
     await expect(
       projectRepository.addLap({ id: "non-existent", name: "Volta 1" }),
-    ).resolves.toBeUndefined();
+    ).resolves.toBeNull();
   });
 });
 

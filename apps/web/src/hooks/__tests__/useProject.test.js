@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { DEFAULT_STOPWATCH } from "@/services/projectRepository.js";
+import {
+  appendLap,
+  markLapDeleted,
+  restoreLap,
+} from "@/lib/stopwatchTransitions.js";
 
 // vi.hoisted runs before vi.mock hoisting, making these available to factories
 const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
@@ -826,6 +831,88 @@ describe("useProject", () => {
 
       expect(store.writes).toHaveLength(0);
       expect(store.stopwatch.isRunning).toBe(false);
+    });
+  });
+
+  // The live query never re-emits in these tests, which is the gap between a
+  // Dexie write and the next useLiveQuery value.
+  describe("lap writes before the live query catches up", () => {
+    const LAP = { id: "lap-1", name: "1º Base", lapTime: 4000, createdAt: 1 };
+
+    function stubLapWrites() {
+      mockRepository.addLap.mockImplementation(({ id, name }) =>
+        store.update(id, (sw) =>
+          appendLap(sw, { id: "lap-2", name, createdAt: 2 }, Date.now()),
+        ),
+      );
+      mockRepository.removeLap.mockImplementation(({ id, lapId }) =>
+        store.update(id, (sw) => markLapDeleted(sw, lapId, Date.now())),
+      );
+      mockRepository.undeleteLap.mockImplementation(({ id, lapId }) =>
+        store.update(id, (sw) => restoreLap(sw, lapId)),
+      );
+    }
+
+    it("shows the added lap and zeroes the split at once", async () => {
+      stubLapWrites();
+      load(createProject({ currentLapTime: 3000, laps: [LAP] }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      await act(() => result.current.addLap("2º Acabamento"));
+
+      const { laps } = result.current.project.stopwatch;
+      expect(laps.map((lap) => lap.name)).toEqual(["2º Acabamento", "1º Base"]);
+      expect(result.current.splitDisplayTime).toBe(0);
+      expect(result.current.displayTime).toBe(7000);
+    });
+
+    it("shows the first lap of a project that had none", async () => {
+      stubLapWrites();
+      load(createProject({ currentLapTime: 3000 }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      await act(() => result.current.addLap("1º Base"));
+
+      expect(result.current.project.stopwatch.laps).toHaveLength(1);
+    });
+
+    it("hides a deleted lap and brings it back on undo", async () => {
+      stubLapWrites();
+      load(createProject({ laps: [LAP] }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      let undoer;
+      await act(async () => {
+        undoer = await result.current.deleteLap("lap-1");
+      });
+      expect(result.current.project.stopwatch.laps[0].deletedAt).toBeTruthy();
+
+      await act(() => undoer.undo());
+      expect(result.current.project.stopwatch.laps[0].deletedAt).toBeFalsy();
+    });
+
+    it("lets a newer live record win over the optimistic one", async () => {
+      stubLapWrites();
+      load(createProject({ laps: [LAP] }));
+      const { result, rerender } = renderHook(() => useProject("test-id"));
+      await act(() => result.current.addLap("2º Acabamento"));
+
+      load(createProject({ laps: [{ ...LAP, name: "Vinda do sync" }] }));
+      rerender();
+
+      const { laps } = result.current.project.stopwatch;
+      expect(laps.map((lap) => lap.name)).toEqual(["Vinda do sync"]);
+    });
+
+    it("keeps the live record when the repository writes nothing", async () => {
+      mockRepository.addLap.mockResolvedValue(null);
+      const project = createProject({ laps: [LAP] });
+      load(project);
+      const { result } = renderHook(() => useProject("test-id"));
+
+      await act(() => result.current.addLap("Além do limite"));
+
+      expect(result.current.project).toBe(project);
     });
   });
 });

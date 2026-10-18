@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import projectRepository from "@/services/projectRepository.js";
@@ -26,12 +26,27 @@ export function useProject(projectId) {
   const [displayTime, setDisplayTime] = useState(0);
   const [splitDisplayTime, setSplitDisplayTime] = useState(0);
 
-  const project = useLiveQuery(
+  const [lapOverride, setLapOverride] = useState(null);
+
+  const liveProject = useLiveQuery(
     () => projectRepository.getById(projectId),
     [projectId],
   );
 
-  const isLoading = project === undefined;
+  // A lap write resolves before useLiveQuery re-emits. Without the override
+  // the add form closes on a list that lacks the new lap, and the lap pops in
+  // a frame later. Any newer live stopwatch wins over it.
+  const project = useMemo(() => {
+    if (!lapOverride || liveProject?.stopwatch !== lapOverride.base) {
+      return liveProject;
+    }
+    return { ...liveProject, stopwatch: lapOverride.next };
+  }, [liveProject, lapOverride]);
+
+  const isLoading = liveProject === undefined;
+  // Read at write time: the delete undo runs from a toast, renders later.
+  const liveStopwatchRef = useRef(null);
+  liveStopwatchRef.current = liveProject?.stopwatch;
 
   const ignoreMs = useIgnoreMilliseconds();
 
@@ -98,6 +113,14 @@ export function useProject(projectId) {
     setSplitDisplayTime(calculateSplitTime(sw, { ignoreMs }));
   }
 
+  async function writeLap(write) {
+    const base = liveStopwatchRef.current;
+    const change = await write();
+    if (!change) return;
+    setLapOverride({ base, next: change.next });
+    showStopwatch(change.next);
+  }
+
   function start() {
     projectRepository.updateStopwatch(project.id, (sw) =>
       startRun(sw, Date.now()),
@@ -153,7 +176,8 @@ export function useProject(projectId) {
   }
 
   async function addLap(name) {
-    await projectRepository.addLap({ id: project.id, name });
+    const id = project.id;
+    await writeLap(() => projectRepository.addLap({ id, name }));
   }
 
   async function deleteProject() {
@@ -168,8 +192,10 @@ export function useProject(projectId) {
 
   async function deleteLap(lapId) {
     const id = project.id;
-    await projectRepository.removeLap({ id, lapId });
-    return { undo: () => projectRepository.undeleteLap({ id, lapId }) };
+    await writeLap(() => projectRepository.removeLap({ id, lapId }));
+    return {
+      undo: () => writeLap(() => projectRepository.undeleteLap({ id, lapId })),
+    };
   }
 
   return {
