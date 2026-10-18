@@ -92,7 +92,7 @@ export function TimerMeta({
                 }
                 title="Copiar tempo e valor"
                 className={cn(
-                  "text-muted-foreground transition-opacity md:absolute md:left-full md:inset-y-0 md:my-auto md:ml-1 md:opacity-0 md:group-hover:opacity-100",
+                  "-my-1 text-muted-foreground transition-opacity md:absolute md:left-full md:inset-y-0 md:my-auto md:ml-1 md:opacity-0 md:group-hover:opacity-100",
                   isRunning && "invisible transition-none",
                 )}
               >

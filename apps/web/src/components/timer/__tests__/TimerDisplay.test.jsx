@@ -142,6 +142,13 @@ describe("TimerDisplay", () => {
     expect(screen.queryByTitle("Copiar tempo e valor")).not.toBeInTheDocument();
   });
 
+  it("keeps the in-flow copy button from growing the meta line", () => {
+    render(<TimerDisplay time={1000} totalTime={3600000} hourlyPrice={100} />);
+
+    // Adjust mode drops the button, so any extra height makes the line jump.
+    expect(screen.getByTitle("Copiar tempo e valor")).toHaveClass("-my-1");
+  });
+
   it("holds the meta line of a lapless timer when hidePrice is set", () => {
     vi.mocked(useHidePrice).mockReturnValue(true);
     const { container } = render(<TimerDisplay time={1000} size="compact" />);
