@@ -15,7 +15,7 @@ import {
   isStopwatchLive,
   isStopwatchStale,
   calculateTotalPrice,
-  summarizeExactTime,
+  runningElapsed,
   RECOVERY_GRACE_PERIOD,
 } from "@/lib/stopwatch.js";
 
@@ -593,57 +593,49 @@ describe("calculateTotalPrice", () => {
   });
 });
 
-describe("summarizeExactTime", () => {
-  it("compares rounded, exact and difference for a paused stopwatch with laps", () => {
-    const stopwatch = {
-      isRunning: false,
-      startTimestamp: null,
-      currentLapTime: 0,
-      laps: [{ lapTime: 1999 }, { lapTime: 1999 }, { lapTime: 1999 }],
-    };
+describe("runningElapsed", () => {
+  const NOW = 1_000_000;
 
-    const summary = summarizeExactTime(stopwatch, 3600);
-
-    // rounded: trunc(1999)*3 = 3000 ; exact: 5997 ; diff: 2997
-    expect(summary.rounded.time).toBe(3000);
-    expect(summary.exact.time).toBe(5997);
-    expect(summary.difference.time).toBe(2997);
-
-    // price = (ms / 3600000) * 3600 = ms / 1000
-    expect(summary.rounded.price).toBeCloseTo(3);
-    expect(summary.exact.price).toBeCloseTo(5.997);
-    expect(summary.difference.price).toBeCloseTo(2.997);
+  it("is zero for a paused clock", () => {
+    expect(
+      runningElapsed({ isRunning: false, startTimestamp: null }, NOW),
+    ).toBe(0);
   });
 
-  it("reports zero difference when every segment lands on a whole second", () => {
-    const stopwatch = {
-      isRunning: false,
-      startTimestamp: null,
-      currentLapTime: 3000,
-      laps: [{ lapTime: 1000 }, { lapTime: 2000 }],
-    };
-
-    const summary = summarizeExactTime(stopwatch, 3600);
-
-    expect(summary.rounded.time).toBe(6000);
-    expect(summary.exact.time).toBe(6000);
-    expect(summary.difference.time).toBe(0);
-    expect(summary.difference.price).toBe(0);
+  it("is zero for a running flag without a start timestamp", () => {
+    expect(runningElapsed({ isRunning: true, startTimestamp: null }, NOW)).toBe(
+      0,
+    );
   });
 
-  it("captures the dropped sub-second when there are no laps", () => {
-    const stopwatch = {
-      isRunning: false,
-      startTimestamp: null,
-      currentLapTime: 1750,
-      laps: [],
+  it("measures from the start to now while the heartbeat is fresh", () => {
+    const sw = {
+      isRunning: true,
+      startTimestamp: NOW - 4000,
+      lastActiveAt: NOW,
     };
+    expect(runningElapsed(sw, NOW)).toBe(4000);
+  });
 
-    const summary = summarizeExactTime(stopwatch, 3600);
+  it("stops at the last heartbeat once it goes stale", () => {
+    const sw = {
+      isRunning: true,
+      startTimestamp: NOW - 100_000,
+      lastActiveAt: NOW - RECOVERY_GRACE_PERIOD,
+    };
+    expect(runningElapsed(sw, NOW)).toBe(100_000 - RECOVERY_GRACE_PERIOD);
+  });
 
-    expect(summary.rounded.time).toBe(1000);
-    expect(summary.exact.time).toBe(1750);
-    expect(summary.difference.time).toBe(750);
+  it("feeds calculateTotalTime and calculateSplitTime the same `now`", () => {
+    const sw = {
+      isRunning: true,
+      startTimestamp: NOW - 4000,
+      lastActiveAt: NOW,
+      currentLapTime: 1000,
+      laps: [{ lapTime: 2000 }],
+    };
+    expect(calculateSplitTime(sw, { now: NOW })).toBe(5000);
+    expect(calculateTotalTime(sw, { now: NOW })).toBe(7000);
   });
 });
 

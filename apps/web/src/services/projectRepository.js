@@ -1,7 +1,11 @@
-import { MAX_LAPS_PER_PROJECT } from "@cronoz/shared";
 import db from "./db.js";
 import { emitMutation } from "./repoEvents.js";
 import { addTagToList, removeTagFromList } from "@/lib/tags.js";
+import {
+  appendLap,
+  markLapDeleted,
+  restoreLap,
+} from "@/lib/stopwatchTransitions.js";
 
 export const DEFAULT_STOPWATCH = {
   startTimestamp: null,
@@ -9,6 +13,8 @@ export const DEFAULT_STOPWATCH = {
   isRunning: false,
   lastActiveAt: null,
   laps: [],
+  realTime: 0,
+  editedTime: 0,
 };
 
 function getDefaultProject(id) {
@@ -94,65 +100,48 @@ async function reopen(id) {
   await mutateLocal(id, { completedAt: null });
 }
 
-async function addLap({ id, lapTime, name }) {
-  const project = await getRawById(id);
-  if (!project) return;
-  if (project.stopwatch.laps.length >= MAX_LAPS_PER_PROJECT) return;
+// Read-modify-write of the stopwatch in one transaction, from the stored
+// record rather than a caller's copy, which may lag behind a write that has
+// not reached the live query yet. Writes nothing when the transform returns
+// the same object. Bumps updatedAt and emits a mutation so the change reaches
+// other devices via push.
+async function updateStopwatch(id, transform) {
+  let change = null;
 
-  const newLap = {
-    id: crypto.randomUUID(),
-    name,
-    lapTime,
-    createdAt: Date.now(),
-  };
+  await db.transaction("rw", db.projects, async () => {
+    const project = await db.projects.get(id);
+    if (!project) return;
 
-  await mutateLocal(id, {
-    stopwatch: {
-      ...project.stopwatch,
-      currentLapTime: 0,
-      laps: [newLap, ...project.stopwatch.laps],
-    },
+    const next = transform(project.stopwatch);
+    if (next === project.stopwatch) return;
+
+    await db.projects.update(id, { stopwatch: next, updatedAt: Date.now() });
+    change = { previous: project.stopwatch, next };
   });
+
+  if (change) emitMutation();
+  return change;
+}
+
+async function addLap({ id, name }) {
+  const now = Date.now();
+  const lap = { id: crypto.randomUUID(), name, createdAt: now };
+  await updateStopwatch(id, (sw) => appendLap(sw, lap, now));
 }
 
 async function renameLap({ id, lapId, name }) {
-  const project = await getRawById(id);
-  if (!project) return;
-
-  const laps = project.stopwatch.laps.map((lap) =>
-    lap.id === lapId ? { ...lap, name } : lap,
-  );
-
-  await mutateLocal(id, {
-    stopwatch: { ...project.stopwatch, laps },
-  });
+  await updateStopwatch(id, (sw) => ({
+    ...sw,
+    laps: sw.laps.map((lap) => (lap.id === lapId ? { ...lap, name } : lap)),
+  }));
 }
 
 async function removeLap({ id, lapId }) {
-  const project = await getRawById(id);
-  if (!project) return;
-
-  const now = Date.now();
-  const laps = project.stopwatch.laps.map((lap) =>
-    lap.id === lapId ? { ...lap, deletedAt: now } : lap,
-  );
-
-  await mutateLocal(id, {
-    stopwatch: { ...project.stopwatch, laps },
-  });
+  await updateStopwatch(id, (sw) => markLapDeleted(sw, lapId, Date.now()));
 }
 
 async function undeleteLap({ id, lapId }) {
-  const project = await getRawById(id);
-  if (!project) return;
-
-  const laps = project.stopwatch.laps.map((lap) =>
-    lap.id === lapId ? { ...lap, deletedAt: null } : lap,
-  );
-
-  await mutateLocal(id, {
-    stopwatch: { ...project.stopwatch, laps },
-  });
+  await updateStopwatch(id, (sw) => restoreLap(sw, lapId));
 }
 
 async function updateTags(id, transform) {
@@ -184,13 +173,6 @@ async function removeTag({ id, name }) {
   await updateTags(id, (tags) => removeTagFromList(tags, name));
 }
 
-// User-final stopwatch transitions (start/pause/recovery). Unlike
-// save(), this bumps updatedAt and emits a mutation event so the change
-// reaches other devices via push.
-async function setStopwatch(id, stopwatch) {
-  await mutateLocal(id, { stopwatch });
-}
-
 const projectRepository = {
   getAll,
   getById,
@@ -208,7 +190,7 @@ const projectRepository = {
   undeleteLap,
   addTag,
   removeTag,
-  setStopwatch,
+  updateStopwatch,
 };
 
 export default projectRepository;

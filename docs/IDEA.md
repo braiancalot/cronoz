@@ -60,6 +60,9 @@ A versão 1.0 está entregue e em uso em produção.
 - Atalhos de teclado e auto-pause ao sair/minimizar o app
 - Tags livres por projeto, com cores determinísticas, autocomplete e filtros
   combináveis por tag e status de conclusão
+- Tempo real: quanto o cronômetro rodou de fato, sem ajustes, descartes nem
+  voltas apagadas, comparado ao total em uso. Só em projetos criados depois do
+  recurso.
 
 ## Ideias Futuras
 

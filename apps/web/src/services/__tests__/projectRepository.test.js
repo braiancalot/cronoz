@@ -4,6 +4,18 @@ import db from "@/services/db.js";
 import projectRepository, {
   DEFAULT_STOPWATCH,
 } from "@/services/projectRepository.js";
+import { pauseRun, startRun } from "@/lib/stopwatchTransitions.js";
+import { REAL_TIME_STATUS, getRealTimeStatus } from "@/lib/realTime.js";
+
+const RUN_START = 1_000_000;
+
+// Runs the clock for `lapTime` and closes it into a lap, the way the app does.
+async function addTimedLap(id, lapTime, name) {
+  await projectRepository.updateStopwatch(id, (sw) =>
+    pauseRun(startRun(sw, RUN_START), RUN_START + lapTime),
+  );
+  await projectRepository.addLap({ id, name });
+}
 
 beforeEach(async () => {
   await db.projects.clear();
@@ -17,7 +29,13 @@ describe("DEFAULT_STOPWATCH", () => {
       isRunning: false,
       lastActiveAt: null,
       laps: [],
+      realTime: 0,
+      editedTime: 0,
     });
+  });
+
+  it("starts tracking the real time", () => {
+    expect(getRealTimeStatus(DEFAULT_STOPWATCH)).toBe(REAL_TIME_STATUS.tracked);
   });
 });
 
@@ -135,16 +153,8 @@ describe("undeleteProject", () => {
 describe("undeleteLap", () => {
   it("clears deletedAt on a single lap without touching others", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 1000,
-      name: "Volta 1",
-    });
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 2000,
-      name: "Volta 2",
-    });
+    await addTimedLap(project.id, 1000, "Volta 1");
+    await addTimedLap(project.id, 2000, "Volta 2");
 
     const before = await projectRepository.getById(project.id);
     const targetLapId = before.stopwatch.laps[1].id; // Volta 1
@@ -164,11 +174,7 @@ describe("undeleteLap", () => {
 
   it("bumps updatedAt", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 1000,
-      name: "Volta 1",
-    });
+    await addTimedLap(project.id, 1000, "Volta 1");
     const withLap = await projectRepository.getById(project.id);
     const lapId = withLap.stopwatch.laps[0].id;
 
@@ -220,32 +226,20 @@ describe("addLap", () => {
       stopwatch: { ...project.stopwatch, currentLapTime: 700, laps },
     });
 
-    await projectRepository.addLap({ id: project.id, lapTime: 700, name: "x" });
+    await projectRepository.addLap({ id: project.id, name: "x" });
 
     const found = await db.projects.get(project.id);
     expect(found.stopwatch.laps).toHaveLength(MAX_LAPS_PER_PROJECT);
     expect(found.stopwatch.currentLapTime).toBe(700);
   });
 
-  it("saves lap with lapTime and resets currentLapTime", async () => {
+  it("closes the stored current time into a lap and zeroes it", async () => {
     const project = await projectRepository.create();
-
-    // Simulate a running stopwatch with accumulated time
-    await db.projects.put({
-      ...project,
-      stopwatch: {
-        ...project.stopwatch,
-        isRunning: true,
-        startTimestamp: 1000,
-        currentLapTime: 0,
-      },
+    await db.projects.update(project.id, {
+      stopwatch: { ...project.stopwatch, currentLapTime: 5000, realTime: 5000 },
     });
 
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 5000,
-      name: "Volta 1",
-    });
+    await projectRepository.addLap({ id: project.id, name: "Volta 1" });
 
     const found = await projectRepository.getById(project.id);
     const lap = found.stopwatch.laps[0];
@@ -257,22 +251,36 @@ describe("addLap", () => {
     );
     expect(lap.createdAt).toBeTypeOf("number");
     expect(found.stopwatch.currentLapTime).toBe(0);
-    expect(found.stopwatch.startTimestamp).toBe(1000); // preserves original value
+    expect(found.stopwatch.realTime).toBe(5000);
+  });
+
+  it("pauses a clock still running instead of counting the run twice", async () => {
+    const project = await projectRepository.create();
+    const startedAt = Date.now() - 3000;
+    await db.projects.update(project.id, {
+      stopwatch: {
+        ...project.stopwatch,
+        isRunning: true,
+        startTimestamp: startedAt,
+        lastActiveAt: startedAt,
+      },
+    });
+
+    await projectRepository.addLap({ id: project.id, name: "Volta 1" });
+
+    const { stopwatch } = await db.projects.get(project.id);
+    expect(stopwatch.isRunning).toBe(false);
+    expect(stopwatch.startTimestamp).toBeNull();
+    expect(stopwatch.laps[0].lapTime).toBeGreaterThanOrEqual(3000);
+    expect(stopwatch.realTime).toBe(stopwatch.laps[0].lapTime);
+    expect(getRealTimeStatus(stopwatch)).toBe(REAL_TIME_STATUS.tracked);
   });
 
   it("adds multiple laps each with their own lapTime", async () => {
     const project = await projectRepository.create();
 
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 3000,
-      name: "Volta 1",
-    });
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 5000,
-      name: "Volta 2",
-    });
+    await addTimedLap(project.id, 3000, "Volta 1");
+    await addTimedLap(project.id, 5000, "Volta 2");
 
     const found = await projectRepository.getById(project.id);
     const [secondLap, firstLap] = found.stopwatch.laps;
@@ -281,15 +289,12 @@ describe("addLap", () => {
     expect(firstLap.name).toBe("Volta 1");
     expect(secondLap.lapTime).toBe(5000);
     expect(secondLap.name).toBe("Volta 2");
+    expect(found.stopwatch.realTime).toBe(8000);
   });
 
   it("does nothing for non-existent project", async () => {
     await expect(
-      projectRepository.addLap({
-        id: "non-existent",
-        lapTime: 1000,
-        name: "Volta 1",
-      }),
+      projectRepository.addLap({ id: "non-existent", name: "Volta 1" }),
     ).resolves.toBeUndefined();
   });
 });
@@ -297,11 +302,7 @@ describe("addLap", () => {
 describe("renameLap", () => {
   it("renames a specific lap", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 5000,
-      name: "Volta 1",
-    });
+    await addTimedLap(project.id, 5000, "Volta 1");
 
     const withLap = await projectRepository.getById(project.id);
     const lapId = withLap.stopwatch.laps[0].id;
@@ -320,21 +321,9 @@ describe("renameLap", () => {
 describe("removeLap", () => {
   it("soft deletes a lap (sets deletedAt instead of removing)", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 2000,
-      name: "Volta 1",
-    });
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 3000,
-      name: "Volta 2",
-    });
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 4000,
-      name: "Volta 3",
-    });
+    await addTimedLap(project.id, 2000, "Volta 1");
+    await addTimedLap(project.id, 3000, "Volta 2");
+    await addTimedLap(project.id, 4000, "Volta 3");
 
     // laps order (newest first): [4000, 3000, 2000]
     const before = await projectRepository.getById(project.id);
@@ -358,35 +347,131 @@ describe("removeLap", () => {
   });
 });
 
-describe("setStopwatch", () => {
-  it("replaces the stopwatch fully", async () => {
+describe("removeLap / undeleteLap real time", () => {
+  it("counts a deleted lap as an edit, so the real time stays whole", async () => {
     const project = await projectRepository.create();
+    await addTimedLap(project.id, 2000, "Volta 1");
+    await addTimedLap(project.id, 3000, "Volta 2");
+    const lapId = (await projectRepository.getById(project.id)).stopwatch
+      .laps[0].id;
 
-    await projectRepository.setStopwatch(project.id, {
-      ...DEFAULT_STOPWATCH,
-      isRunning: true,
-      startTimestamp: 1234,
-      lastActiveAt: 1234,
-      currentLapTime: 5000,
-    });
+    await projectRepository.removeLap({ id: project.id, lapId });
 
     const found = await projectRepository.getById(project.id);
-    expect(found.stopwatch).toEqual({
-      ...DEFAULT_STOPWATCH,
-      isRunning: true,
-      startTimestamp: 1234,
-      lastActiveAt: 1234,
-      currentLapTime: 5000,
-    });
+    expect(found.stopwatch.realTime).toBe(5000);
+    expect(found.stopwatch.editedTime).toBe(-3000);
+    expect(getRealTimeStatus(found.stopwatch)).toBe(REAL_TIME_STATUS.tracked);
   });
 
-  it("does nothing for a non-existent project", async () => {
-    await expect(
-      projectRepository.setStopwatch("missing-id", DEFAULT_STOPWATCH),
-    ).resolves.toBeUndefined();
+  it("deleting the same lap twice removes it once", async () => {
+    const project = await projectRepository.create();
+    await addTimedLap(project.id, 2000, "Volta 1");
+    const lapId = (await projectRepository.getById(project.id)).stopwatch
+      .laps[0].id;
 
-    const found = await db.projects.get("missing-id");
-    expect(found).toBeUndefined();
+    await projectRepository.removeLap({ id: project.id, lapId });
+    const once = await db.projects.get(project.id);
+    await projectRepository.removeLap({ id: project.id, lapId });
+    const twice = await db.projects.get(project.id);
+
+    expect(twice.stopwatch.editedTime).toBe(-2000);
+    expect(twice.updatedAt).toBe(once.updatedAt);
+  });
+
+  it("undeleting gives the lap back to the time in use", async () => {
+    const project = await projectRepository.create();
+    await addTimedLap(project.id, 2000, "Volta 1");
+    const lapId = (await projectRepository.getById(project.id)).stopwatch
+      .laps[0].id;
+
+    await projectRepository.removeLap({ id: project.id, lapId });
+    await projectRepository.undeleteLap({ id: project.id, lapId });
+
+    const { stopwatch } = await projectRepository.getById(project.id);
+    expect(stopwatch.editedTime).toBe(0);
+    expect(stopwatch.realTime).toBe(2000);
+    expect(getRealTimeStatus(stopwatch)).toBe(REAL_TIME_STATUS.tracked);
+  });
+});
+
+describe("updateStopwatch", () => {
+  it("applies the transform to the stored stopwatch and reports both sides", async () => {
+    const project = await projectRepository.create();
+
+    const change = await projectRepository.updateStopwatch(
+      project.id,
+      (sw) => ({
+        ...sw,
+        currentLapTime: 5000,
+      }),
+    );
+
+    expect(change.previous).toEqual(DEFAULT_STOPWATCH);
+    expect(change.next).toEqual({ ...DEFAULT_STOPWATCH, currentLapTime: 5000 });
+    const found = await db.projects.get(project.id);
+    expect(found.stopwatch).toEqual(change.next);
+  });
+
+  it("reads the stored record, not a stale copy", async () => {
+    const project = await projectRepository.create();
+    await db.projects.update(project.id, {
+      stopwatch: { ...project.stopwatch, currentLapTime: 9000 },
+    });
+
+    const seen = [];
+    await projectRepository.updateStopwatch(project.id, (sw) => {
+      seen.push(sw.currentLapTime);
+      return sw;
+    });
+
+    expect(seen).toEqual([9000]);
+  });
+
+  it("bumps updatedAt and emits a mutation when something changes", async () => {
+    const project = await projectRepository.create();
+    await db.projects.update(project.id, { updatedAt: 1 });
+
+    await projectRepository.updateStopwatch(project.id, (sw) => ({
+      ...sw,
+      currentLapTime: 1,
+    }));
+
+    expect((await db.projects.get(project.id)).updatedAt).toBeGreaterThan(1);
+  });
+
+  it("writes nothing when the transform returns the same stopwatch", async () => {
+    const project = await projectRepository.create();
+    await db.projects.update(project.id, { updatedAt: 1 });
+
+    const change = await projectRepository.updateStopwatch(
+      project.id,
+      (sw) => sw,
+    );
+
+    expect(change).toBeNull();
+    expect((await db.projects.get(project.id)).updatedAt).toBe(1);
+  });
+
+  it("serializes concurrent updates so neither is lost", async () => {
+    const project = await projectRepository.create();
+    const addOne = (sw) => ({ ...sw, currentLapTime: sw.currentLapTime + 1 });
+
+    await Promise.all(
+      Array.from({ length: 10 }, () =>
+        projectRepository.updateStopwatch(project.id, addOne),
+      ),
+    );
+
+    expect((await db.projects.get(project.id)).stopwatch.currentLapTime).toBe(
+      10,
+    );
+  });
+
+  it("returns null for a non-existent project", async () => {
+    await expect(
+      projectRepository.updateStopwatch("missing-id", (sw) => sw),
+    ).resolves.toBeNull();
+    expect(await db.projects.get("missing-id")).toBeUndefined();
   });
 });
 
@@ -522,22 +607,14 @@ describe("updatedAt", () => {
     const project = await projectRepository.create();
     const before = project.updatedAt;
 
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 5000,
-      name: "Volta 1",
-    });
+    await addTimedLap(project.id, 5000, "Volta 1");
     const found = await projectRepository.getById(project.id);
     expect(found.updatedAt).toBeGreaterThanOrEqual(before);
   });
 
   it("renameLap updates updatedAt", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 5000,
-      name: "Volta 1",
-    });
+    await addTimedLap(project.id, 5000, "Volta 1");
     const withLap = await projectRepository.getById(project.id);
     const before = withLap.updatedAt;
 
@@ -552,11 +629,7 @@ describe("updatedAt", () => {
 
   it("removeLap updates updatedAt", async () => {
     const project = await projectRepository.create();
-    await projectRepository.addLap({
-      id: project.id,
-      lapTime: 5000,
-      name: "Volta 1",
-    });
+    await addTimedLap(project.id, 5000, "Volta 1");
     const withLap = await projectRepository.getById(project.id);
     const before = withLap.updatedAt;
 
@@ -599,18 +672,6 @@ describe("updatedAt", () => {
 
     const found = await db.projects.get(project.id);
     expect(found.updatedAt).toBe(before);
-  });
-
-  it("setStopwatch updates updatedAt", async () => {
-    const project = await projectRepository.create();
-    const before = project.updatedAt;
-
-    await projectRepository.setStopwatch(project.id, {
-      ...DEFAULT_STOPWATCH,
-      currentLapTime: 5000,
-    });
-    const found = await projectRepository.getById(project.id);
-    expect(found.updatedAt).toBeGreaterThanOrEqual(before);
   });
 });
 

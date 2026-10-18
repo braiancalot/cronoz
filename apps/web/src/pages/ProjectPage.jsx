@@ -12,6 +12,8 @@ import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 import { adjustPreview } from "@/lib/stopwatch.js";
+import { getRealTimeStatus } from "@/lib/realTime.js";
+import { pauseRun } from "@/lib/stopwatchTransitions.js";
 
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 
@@ -20,7 +22,7 @@ import { TimerStage } from "@/components/timer/TimerStage.jsx";
 import { PiPTimer } from "@/components/pip/PiPTimer.jsx";
 import { PiPContent } from "@/components/pip/PiPContent.jsx";
 import { PiPPlaceholder } from "@/components/pip/PiPPlaceholder.jsx";
-import { ExactTimeDialog } from "@/components/ExactTimeDialog.jsx";
+import { RealTimeDialog } from "@/components/RealTimeDialog.jsx";
 import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
 import { RunningOverlay } from "@/components/RunningOverlay.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
@@ -37,7 +39,7 @@ export default function ProjectPage() {
   const [isConfirmingDiscard, setIsConfirmingDiscard] = useState(false);
   const [isAddingLap, setIsAddingLap] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
-  const [exactTimeSnapshot, setExactTimeSnapshot] = useState(null);
+  const [realTimeSnapshot, setRealTimeSnapshot] = useState(null);
   const [lapName, setLapName] = useState("");
 
   const hourlyPrice = useHourlyPrice();
@@ -114,13 +116,9 @@ export default function ProjectPage() {
   }
 
   function handleStartAdjust() {
-    const sw = project.stopwatch;
-    const settled =
-      sw.isRunning && sw.startTimestamp
-        ? sw.currentLapTime + (Date.now() - sw.startTimestamp)
-        : sw.currentLapTime;
+    const settled = pauseRun(project.stopwatch, Date.now());
     pause();
-    draft.begin(settled);
+    draft.begin(settled.currentLapTime);
     setIsAdjusting(true);
   }
 
@@ -135,33 +133,23 @@ export default function ProjectPage() {
 
   // Freeze the current total into a paused snapshot so the consultation panel
   // reads a static value while the stopwatch keeps running underneath.
-  function handleViewExactTime() {
-    const sw = project.stopwatch;
-    const settled =
-      sw.isRunning && sw.startTimestamp
-        ? sw.currentLapTime + (Date.now() - sw.startTimestamp)
-        : sw.currentLapTime;
-    setExactTimeSnapshot({
-      ...sw,
-      isRunning: false,
-      startTimestamp: null,
-      currentLapTime: settled,
-    });
+  function handleViewRealTime() {
+    setRealTimeSnapshot(pauseRun(project.stopwatch, Date.now()));
   }
 
   function handleRequestDiscard() {
     setIsConfirmingDiscard(true);
   }
 
-  function handleConfirmDiscard() {
+  async function handleConfirmDiscard() {
     setIsConfirmingDiscard(false);
     setIsAdjusting(false);
-    const { undo } = discardCurrentTime();
+    const { undo } = await discardCurrentTime();
     showUndoToast("Tempo atual descartado", undo);
   }
 
-  function handlePiPDiscard() {
-    const { undo } = discardCurrentTime();
+  async function handlePiPDiscard() {
+    const { undo } = await discardCurrentTime();
     showUndoToast("Tempo atual descartado", undo);
   }
 
@@ -223,7 +211,8 @@ export default function ProjectPage() {
         onAdjust={handleStartAdjust}
         canAdjust={!isAdjusting && !isPiPActive}
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
-        onViewExactTime={ignoreMs ? handleViewExactTime : null}
+        onViewRealTime={handleViewRealTime}
+        realTimeStatus={getRealTimeStatus(project.stopwatch)}
       />
 
       <TimerStage
@@ -268,11 +257,12 @@ export default function ProjectPage() {
         />
       </PiPTimer>
 
-      <ExactTimeDialog
-        open={!!exactTimeSnapshot}
-        onOpenChange={(isOpen) => !isOpen && setExactTimeSnapshot(null)}
-        stopwatch={exactTimeSnapshot ?? project.stopwatch}
+      <RealTimeDialog
+        open={!!realTimeSnapshot}
+        onOpenChange={(isOpen) => !isOpen && setRealTimeSnapshot(null)}
+        stopwatch={realTimeSnapshot ?? project.stopwatch}
         hourlyPrice={hourlyPrice}
+        ignoreMs={ignoreMs}
       />
 
       <ConfirmDialog

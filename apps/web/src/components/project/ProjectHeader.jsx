@@ -18,7 +18,8 @@ export function ProjectHeader({
   onAdjust,
   canAdjust,
   onOpenPiP,
-  onViewExactTime,
+  onViewRealTime,
+  realTimeStatus,
 }) {
   const {
     isEditing: isRenaming,
@@ -88,7 +89,8 @@ export function ProjectHeader({
               onRename={handleStartRename}
               onAdjust={onAdjust}
               canAdjust={canAdjust}
-              onViewExactTime={onViewExactTime}
+              onViewRealTime={onViewRealTime}
+              realTimeStatus={realTimeStatus}
               onDiscardCurrentTime={onDiscardCurrentTime}
               canDiscardCurrentTime={canDiscardCurrentTime}
               onDelete={onDelete}

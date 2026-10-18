@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { MAX_PROJECT_NAME_LENGTH } from "@cronoz/shared";
 import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
+import { REAL_TIME_STATUS } from "@/lib/realTime.js";
 
 function renderHeader(props = {}) {
   return render(
@@ -35,30 +36,56 @@ async function startRename() {
 }
 
 describe("ProjectHeader", () => {
-  it("shows the 'Tempo exato' item when onViewExactTime is provided", async () => {
-    renderHeader({ onViewExactTime: () => {} });
+  function realTimeItem() {
+    return screen.getByRole("menuitem", { name: /Tempo real/ });
+  }
+
+  it("calls onViewRealTime when the item is selected on a tracked project", async () => {
+    const onViewRealTime = vi.fn();
+    renderHeader({ onViewRealTime, realTimeStatus: REAL_TIME_STATUS.tracked });
     await openMenu();
 
-    expect(screen.getByText("Tempo exato")).toBeInTheDocument();
+    await userEvent.click(realTimeItem());
+
+    expect(onViewRealTime).toHaveBeenCalledOnce();
   });
 
-  it("hides the 'Tempo exato' item when onViewExactTime is absent", async () => {
-    renderHeader({ onViewExactTime: null });
+  it("disables the item on a project from before the feature, saying why", async () => {
+    const onViewRealTime = vi.fn();
+    renderHeader({
+      onViewRealTime,
+      realTimeStatus: REAL_TIME_STATUS.untracked,
+    });
     await openMenu();
 
-    // Sanity that the menu actually opened before asserting absence.
-    expect(screen.getByText("Ajustar tempo")).toBeInTheDocument();
-    expect(screen.queryByText("Tempo exato")).not.toBeInTheDocument();
+    expect(realTimeItem()).toHaveAttribute("data-disabled");
+    expect(
+      screen.getByText("Indisponível em projetos antigos"),
+    ).toBeInTheDocument();
   });
 
-  it("calls onViewExactTime when the item is selected", async () => {
-    const onViewExactTime = vi.fn();
-    renderHeader({ onViewExactTime });
+  it("disables the item when an older build left the times out of step", async () => {
+    renderHeader({
+      onViewRealTime: () => {},
+      realTimeStatus: REAL_TIME_STATUS.inconsistent,
+    });
     await openMenu();
 
-    await userEvent.click(screen.getByText("Tempo exato"));
+    expect(realTimeItem()).toHaveAttribute("data-disabled");
+    expect(
+      screen.getByText("Alterado por uma versão antiga do app"),
+    ).toBeInTheDocument();
+  });
 
-    expect(onViewExactTime).toHaveBeenCalledOnce();
+  it("shows no reason on an available item", async () => {
+    renderHeader({
+      onViewRealTime: () => {},
+      realTimeStatus: REAL_TIME_STATUS.tracked,
+    });
+    await openMenu();
+
+    expect(realTimeItem()).not.toHaveAttribute("data-disabled");
+    expect(realTimeItem()).toHaveTextContent(/^Tempo real$/);
   });
 
   it("truncates a long title instead of pushing the menu off the row", () => {

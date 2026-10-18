@@ -44,16 +44,25 @@ export function sumLapTimes(laps) {
   return laps.reduce((sum, lap) => sum + lap.lapTime, 0);
 }
 
-export function calculateTotalTime(stopwatch, { ignoreMs = false } = {}) {
+// Open run as the display shows it: capped at lastActiveAt once the heartbeat
+// goes stale, so an abandoned run stops growing. Matches what useProject's
+// recovery commits.
+export function runningElapsed(stopwatch, now = Date.now()) {
+  const { isRunning, startTimestamp } = stopwatch;
+  if (!isRunning || !startTimestamp) return 0;
+
+  const end = isStopwatchStale(stopwatch, now) ? stopwatch.lastActiveAt : now;
+  return end - startTimestamp;
+}
+
+export function calculateTotalTime(
+  stopwatch,
+  { ignoreMs = false, now = Date.now() } = {},
+) {
   if (!stopwatch) return 0;
 
-  const { isRunning, startTimestamp, currentLapTime, laps } = stopwatch;
-  const now = Date.now();
-  // Cap the running elapsed at lastActiveAt once the heartbeat goes stale, so an
-  // abandoned run stops growing — matches what useProject's recovery commits.
-  const end = isStopwatchStale(stopwatch, now) ? stopwatch.lastActiveAt : now;
-  const elapsed = isRunning && startTimestamp ? end - startTimestamp : 0;
-  const inProgress = currentLapTime + elapsed;
+  const { currentLapTime, laps } = stopwatch;
+  const inProgress = currentLapTime + runningElapsed(stopwatch, now);
 
   if (!ignoreMs) {
     return sumLapTimes(laps) + inProgress;
@@ -66,15 +75,13 @@ export function calculateTotalTime(stopwatch, { ignoreMs = false } = {}) {
   return lapsTotal + truncateToSecond(inProgress);
 }
 
-export function calculateSplitTime(stopwatch, { ignoreMs = false } = {}) {
+export function calculateSplitTime(
+  stopwatch,
+  { ignoreMs = false, now = Date.now() } = {},
+) {
   if (!stopwatch) return 0;
 
-  const { isRunning, startTimestamp, currentLapTime } = stopwatch;
-  const now = Date.now();
-  const end = isStopwatchStale(stopwatch, now) ? stopwatch.lastActiveAt : now;
-  const elapsed = isRunning && startTimestamp ? end - startTimestamp : 0;
-  const split = currentLapTime + elapsed;
-
+  const split = stopwatch.currentLapTime + runningElapsed(stopwatch, now);
   return ignoreMs ? truncateToSecond(split) : split;
 }
 
@@ -99,30 +106,6 @@ const MS_PER_HOUR = 3600000;
 
 export function calculateTotalPrice(ms, hourlyPrice) {
   return (ms / MS_PER_HOUR) * hourlyPrice;
-}
-
-// Snapshot for the "exact time" consultation panel: what the total time/price
-// currently are (rounded, with per-lap ms truncation) versus what they'd be
-// without the truncation, plus the difference the rounding drops.
-export function summarizeExactTime(stopwatch, hourlyPrice) {
-  const roundedTime = calculateTotalTime(stopwatch, { ignoreMs: true });
-  const exactTime = calculateTotalTime(stopwatch, { ignoreMs: false });
-  const differenceTime = exactTime - roundedTime;
-
-  return {
-    rounded: {
-      time: roundedTime,
-      price: calculateTotalPrice(roundedTime, hourlyPrice),
-    },
-    exact: {
-      time: exactTime,
-      price: calculateTotalPrice(exactTime, hourlyPrice),
-    },
-    difference: {
-      time: differenceTime,
-      price: calculateTotalPrice(differenceTime, hourlyPrice),
-    },
-  };
 }
 
 export function hasHours(hours) {
@@ -150,7 +133,7 @@ export function formatTimeCompact(ms) {
 
 // Labeled h/m/s format ("1h 23m 47s"). Outer zero segments are dropped, but
 // interior ones stay so place value reads right ("1h 0m 5s", "1m"). `fraction`
-// appends centiseconds, for the "exact time" panel's rounding drops.
+// appends centiseconds, for the real time panel.
 export function formatHms(ms, { fraction = false } = {}) {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms / 60000) % 60);

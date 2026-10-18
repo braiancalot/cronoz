@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { DEFAULT_STOPWATCH } from "@/services/projectRepository.js";
 
@@ -7,7 +7,7 @@ const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
   mockUseLiveQuery: vi.fn(),
   mockRepository: {
     getById: vi.fn(),
-    setStopwatch: vi.fn(),
+    updateStopwatch: vi.fn(),
     rename: vi.fn(),
     remove: vi.fn(),
     undeleteProject: vi.fn(),
@@ -52,9 +52,44 @@ function createProject(stopwatchOverrides = {}) {
   };
 }
 
+// Stands in for the Dexie record: applies each transform the hook sends the
+// way projectRepository.updateStopwatch does, and keeps what was written.
+class FakeStopwatchStore {
+  constructor(stopwatch) {
+    this.stopwatch = stopwatch;
+    this.writes = [];
+  }
+
+  async update(_id, transform) {
+    const previous = this.stopwatch;
+    const next = transform(previous);
+    if (next === previous) return null;
+    this.stopwatch = next;
+    this.writes.push(next);
+    return { previous, next };
+  }
+
+  get last() {
+    return this.writes.at(-1);
+  }
+}
+
+let store;
+
+// Loads the project into both the live query and the fake record. A rerender
+// with another project means a sync pull replaced the record.
+function load(project) {
+  mockUseLiveQuery.mockReturnValue(project);
+  store.stopwatch = project.stopwatch;
+}
+
 describe("useProject", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    store = new FakeStopwatchStore(DEFAULT_STOPWATCH);
+    mockRepository.updateStopwatch.mockImplementation((id, transform) =>
+      store.update(id, transform),
+    );
   });
 
   it("returns isLoading true when project is undefined", () => {
@@ -67,7 +102,7 @@ describe("useProject", () => {
 
   it("returns project data when loaded", () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -77,7 +112,7 @@ describe("useProject", () => {
 
   it("start saves project with isRunning true and lastActiveAt set", () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -85,14 +120,11 @@ describe("useProject", () => {
       result.current.start();
     });
 
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-      "test-id",
-      expect.objectContaining({
-        isRunning: true,
-        startTimestamp: expect.any(Number),
-        lastActiveAt: expect.any(Number),
-      }),
-    );
+    expect(store.last).toMatchObject({
+      isRunning: true,
+      startTimestamp: expect.any(Number),
+      lastActiveAt: expect.any(Number),
+    });
   });
 
   it("pause saves project with isRunning false and accumulated currentLapTime", () => {
@@ -104,7 +136,7 @@ describe("useProject", () => {
       startTimestamp: 7000,
       currentLapTime: 2000,
     });
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -112,21 +144,18 @@ describe("useProject", () => {
       result.current.pause();
     });
 
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-      "test-id",
-      expect.objectContaining({
-        isRunning: false,
-        startTimestamp: null,
-        currentLapTime: 5000, // 2000 + (10000 - 7000)
-      }),
-    );
+    expect(store.last).toMatchObject({
+      isRunning: false,
+      startTimestamp: null,
+      currentLapTime: 5000, // 2000 + (10000 - 7000)
+    });
 
     vi.useRealTimers();
   });
 
   it("pause does nothing when not running", () => {
     const project = createProject({ isRunning: false });
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -134,7 +163,7 @@ describe("useProject", () => {
       result.current.pause();
     });
 
-    expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+    expect(store.writes).toHaveLength(0);
   });
 
   it("discardCurrentTime zeroes currentLapTime and pauses", () => {
@@ -143,7 +172,7 @@ describe("useProject", () => {
       startTimestamp: 1000,
       currentLapTime: 4000,
     });
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -151,53 +180,101 @@ describe("useProject", () => {
       result.current.discardCurrentTime();
     });
 
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-      "test-id",
-      expect.objectContaining({
-        isRunning: false,
-        startTimestamp: null,
-        lastActiveAt: null,
-        currentLapTime: 0,
-      }),
-    );
+    expect(store.last).toMatchObject({
+      isRunning: false,
+      startTimestamp: null,
+      lastActiveAt: null,
+      currentLapTime: 0,
+    });
   });
 
-  it("discardCurrentTime returns an undo that restores the prior currentLapTime (paused)", () => {
-    const project = createProject({
-      isRunning: true,
-      startTimestamp: 1000,
-      currentLapTime: 4000,
-    });
-    mockUseLiveQuery.mockReturnValue(project);
+  it("discardCurrentTime returns an undo that restores the discarded time (paused)", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(10_000));
+    load(createProject({ isRunning: true, startTimestamp: 7000 }));
 
     const { result } = renderHook(() => useProject("test-id"));
 
     let undoer;
-    act(() => {
-      undoer = result.current.discardCurrentTime();
+    await act(async () => {
+      undoer = await result.current.discardCurrentTime();
     });
-    expect(undoer).toEqual(
-      expect.objectContaining({ undo: expect.any(Function) }),
-    );
+    await act(() => undoer.undo());
 
-    mockRepository.setStopwatch.mockClear();
-
-    act(() => {
-      undoer.undo();
-    });
-
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith("test-id", {
-      ...project.stopwatch,
+    expect(store.last).toMatchObject({
       isRunning: false,
       startTimestamp: null,
-      lastActiveAt: null,
+      currentLapTime: 3000,
+      realTime: 3000,
+      editedTime: 0,
     });
+
+    vi.useRealTimers();
+  });
+
+  it("discardCurrentTime records the discarded run as real time and the drop as an edit", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(10_000));
+    load(createProject({ isRunning: true, startTimestamp: 7000 }));
+
+    const { result } = renderHook(() => useProject("test-id"));
+    await act(() => result.current.discardCurrentTime());
+
+    expect(store.last).toMatchObject({
+      currentLapTime: 0,
+      realTime: 3000,
+      editedTime: -3000,
+    });
+
+    vi.useRealTimers();
+  });
+
+  // The undo used to restore a snapshot, which erased a run made after the
+  // discard. It now adds the discarded amount back on top.
+  it("discardCurrentTime undo keeps a run made after the discard", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(10_000));
+    load(createProject({ isRunning: true, startTimestamp: 7000 }));
+
+    const { result } = renderHook(() => useProject("test-id"));
+    let undoer;
+    await act(async () => {
+      undoer = await result.current.discardCurrentTime();
+    });
+
+    store.stopwatch = {
+      ...store.stopwatch,
+      currentLapTime: 500,
+      realTime: 3500,
+    };
+    await act(() => undoer.undo());
+
+    expect(store.last).toMatchObject({
+      currentLapTime: 3500,
+      realTime: 3500,
+      editedTime: 0,
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("discardCurrentTime with nothing to discard returns an undo that writes nothing", async () => {
+    load(createProject());
+
+    const { result } = renderHook(() => useProject("test-id"));
+    let undoer;
+    await act(async () => {
+      undoer = await result.current.discardCurrentTime();
+    });
+    await act(() => undoer.undo());
+
+    expect(store.writes).toHaveLength(0);
   });
 
   describe("setCurrentTime", () => {
     it("commits the given value as currentLapTime", () => {
       const project = createProject({ currentLapTime: 5000 });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       const { result } = renderHook(() => useProject("test-id"));
 
@@ -205,15 +282,12 @@ describe("useProject", () => {
         result.current.setCurrentTime(15000);
       });
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({ currentLapTime: 15000 }),
-      );
+      expect(store.last).toMatchObject({ currentLapTime: 15000 });
     });
 
     it("clamps negative values to 0", () => {
       const project = createProject({ currentLapTime: 5000 });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       const { result } = renderHook(() => useProject("test-id"));
 
@@ -221,10 +295,7 @@ describe("useProject", () => {
         result.current.setCurrentTime(-2000);
       });
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({ currentLapTime: 0 }),
-      );
+      expect(store.last).toMatchObject({ currentLapTime: 0 });
     });
 
     it("keeps the stopwatch paused", () => {
@@ -232,7 +303,7 @@ describe("useProject", () => {
         currentLapTime: 5000,
         isRunning: false,
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       const { result } = renderHook(() => useProject("test-id"));
 
@@ -240,16 +311,16 @@ describe("useProject", () => {
         result.current.setCurrentTime(6000);
       });
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({ isRunning: false, currentLapTime: 6000 }),
-      );
+      expect(store.last).toMatchObject({
+        isRunning: false,
+        currentLapTime: 6000,
+      });
     });
   });
 
   it("toggle calls start when stopped", () => {
     const project = createProject({ isRunning: false });
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -257,10 +328,7 @@ describe("useProject", () => {
       result.current.toggle();
     });
 
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-      "test-id",
-      expect.objectContaining({ isRunning: true }),
-    );
+    expect(store.last).toMatchObject({ isRunning: true });
   });
 
   it("toggle calls pause when running", () => {
@@ -269,7 +337,7 @@ describe("useProject", () => {
       startTimestamp: Date.now(),
       currentLapTime: 1000,
     });
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -277,41 +345,26 @@ describe("useProject", () => {
       result.current.toggle();
     });
 
-    expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-      "test-id",
-      expect.objectContaining({ isRunning: false }),
-    );
+    expect(store.last).toMatchObject({ isRunning: false });
   });
 
-  it("addLap calls repository with calculated lapTime and name", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(10000));
-
-    const project = createProject({
-      isRunning: true,
-      startTimestamp: 7000,
-      currentLapTime: 2000,
-    });
-    mockUseLiveQuery.mockReturnValue(project);
+  // The lap time comes from the stored record, inside the repository's
+  // transaction, so a stale render cannot hand it an old value.
+  it("addLap calls repository with the project id and name only", async () => {
+    load(createProject({ isRunning: true, startTimestamp: 7000 }));
 
     const { result } = renderHook(() => useProject("test-id"));
-
-    act(() => {
-      result.current.addLap("Volta 1");
-    });
+    await act(() => result.current.addLap("Volta 1"));
 
     expect(mockRepository.addLap).toHaveBeenCalledWith({
       id: "test-id",
-      lapTime: 5000, // currentLapTime (2000) + elapsed (10000 - 7000)
       name: "Volta 1",
     });
-
-    vi.useRealTimers();
   });
 
   it("rename calls repository with new name", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -327,7 +380,7 @@ describe("useProject", () => {
 
   it("rename does nothing with empty name", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -340,7 +393,7 @@ describe("useProject", () => {
 
   it("deleteProject calls repository remove", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -353,7 +406,7 @@ describe("useProject", () => {
 
   it("deleteProject returns an undo that calls undeleteProject", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -374,7 +427,7 @@ describe("useProject", () => {
 
   it("renameLap calls repository", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -389,34 +442,19 @@ describe("useProject", () => {
     });
   });
 
-  it("addLap works correctly when stopwatch is paused (regression: stale state overwrite)", () => {
-    const project = createProject({
-      isRunning: false,
-      startTimestamp: null,
-      currentLapTime: 5000,
-    });
-    mockUseLiveQuery.mockReturnValue(project);
+  it("addLap does not write the stopwatch itself (regression: stale state overwrite)", async () => {
+    load(createProject({ currentLapTime: 5000 }));
 
     const { result } = renderHook(() => useProject("test-id"));
+    await act(() => result.current.addLap("Volta 1"));
 
-    act(() => {
-      result.current.addLap("Volta 1");
-    });
-
-    expect(mockRepository.addLap).toHaveBeenCalledWith({
-      id: "test-id",
-      lapTime: 5000,
-      name: "Volta 1",
-    });
-
-    // Must NOT touch the stopwatch write path — start() was the original
-    // culprit of the stale-state overwrite bug.
-    expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+    // start() was the original culprit of the stale-state overwrite bug.
+    expect(store.writes).toHaveLength(0);
   });
 
   it("deleteLap calls repository", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -432,7 +470,7 @@ describe("useProject", () => {
 
   it("deleteLap returns an undo that calls undeleteLap", async () => {
     const project = createProject();
-    mockUseLiveQuery.mockReturnValue(project);
+    load(project);
 
     const { result } = renderHook(() => useProject("test-id"));
 
@@ -462,19 +500,16 @@ describe("useProject", () => {
         currentLapTime: 2000,
         lastActiveAt: 15000, // far in the past relative to wall clock → stale
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({
-          isRunning: false,
-          startTimestamp: null,
-          lastActiveAt: null,
-          currentLapTime: 12000, // 2000 + (15000 - 5000)
-        }),
-      );
+      expect(store.last).toMatchObject({
+        isRunning: false,
+        startTimestamp: null,
+        lastActiveAt: null,
+        currentLapTime: 12000, // 2000 + (15000 - 5000)
+      });
     });
 
     it("does not recover a running timer without lastActiveAt", () => {
@@ -484,11 +519,11 @@ describe("useProject", () => {
         currentLapTime: 0,
         lastActiveAt: null,
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
     });
 
     it("does not recover a paused timer", () => {
@@ -496,16 +531,16 @@ describe("useProject", () => {
         isRunning: false,
         lastActiveAt: 15000,
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
     });
 
     it("does not recover when the timer was just started (fresh lastActiveAt)", () => {
       const pausedProject = createProject({ isRunning: false });
-      mockUseLiveQuery.mockReturnValue(pausedProject);
+      load(pausedProject);
 
       const { rerender } = renderHook(() => useProject("test-id"));
 
@@ -517,11 +552,11 @@ describe("useProject", () => {
         currentLapTime: 0,
         lastActiveAt: now,
       });
-      mockUseLiveQuery.mockReturnValue(runningProject);
+      load(runningProject);
 
       rerender();
 
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
     });
 
     // Regression: cross-device scenario where a phone has a stale local copy
@@ -531,11 +566,11 @@ describe("useProject", () => {
     it("recovers when sync pull brings a stale running stopwatch after a paused initial render", () => {
       // Initial local state: paused (this device hadn't synced yet)
       const pausedProject = createProject({ isRunning: false });
-      mockUseLiveQuery.mockReturnValue(pausedProject);
+      load(pausedProject);
 
       const { rerender } = renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
 
       // Sync pull arrives with running stopwatch + ancient heartbeat
       const stalePulled = createProject({
@@ -544,19 +579,16 @@ describe("useProject", () => {
         currentLapTime: 2_000,
         lastActiveAt: 15_000, // stale relative to wall clock
       });
-      mockUseLiveQuery.mockReturnValue(stalePulled);
+      load(stalePulled);
 
       rerender();
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({
-          isRunning: false,
-          startTimestamp: null,
-          lastActiveAt: null,
-          currentLapTime: 12_000, // 2_000 + (15_000 - 5_000)
-        }),
-      );
+      expect(store.last).toMatchObject({
+        isRunning: false,
+        startTimestamp: null,
+        lastActiveAt: null,
+        currentLapTime: 12_000, // 2_000 + (15_000 - 5_000)
+      });
     });
 
     // Regression: when recovery and checkpoint were in separate effects, the
@@ -572,7 +604,7 @@ describe("useProject", () => {
         currentLapTime: 2_000,
         lastActiveAt: 15_000, // ancient — far past grace period
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
@@ -580,13 +612,10 @@ describe("useProject", () => {
       // checkpoint loop would write a fresh lastActiveAt here.
       await act(() => vi.advanceTimersByTime(100));
 
-      // Recovery must be the ONLY setStopwatch call. A second call would
-      // be the stale checkpoint write overwriting the pause.
-      expect(mockRepository.setStopwatch).toHaveBeenCalledTimes(1);
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({ isRunning: false }),
-      );
+      // Recovery must be the ONLY write. A second one would be the stale
+      // checkpoint write overwriting the pause.
+      expect(store.writes).toHaveLength(1);
+      expect(store.last).toMatchObject({ isRunning: false });
 
       vi.useRealTimers();
     });
@@ -601,11 +630,11 @@ describe("useProject", () => {
         currentLapTime: 2_000,
         lastActiveAt: 95_000, // 5s ago — fresh heartbeat
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
 
       vi.useRealTimers();
     });
@@ -621,25 +650,22 @@ describe("useProject", () => {
         startTimestamp: 90000,
         currentLapTime: 0,
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
       // Trigger first rAF tick — no checkpoint yet (interval not elapsed)
       await act(() => vi.advanceTimersByTime(1));
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
 
       // Advance system time past checkpoint interval and trigger rAF
       vi.setSystemTime(new Date(110001));
       await act(() => vi.runOnlyPendingTimers());
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({
-          lastActiveAt: expect.any(Number),
-          isRunning: true,
-        }),
-      );
+      expect(store.last).toMatchObject({
+        lastActiveAt: expect.any(Number),
+        isRunning: true,
+      });
 
       vi.useRealTimers();
     });
@@ -653,14 +679,14 @@ describe("useProject", () => {
         startTimestamp: 95000,
         currentLapTime: 0,
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       renderHook(() => useProject("test-id"));
 
       vi.setSystemTime(new Date(105000));
       vi.advanceTimersByTime(0);
 
-      expect(mockRepository.setStopwatch).not.toHaveBeenCalled();
+      expect(store.writes).toHaveLength(0);
 
       vi.useRealTimers();
     });
@@ -675,7 +701,7 @@ describe("useProject", () => {
         currentLapTime: 2000,
         lastActiveAt: 9000,
       });
-      mockUseLiveQuery.mockReturnValue(project);
+      load(project);
 
       const { result } = renderHook(() => useProject("test-id"));
 
@@ -683,15 +709,123 @@ describe("useProject", () => {
         result.current.pause();
       });
 
-      expect(mockRepository.setStopwatch).toHaveBeenCalledWith(
-        "test-id",
-        expect.objectContaining({
-          isRunning: false,
-          lastActiveAt: null,
+      expect(store.last).toMatchObject({
+        isRunning: false,
+        lastActiveAt: null,
+      });
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe("real time", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(100_000));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("pause adds the run to the real time", () => {
+      load(
+        createProject({
+          isRunning: true,
+          startTimestamp: 97_000,
+          lastActiveAt: 97_000,
+          currentLapTime: 2000,
+          realTime: 2000,
         }),
       );
 
-      vi.useRealTimers();
+      const { result } = renderHook(() => useProject("test-id"));
+      act(() => result.current.pause());
+
+      expect(store.last).toMatchObject({
+        currentLapTime: 5000,
+        realTime: 5000,
+        editedTime: 0,
+      });
+    });
+
+    it("setCurrentTime records the change as an edit, not as real time", async () => {
+      load(createProject({ currentLapTime: 5000, realTime: 5000 }));
+
+      const { result } = renderHook(() => useProject("test-id"));
+      await act(() => result.current.setCurrentTime(60_000));
+
+      expect(store.last).toMatchObject({
+        currentLapTime: 60_000,
+        realTime: 5000,
+        editedTime: 55_000,
+      });
+    });
+
+    it("recovery adds the run up to the last heartbeat", () => {
+      load(
+        createProject({
+          isRunning: true,
+          startTimestamp: 5000,
+          lastActiveAt: 15_000,
+        }),
+      );
+
+      renderHook(() => useProject("test-id"));
+
+      expect(store.last).toMatchObject({
+        isRunning: false,
+        currentLapTime: 10_000,
+        realTime: 10_000,
+      });
+    });
+
+    it("leaves a project from before the feature without real time", () => {
+      const { realTime: _r, editedTime: _e, ...legacy } = DEFAULT_STOPWATCH;
+      load({
+        ...createProject(),
+        stopwatch: {
+          ...legacy,
+          isRunning: true,
+          startTimestamp: 97_000,
+          lastActiveAt: 97_000,
+        },
+      });
+
+      const { result } = renderHook(() => useProject("test-id"));
+      act(() => result.current.pause());
+
+      expect(store.last.currentLapTime).toBe(3000);
+      expect(store.last).not.toHaveProperty("realTime");
+      expect(store.last).not.toHaveProperty("editedTime");
+    });
+
+    // The checkpoint used to write the rendered stopwatch back with a fresh
+    // heartbeat. Landing after a pause, it restarted the clock and the pause
+    // was lost. It now only touches a record that is still running.
+    it("a checkpoint that lands after a pause does not restart the run", async () => {
+      load(
+        createProject({
+          isRunning: true,
+          startTimestamp: 95_000,
+          lastActiveAt: 95_000,
+        }),
+      );
+      renderHook(() => useProject("test-id"));
+
+      store.stopwatch = {
+        ...store.stopwatch,
+        isRunning: false,
+        startTimestamp: null,
+        lastActiveAt: null,
+        currentLapTime: 5000,
+        realTime: 5000,
+      };
+      vi.setSystemTime(new Date(110_000));
+      await act(() => vi.runOnlyPendingTimers());
+
+      expect(store.writes).toHaveLength(0);
+      expect(store.stopwatch.isRunning).toBe(false);
     });
   });
 });

@@ -14,16 +14,25 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu.jsx";
+import { REAL_TIME_STATUS } from "@/lib/realTime.js";
+
+const REAL_TIME_UNAVAILABLE = {
+  [REAL_TIME_STATUS.untracked]: "Indisponível em projetos antigos",
+  [REAL_TIME_STATUS.inconsistent]: "Alterado por uma versão antiga do app",
+};
 
 export function ProjectMenu({
   onRename,
   onAdjust,
   canAdjust,
-  onViewExactTime,
+  onViewRealTime,
+  realTimeStatus,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
   onDelete,
 }) {
+  const realTimeUnavailable = REAL_TIME_UNAVAILABLE[realTimeStatus];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -44,17 +53,22 @@ export function ProjectMenu({
           <ClockIcon />
           Ajustar tempo
         </DropdownMenuItem>
-        {/* Separator inside the guard: without it, hiding the lone item in this
-            group would leave two rules stacked together. */}
-        {onViewExactTime && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="info" onSelect={onViewExactTime}>
-              <ClockCountdownIcon />
-              Tempo exato
-            </DropdownMenuItem>
-          </>
-        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="info"
+          onSelect={onViewRealTime}
+          disabled={Boolean(realTimeUnavailable)}
+        >
+          <ClockCountdownIcon />
+          <span className="flex flex-col">
+            Tempo real
+            {realTimeUnavailable && (
+              <span className="text-xs text-muted-foreground">
+                {realTimeUnavailable}
+              </span>
+            )}
+          </span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"

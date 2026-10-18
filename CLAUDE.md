@@ -118,12 +118,22 @@ Hand-sizing the reservation can't work, the same reason `TimerSlot` gives: the `
 **Stopwatch state** is stored as a plain object inside each project record:
 
 ```js
-{ isRunning, startTimestamp, totalTime, laps: [] }
+{ isRunning, startTimestamp, lastActiveAt, currentLapTime, laps: [], realTime, editedTime }
 ```
 
 Time is computed on the fly from `startTimestamp` (no stored elapsed during running) — see `calculateTotalTime` / `calculateSplitTime` in `src/lib/stopwatch.js`.
 
-**`useProject` hook** (`src/hooks/useProject.js`) drives the project detail page: subscribes to live DB data, runs a `requestAnimationFrame` loop to update display time while running, and exposes start/pause/reset/toggle/addLap/rename/deleteProject/renameLap/deleteLap.
+**Every stopwatch change is a pure transition** in `src/lib/stopwatchTransitions.js` (start, pause, recover, heartbeat, adjust, discard, append/delete/restore lap). The hook and the repository only call them, through `projectRepository.updateStopwatch(id, transform)`. That runs the transform on the stored record inside a Dexie transaction, so a write built from a stale render (the checkpoint landing after a pause) can no longer undo another one. A transform that returns the same object writes nothing. A new stopwatch operation MUST be a transition and MUST go through `updateStopwatch`.
+
+**Real time** (`src/lib/realTime.js`): `realTime` is how long the clock actually ran, and `editedTime` is the net time added or removed by adjusts, discards and lap deletions. The invariant is `sum(non-deleted lapTime) + currentLapTime === realTime + editedTime`, and every transition keeps it. `getRealTimeStatus` checks it:
+
+- `untracked`: neither field exists. The project predates the feature and MUST stay that way; the add helpers never create the fields mid-way.
+- `inconsistent`: one field missing, a non-number, or the sum broken. That is a write from a build without the feature, or a bug.
+- `tracked`: the invariant holds.
+
+The undo of a discard adds the amount back (`restoreDiscarded`) instead of restoring a snapshot, so a run made in between survives. The property tests in `realTime.property.test.js` (fast-check) drive random sessions against a model that only knows when the clock ran. A new transition MUST be added to their `opArb`.
+
+**`useProject` hook** (`src/hooks/useProject.js`) drives the project detail page: subscribes to live DB data, runs a `requestAnimationFrame` loop to update display time while running, and exposes start/pause/toggle/discardCurrentTime/setCurrentTime/addLap/rename/deleteProject/renameLap/deleteLap.
 
 **`useAutoPause`** auto-pauses on `pagehide` and on `visibilitychange` (mobile only), ensuring time isn't counted when the app is backgrounded.
 

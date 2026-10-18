@@ -7,6 +7,15 @@ import {
   calculateTotalTime,
   isStopwatchStale,
 } from "@/lib/stopwatch.js";
+import {
+  adjustCurrent,
+  discardCurrent,
+  heartbeat,
+  pauseRun,
+  recoverStaleRun,
+  restoreDiscarded,
+  startRun,
+} from "@/lib/stopwatchTransitions.js";
 import { useAutoPause } from "./useAutoPause.js";
 import { useIgnoreMilliseconds } from "./useIgnoreMilliseconds.js";
 import { useWakeLock } from "./useWakeLock.js";
@@ -42,14 +51,9 @@ export function useProject(projectId) {
     const sw = project.stopwatch;
 
     if (isStopwatchStale(sw)) {
-      const elapsed = sw.lastActiveAt - sw.startTimestamp;
-      projectRepository.setStopwatch(project.id, {
-        ...sw,
-        isRunning: false,
-        startTimestamp: null,
-        lastActiveAt: null,
-        currentLapTime: sw.currentLapTime + elapsed,
-      });
+      projectRepository.updateStopwatch(project.id, (stored) =>
+        recoverStaleRun(stored, Date.now()),
+      );
       // Don't start the checkpoint loop — useLiveQuery will fire again
       // with the paused state and this effect will re-run.
       return;
@@ -71,10 +75,9 @@ export function useProject(projectId) {
       const now = Date.now();
       if (now - lastCheckpoint >= CHECKPOINT_INTERVAL) {
         lastCheckpoint = now;
-        projectRepository.setStopwatch(project.id, {
-          ...project.stopwatch,
-          lastActiveAt: now,
-        });
+        projectRepository.updateStopwatch(project.id, (stored) =>
+          heartbeat(stored, now),
+        );
       }
 
       frameId = requestAnimationFrame(tick);
@@ -96,63 +99,48 @@ export function useProject(projectId) {
   }
 
   function start() {
-    const now = Date.now();
-    projectRepository.setStopwatch(project.id, {
-      ...project.stopwatch,
-      isRunning: true,
-      startTimestamp: now,
-      lastActiveAt: now,
-    });
+    projectRepository.updateStopwatch(project.id, (sw) =>
+      startRun(sw, Date.now()),
+    );
   }
 
   function pause() {
     if (!project?.stopwatch?.isRunning) return;
-
-    const elapsed = Date.now() - project.stopwatch.startTimestamp;
-
-    projectRepository.setStopwatch(project.id, {
-      ...project.stopwatch,
-      isRunning: false,
-      startTimestamp: null,
-      lastActiveAt: null,
-      currentLapTime: project.stopwatch.currentLapTime + elapsed,
-    });
+    projectRepository.updateStopwatch(project.id, (sw) =>
+      pauseRun(sw, Date.now()),
+    );
   }
 
-  function discardCurrentTime() {
-    const snapshot = { ...project.stopwatch };
-    const next = {
-      ...project.stopwatch,
-      isRunning: false,
-      startTimestamp: null,
-      lastActiveAt: null,
-      currentLapTime: 0,
-    };
-    projectRepository.setStopwatch(project.id, next);
-    showStopwatch(next);
+  // The undo adds the discarded time back on top of the stored record, so a
+  // run made before the undo is kept.
+  async function discardCurrentTime() {
+    const id = project.id;
+    const now = Date.now();
+    showStopwatch(discardCurrent(project.stopwatch, now));
+
+    const change = await projectRepository.updateStopwatch(id, (sw) =>
+      discardCurrent(sw, now),
+    );
+    const amount = change ? pauseRun(change.previous, now).currentLapTime : 0;
+
     return {
-      undo: () => {
-        const restored = {
-          ...snapshot,
-          isRunning: false,
-          startTimestamp: null,
-          lastActiveAt: null,
-        };
-        projectRepository.setStopwatch(project.id, restored);
-        showStopwatch(restored);
+      undo: async () => {
+        const restored = await projectRepository.updateStopwatch(id, (sw) =>
+          restoreDiscarded(sw, amount),
+        );
+        if (restored) showStopwatch(restored.next);
       },
     };
   }
 
   // Commit an adjusted in-progress segment (clamped at 0). Called only while
   // paused (adjust mode pauses on entry) with the value confirmed in the UI.
-  function setCurrentTime(value) {
-    const next = {
-      ...project.stopwatch,
-      currentLapTime: Math.max(0, value),
-    };
-    projectRepository.setStopwatch(project.id, next);
-    showStopwatch(next);
+  async function setCurrentTime(value) {
+    const now = Date.now();
+    showStopwatch(adjustCurrent(project.stopwatch, value, now));
+    await projectRepository.updateStopwatch(project.id, (sw) =>
+      adjustCurrent(sw, value, now),
+    );
   }
 
   function toggle() {
@@ -165,12 +153,7 @@ export function useProject(projectId) {
   }
 
   async function addLap(name) {
-    const elapsed = project.stopwatch.startTimestamp
-      ? Date.now() - project.stopwatch.startTimestamp
-      : 0;
-    const lapTime = project.stopwatch.currentLapTime + elapsed;
-
-    await projectRepository.addLap({ id: project.id, lapTime, name });
+    await projectRepository.addLap({ id: project.id, name });
   }
 
   async function deleteProject() {

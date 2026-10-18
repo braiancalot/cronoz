@@ -252,7 +252,7 @@ describe("syncManager.sync — paired", () => {
   // useProject called projectRepository.save() (raw write — no updatedAt
   // bump, no mutation event), so the elapsed time never made it past the
   // (updatedAt > lastPushedAt) filter in pushLocalChanges. The fix routes
-  // start/pause through projectRepository.setStopwatch.
+  // start/pause through projectRepository.updateStopwatch.
   it("propagates elapsed currentLapTime to other devices even when no lap was added", async () => {
     await internalRepository.set(LAST_PUSHED_AT_KEY, 1000);
 
@@ -276,10 +276,10 @@ describe("syncManager.sync — paired", () => {
 
     // Mimic the exact write useProject.pause() performs after the user runs
     // the timer for 60s and pauses (without adding a lap).
-    await projectRepository.setStopwatch(projectId, {
-      ...initialProject.stopwatch,
+    await projectRepository.updateStopwatch(projectId, (sw) => ({
+      ...sw,
       currentLapTime: 60_000,
-    });
+    }));
 
     syncService.push.mockResolvedValue({ ok: true, serverTimestamp: 9999 });
 

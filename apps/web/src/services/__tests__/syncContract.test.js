@@ -3,6 +3,25 @@ import { pushRequestSchema } from "@cronoz/shared";
 import db from "@/services/db.js";
 import projectRepository from "@/services/projectRepository.js";
 import settingsRepository from "@/services/settingsRepository.js";
+import {
+  adjustCurrent,
+  discardCurrent,
+  pauseRun,
+  startRun,
+} from "@/lib/stopwatchTransitions.js";
+
+const RUN_START = 1_000_000;
+
+async function runFor(id, ms) {
+  await projectRepository.updateStopwatch(id, (sw) =>
+    pauseRun(startRun(sw, RUN_START), RUN_START + ms),
+  );
+}
+
+async function addTimedLap(id, lapTime, name) {
+  await runFor(id, lapTime);
+  await projectRepository.addLap({ id, name });
+}
 
 beforeEach(async () => {
   await db.projects.clear();
@@ -18,17 +37,12 @@ describe("sync contract: local records survive the push schema", () => {
     await projectRepository.rename({ id, newName: "Cliente X" });
     await projectRepository.addTag({ id, name: "Crochê" });
     await projectRepository.addTag({ id, name: "Urgente" });
-    await projectRepository.addLap({ id, lapTime: 5000, name: "Base" });
-    await projectRepository.addLap({ id, lapTime: 3000, name: "Acabamento" });
-
-    const { stopwatch } = await db.projects.get(id);
-    await projectRepository.setStopwatch(id, {
-      ...stopwatch,
-      startTimestamp: Date.now(),
-      currentLapTime: 1200,
-      isRunning: true,
-      lastActiveAt: Date.now(),
-    });
+    await addTimedLap(id, 5000, "Base");
+    await addTimedLap(id, 3000, "Acabamento");
+    await runFor(id, 1200);
+    await projectRepository.updateStopwatch(id, (sw) =>
+      startRun(sw, Date.now()),
+    );
     await projectRepository.complete(id);
 
     const projects = await projectRepository.getAllForSync();
@@ -40,7 +54,7 @@ describe("sync contract: local records survive the push schema", () => {
   it("keeps every field of a deleted project with a deleted lap", async () => {
     const { id } = await projectRepository.create();
     await projectRepository.addTag({ id, name: "Crochê" });
-    await projectRepository.addLap({ id, lapTime: 5000, name: "Base" });
+    await addTimedLap(id, 5000, "Base");
 
     const [lap] = (await db.projects.get(id)).stopwatch.laps;
     await projectRepository.renameLap({ id, lapId: lap.id, name: "Revisado" });
@@ -51,6 +65,29 @@ describe("sync contract: local records survive the push schema", () => {
     expect(
       pushRequestSchema.parse({ projects, settings: [] }).projects,
     ).toEqual(projects);
+  });
+
+  it("keeps the real and edited time after adjusts and a discard", async () => {
+    const { id } = await projectRepository.create();
+    await addTimedLap(id, 5000, "Base");
+    await runFor(id, 2000);
+    await projectRepository.updateStopwatch(id, (sw) =>
+      adjustCurrent(sw, 60_000, Date.now()),
+    );
+    await addTimedLap(id, 0, "Ajustada");
+    await runFor(id, 700);
+    await projectRepository.updateStopwatch(id, (sw) =>
+      discardCurrent(sw, Date.now()),
+    );
+
+    const projects = await projectRepository.getAllForSync();
+    const [pushed] = pushRequestSchema.parse({
+      projects,
+      settings: [],
+    }).projects;
+    expect(pushed.stopwatch.realTime).toBe(7700);
+    expect(pushed.stopwatch.editedTime).toBe(58_000 - 700);
+    expect(pushed).toEqual(projects[0]);
   });
 
   it("keeps every field of the settings the repository writes", async () => {
