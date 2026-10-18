@@ -17,19 +17,19 @@ import {
 
 describe("GET /api/sync/devices", () => {
   it("returns 401 without Authorization", async () => {
-    const res = await app.request("/api/sync/devices");
-    expect(res.status).toBe(401);
+    const response = await app.request("/api/sync/devices");
+    expect(response.status).toBe(401);
   });
 
   it("returns the device count for the sync group", async () => {
     const { credential } = await pair(DEVICE_A, DEVICE_B);
 
-    const res = await app.request("/api/sync/devices", {
+    const response = await app.request("/api/sync/devices", {
       headers: { Authorization: `Bearer ${credential}` },
     });
 
-    expect(res.status).toBe(200);
-    const body = await res.json();
+    expect(response.status).toBe(200);
+    const body = await response.json();
     expect(body.count).toBe(2);
   });
 
@@ -37,10 +37,10 @@ describe("GET /api/sync/devices", () => {
     const { credential: credentialAB } = await pair(DEVICE_A, DEVICE_B);
     await pair(DEVICE_C, DEVICE_D);
 
-    const res = await app.request("/api/sync/devices", {
+    const response = await app.request("/api/sync/devices", {
       headers: { Authorization: `Bearer ${credentialAB}` },
     });
-    const body = await res.json();
+    const body = await response.json();
     expect(body.count).toBe(2);
   });
 
@@ -48,10 +48,10 @@ describe("GET /api/sync/devices", () => {
     await initiate(DEVICE_A);
     const credential = credentialOf(DEVICE_A);
 
-    const res = await app.request("/api/sync/devices", {
+    const response = await app.request("/api/sync/devices", {
       headers: { Authorization: `Bearer ${credential}` },
     });
-    const body = await res.json();
+    const body = await response.json();
     expect(body.count).toBe(1);
   });
 
@@ -61,18 +61,20 @@ describe("GET /api/sync/devices", () => {
     const joinRes = await join(DEVICE_C, code);
     expect(joinRes.status).toBe(200);
 
-    const res = await app.request("/api/sync/devices", {
+    const response = await app.request("/api/sync/devices", {
       headers: { Authorization: `Bearer ${credentialAB}` },
     });
-    const body = await res.json();
+    const body = await response.json();
     expect(body.count).toBe(3);
   });
 });
 
 describe("DELETE /api/sync/device", () => {
   it("returns 401 without Authorization", async () => {
-    const res = await app.request("/api/sync/device", { method: "DELETE" });
-    expect(res.status).toBe(401);
+    const response = await app.request("/api/sync/device", {
+      method: "DELETE",
+    });
+    expect(response.status).toBe(401);
   });
 
   it("removes the calling device and lets it pair into another group afterwards", async () => {

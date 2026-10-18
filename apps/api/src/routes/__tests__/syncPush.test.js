@@ -27,18 +27,21 @@ import {
 
 describe("POST /api/sync/push", () => {
   it("returns 401 without Authorization", async () => {
-    const res = await post("/api/sync/push", { projects: [], settings: [] });
-    expect(res.status).toBe(401);
+    const response = await post("/api/sync/push", {
+      projects: [],
+      settings: [],
+    });
+    expect(response.status).toBe(401);
   });
 
   it("returns 400 for invalid body", async () => {
     const { credential } = await pair(DEVICE_A, DEVICE_B);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [{ id: "not-a-uuid" }], settings: [] },
       credential,
     );
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
   });
 
   it("returns 400 when the push carries more projects than the limit", async () => {
@@ -46,23 +49,23 @@ describe("POST /api/sync/push", () => {
     const projects = Array.from({ length: MAX_PUSH_PROJECTS + 1 }, () =>
       makeProject({ id: crypto.randomUUID() }),
     );
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects, settings: [] },
       credential,
     );
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
   });
 
   it("returns 400 when a project name is over the limit", async () => {
     const { credential } = await pair(DEVICE_A, DEVICE_B);
     const name = "a".repeat(MAX_PROJECT_NAME_LENGTH + 1);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [makeProject({ name })], settings: [] },
       credential,
     );
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
   });
 
   it("returns 400 when a lap name is over the limit", async () => {
@@ -75,33 +78,33 @@ describe("POST /api/sync/push", () => {
     };
     const project = makeProject();
     project.stopwatch.laps = [lap];
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [project], settings: [] },
       credential,
     );
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
   });
 
   it("returns 400 when a setting value is not a number or boolean", async () => {
     const { credential } = await pair(DEVICE_A, DEVICE_B);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [], settings: [{ key: "hourlyPrice", value: { a: 1 } }] },
       credential,
     );
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
   });
 
   it("returns 413 when the body is over the byte limit", async () => {
     const { credential } = await pair(DEVICE_A, DEVICE_B);
     const padding = "a".repeat(MAX_PUSH_BODY_BYTES);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [], settings: [], padding },
       credential,
     );
-    expect(res.status).toBe(413);
+    expect(response.status).toBe(413);
   });
 
   it("inserts a new project with serverUpdatedAt set", async () => {
@@ -109,15 +112,15 @@ describe("POST /api/sync/push", () => {
     const project = makeProject();
 
     const before = Date.now();
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [project], settings: [] },
       credential,
     );
     const after = Date.now();
 
-    expect(res.status).toBe(200);
-    const body = await res.json();
+    expect(response.status).toBe(200);
+    const body = await response.json();
     expect(body.ok).toBe(true);
     expect(body.serverTimestamp).toBeGreaterThanOrEqual(before);
     expect(body.serverTimestamp).toBeLessThanOrEqual(after);
@@ -136,7 +139,7 @@ describe("POST /api/sync/push", () => {
   it("inserts a new setting", async () => {
     const { credential, syncGroupId } = await pair(DEVICE_A, DEVICE_B);
 
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       {
         projects: [],
@@ -144,7 +147,7 @@ describe("POST /api/sync/push", () => {
       },
       credential,
     );
-    expect(res.status).toBe(200);
+    expect(response.status).toBe(200);
 
     const [row] = await db.select().from(settingsTable);
     expect(row.syncGroupId).toBe(syncGroupId);
@@ -241,12 +244,12 @@ describe("POST /api/sync/push", () => {
     );
 
     const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       { projects: [makeProject()], settings: [] },
       credentialC,
     );
-    expect(res.status).toBe(409);
+    expect(response.status).toBe(409);
   });
 
   it("keeps another group's project intact when the push carries a newer updatedAt", async () => {
@@ -261,7 +264,7 @@ describe("POST /api/sync/push", () => {
     );
 
     const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       {
         projects: [makeProject({ updatedAt: 9000, name: "from C" })],
@@ -270,7 +273,7 @@ describe("POST /api/sync/push", () => {
       credentialC,
     );
 
-    expect(res.status).toBe(409);
+    expect(response.status).toBe(409);
     const [row] = await db
       .select()
       .from(projectsTable)
@@ -288,7 +291,7 @@ describe("POST /api/sync/push", () => {
     );
 
     const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
-    const res = await post(
+    const response = await post(
       "/api/sync/push",
       {
         projects: [makeProject({ id: PROJECT_2 }), makeProject()],
@@ -297,7 +300,7 @@ describe("POST /api/sync/push", () => {
       credentialC,
     );
 
-    expect(res.status).toBe(409);
+    expect(response.status).toBe(409);
     const stored = await db
       .select()
       .from(projectsTable)

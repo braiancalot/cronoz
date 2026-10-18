@@ -16,9 +16,13 @@ import {
 
 describe("POST /api/pair/initiate", () => {
   it("creates sync_group, device, and pairing code for a new device", async () => {
-    const res = await post("/api/pair/initiate", {}, credentialOf(DEVICE_A));
-    expect(res.status).toBe(200);
-    const body = await res.json();
+    const response = await post(
+      "/api/pair/initiate",
+      {},
+      credentialOf(DEVICE_A),
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
     expect(body.code).toMatch(new RegExp(`^[${PAIRING_CODE_ALPHABET}]{8}$`));
     expect(body.expiresAt).toBeTruthy();
 
@@ -61,8 +65,8 @@ describe("POST /api/pair/initiate", () => {
     await join(DEVICE_B, code1);
 
     const code2 = await initiate(DEVICE_A);
-    const res = await join(DEVICE_C, code2);
-    expect(res.status).toBe(200);
+    const response = await join(DEVICE_C, code2);
+    expect(response.status).toBe(200);
 
     const groups = await db.select().from(syncGroups);
     expect(groups).toHaveLength(1);
@@ -78,8 +82,8 @@ describe("POST /api/pair/join", () => {
   it("joins device B to device A's group and answers with the group alone", async () => {
     const code = await initiate(DEVICE_A);
 
-    const res = await join(DEVICE_B, code);
-    expect(res.status).toBe(200);
+    const response = await join(DEVICE_B, code);
+    expect(response.status).toBe(200);
 
     const [deviceA] = await db
       .select()
@@ -90,20 +94,20 @@ describe("POST /api/pair/join", () => {
       .from(devices)
       .where(eq(devices.id, DEVICE_B));
     expect(deviceB.syncGroupId).toBe(deviceA.syncGroupId);
-    expect(await res.json()).toEqual({ syncGroupId: deviceA.syncGroupId });
+    expect(await response.json()).toEqual({ syncGroupId: deviceA.syncGroupId });
   });
 
   it("returns 400 for non-existent code", async () => {
-    const res = await join(DEVICE_B, "22222222");
-    expect(res.status).toBe(400);
+    const response = await join(DEVICE_B, "22222222");
+    expect(response.status).toBe(400);
   });
 
   it("returns 400 when code has already been used", async () => {
     const code = await initiate(DEVICE_A);
     await join(DEVICE_B, code);
 
-    const res = await join(DEVICE_C, code);
-    expect(res.status).toBe(400);
+    const response = await join(DEVICE_C, code);
+    expect(response.status).toBe(400);
   });
 
   it("returns 400 when code is expired", async () => {
@@ -113,8 +117,8 @@ describe("POST /api/pair/join", () => {
       .set({ expiresAt: new Date(Date.now() - 1000) })
       .where(eq(pairingCodes.code, code));
 
-    const res = await join(DEVICE_B, code);
-    expect(res.status).toBe(400);
+    const response = await join(DEVICE_B, code);
+    expect(response.status).toBe(400);
   });
 
   it("returns 409 when device already belongs to a different group", async () => {
@@ -122,8 +126,8 @@ describe("POST /api/pair/join", () => {
     await join(DEVICE_B, code1);
 
     const code2 = await initiate(DEVICE_C);
-    const res = await join(DEVICE_B, code2);
-    expect(res.status).toBe(409);
+    const response = await join(DEVICE_B, code2);
+    expect(response.status).toBe(409);
   });
 
   it("is idempotent when device rejoins its own group", async () => {
@@ -131,8 +135,8 @@ describe("POST /api/pair/join", () => {
     await join(DEVICE_B, code);
 
     const code2 = await initiate(DEVICE_A);
-    const res = await join(DEVICE_B, code2);
-    expect(res.status).toBe(200);
+    const response = await join(DEVICE_B, code2);
+    expect(response.status).toBe(200);
   });
 });
 
@@ -152,8 +156,8 @@ describe("POST /api/pair/join failed-attempt brake", () => {
     const code = await initiate(DEVICE_A);
     await failJoins([code], 4);
 
-    const res = await join(DEVICE_B, code);
-    expect(res.status).toBe(200);
+    const response = await join(DEVICE_B, code);
+    expect(response.status).toBe(200);
   });
 
   it("burns every live code after 5 failed joins", async () => {
@@ -170,15 +174,15 @@ describe("POST /api/pair/join failed-attempt brake", () => {
     await failJoins([burned], 5);
 
     const fresh = await initiate(DEVICE_A);
-    const res = await join(DEVICE_B, fresh);
-    expect(res.status).toBe(200);
+    const response = await join(DEVICE_B, fresh);
+    expect(response.status).toBe(200);
   });
 
   it("does not count malformed codes rejected by validation", async () => {
     const code = await initiate(DEVICE_A);
     for (let i = 0; i < 5; i++) await join(DEVICE_B, "0000OOOO");
 
-    const res = await join(DEVICE_B, code);
-    expect(res.status).toBe(200);
+    const response = await join(DEVICE_B, code);
+    expect(response.status).toBe(200);
   });
 });

@@ -42,8 +42,8 @@ export function post(path, body, credential) {
 }
 
 export async function initiateWith(credential) {
-  const res = await post("/api/pair/initiate", {}, credential);
-  const body = await res.json();
+  const response = await post("/api/pair/initiate", {}, credential);
+  const body = await response.json();
   return body.code;
 }
 
@@ -57,8 +57,8 @@ export function join(deviceId, code) {
 
 export async function pairWith(hostCredential, joinerCredential) {
   const code = await initiateWith(hostCredential);
-  const res = await post("/api/pair/join", { code }, joinerCredential);
-  const body = await res.json();
+  const response = await post("/api/pair/join", { code }, joinerCredential);
+  const body = await response.json();
   return body.syncGroupId;
 }
 

@@ -38,9 +38,9 @@ describe("syncService.pairInitiate", () => {
       mockResponse({ body: { code: "ABCD2345", expiresAt: "2026-01-01" } }),
     );
 
-    const res = await syncService.pairInitiate({ credential: "cred" });
+    const response = await syncService.pairInitiate({ credential: "cred" });
 
-    expect(res).toEqual({ code: "ABCD2345", expiresAt: "2026-01-01" });
+    expect(response).toEqual({ code: "ABCD2345", expiresAt: "2026-01-01" });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/initiate");
     expect(init.method).toBe("POST");
@@ -54,9 +54,12 @@ describe("syncService.pairJoin", () => {
   it("POSTs the code to /api/pair/join with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: { syncGroupId: "g-1" } }));
 
-    const res = await syncService.pairJoin({ credential: "cred", code: "999" });
+    const response = await syncService.pairJoin({
+      credential: "cred",
+      code: "999",
+    });
 
-    expect(res).toEqual({ syncGroupId: "g-1" });
+    expect(response).toEqual({ syncGroupId: "g-1" });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/join");
     expect(init.headers.Authorization).toBe("Bearer cred");
@@ -68,12 +71,12 @@ describe("syncService.pairStatus", () => {
   it("POSTs the code to /api/pair/status with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: { status: "waiting" } }));
 
-    const res = await syncService.pairStatus({
+    const response = await syncService.pairStatus({
       credential: "cred",
       code: "ABCD2345",
     });
 
-    expect(res).toEqual({ status: "waiting" });
+    expect(response).toEqual({ status: "waiting" });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/pair/status");
     expect(init.headers.Authorization).toBe("Bearer cred");
@@ -87,13 +90,13 @@ describe("syncService.push", () => {
       mockResponse({ body: { ok: true, serverTimestamp: 123 } }),
     );
 
-    const res = await syncService.push({
+    const response = await syncService.push({
       credential: "cred",
       projects: [{ id: "p1" }],
       settings: [{ key: "hourlyPrice", value: 10 }],
     });
 
-    expect(res).toEqual({ ok: true, serverTimestamp: 123 });
+    expect(response).toEqual({ ok: true, serverTimestamp: 123 });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/sync/push");
     expect(init.headers.Authorization).toBe("Bearer cred");
@@ -110,9 +113,9 @@ describe("syncService.pull", () => {
       mockResponse({ body: { projects: [], settings: [], cursor: 42 } }),
     );
 
-    const res = await syncService.pull({ credential: "cred", cursor: 7 });
+    const response = await syncService.pull({ credential: "cred", cursor: 7 });
 
-    expect(res).toEqual({ projects: [], settings: [], cursor: 42 });
+    expect(response).toEqual({ projects: [], settings: [], cursor: 42 });
     const { url, init, body } = getRequestArgs();
     expect(url).toBe("http://api.test/api/sync/pull");
     expect(init.headers.Authorization).toBe("Bearer cred");
@@ -124,9 +127,9 @@ describe("syncService.getDeviceCount", () => {
   it("GETs /api/sync/devices with the credential as bearer", async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: { count: 2 } }));
 
-    const res = await syncService.getDeviceCount({ credential: "cred" });
+    const response = await syncService.getDeviceCount({ credential: "cred" });
 
-    expect(res).toEqual({ count: 2 });
+    expect(response).toEqual({ count: 2 });
     const { url, init } = getRequestArgs();
     expect(url).toBe("http://api.test/api/sync/devices");
     expect(init.method).toBe("GET");
@@ -193,8 +196,8 @@ describe("syncService error handling", () => {
   it("handles empty response body without crashing", async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: null }));
 
-    const res = await syncService.pairInitiate({ credential: "cred" });
-    expect(res).toBeNull();
+    const response = await syncService.pairInitiate({ credential: "cred" });
+    expect(response).toBeNull();
   });
 
   it("throws clear error if VITE_API_URL is not configured", async () => {

@@ -232,8 +232,8 @@ describe("syncManager.sync, paired", () => {
   it("dedupes concurrent sync() calls (inFlight)", async () => {
     let resolvePull;
     syncService.pull.mockReturnValue(
-      new Promise((res) => {
-        resolvePull = res;
+      new Promise((resolve) => {
+        resolvePull = resolve;
       }),
     );
 

@@ -42,8 +42,8 @@ function request({ method, path, body }, credential) {
   });
 }
 
-async function errorOf(res) {
-  return (await res.json()).error;
+async function errorOf(response) {
+  return (await response.json()).error;
 }
 
 describe("authMiddleware", () => {
@@ -53,9 +53,9 @@ describe("authMiddleware", () => {
       await pairWith(CREDENTIAL_A, CREDENTIAL_B);
       await db.delete(devices).where(eq(devices.id, DEVICE_B));
 
-      const res = await request(route, CREDENTIAL_B);
+      const response = await request(route, CREDENTIAL_B);
 
-      expect(res.status).toBe(401);
+      expect(response.status).toBe(401);
     },
   );
 
@@ -64,9 +64,9 @@ describe("authMiddleware", () => {
     async (route) => {
       await pairWith(CREDENTIAL_A, CREDENTIAL_B);
 
-      const res = await request(route, CREDENTIAL_B);
+      const response = await request(route, CREDENTIAL_B);
 
-      expect(res.status).toBe(200);
+      expect(response.status).toBe(200);
     },
   );
 
@@ -75,26 +75,26 @@ describe("authMiddleware", () => {
     async (route) => {
       await pairWith(CREDENTIAL_A, CREDENTIAL_B);
 
-      const res = await request(route, B_WITH_ANOTHER_SECRET);
+      const response = await request(route, B_WITH_ANOTHER_SECRET);
 
-      expect(res.status).toBe(401);
+      expect(response.status).toBe(401);
     },
   );
 
   it("returns 401 for a device the server has never seen", async () => {
-    const res = await request(PULL, CREDENTIAL_C);
+    const response = await request(PULL, CREDENTIAL_C);
 
-    expect(res.status).toBe(401);
-    expect(await errorOf(res)).toBe("invalid_device_credential");
+    expect(response.status).toBe(401);
+    expect(await errorOf(response)).toBe("invalid_device_credential");
   });
 
   it("returns 401 to a token from before device secrets", async () => {
     await pairWith(CREDENTIAL_A, CREDENTIAL_B);
 
-    const res = await request(PULL, LEGACY_TOKEN);
+    const response = await request(PULL, LEGACY_TOKEN);
 
-    expect(res.status).toBe(401);
-    expect(await errorOf(res)).toBe("missing_device_credential");
+    expect(response.status).toBe(401);
+    expect(await errorOf(response)).toBe("missing_device_credential");
   });
 
   it("serves the device's own group and no other", async () => {
@@ -133,9 +133,9 @@ describe("a caller that only knows another device's id", () => {
   it.each(AUTHED_ROUTES)("gets 401 on $method $path", async (route) => {
     await pairWith(CREDENTIAL_A, CREDENTIAL_B);
 
-    const res = await request(route, FORGED);
+    const response = await request(route, FORGED);
 
-    expect(res.status).toBe(401);
+    expect(response.status).toBe(401);
   });
 
   it("gets no token and no code, and the real device keeps working", async () => {

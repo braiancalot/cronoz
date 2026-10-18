@@ -35,9 +35,11 @@ describe("CORS preflight", () => {
   it.each(registeredRoutes)(
     "allows $method on $path",
     async ({ method, path }) => {
-      const res = await preflight(path, method);
-      expect(res.status).toBe(204);
-      const allowed = (res.headers.get("access-control-allow-methods") ?? "")
+      const response = await preflight(path, method);
+      expect(response.status).toBe(204);
+      const allowed = (
+        response.headers.get("access-control-allow-methods") ?? ""
+      )
         .split(",")
         .map((m) => m.trim().toUpperCase());
       expect(allowed).toContain(method);
@@ -45,8 +47,8 @@ describe("CORS preflight", () => {
   );
 
   it("does not advertise PATCH (a method no route uses and not in allowMethods)", async () => {
-    const res = await preflight("/api/sync/device", "PATCH");
-    const allowed = (res.headers.get("access-control-allow-methods") ?? "")
+    const response = await preflight("/api/sync/device", "PATCH");
+    const allowed = (response.headers.get("access-control-allow-methods") ?? "")
       .split(",")
       .map((m) => m.trim().toUpperCase());
     expect(allowed).not.toContain("PATCH");
@@ -55,26 +57,26 @@ describe("CORS preflight", () => {
 
 describe("CORS allowlist", () => {
   it("echoes an allowed origin on preflight", async () => {
-    const res = await preflight("/api/health", "GET");
-    expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN);
+    const response = await preflight("/api/health", "GET");
+    expect(response.headers.get("access-control-allow-origin")).toBe(ORIGIN);
   });
 
   it("omits the allow-origin header on preflight from an unknown origin", async () => {
-    const res = await app.request("/api/health", {
+    const response = await app.request("/api/health", {
       method: "OPTIONS",
       headers: {
         Origin: UNKNOWN_ORIGIN,
         "Access-Control-Request-Method": "GET",
       },
     });
-    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("omits the allow-origin header on a simple request from an unknown origin", async () => {
-    const res = await app.request("/api/health", {
+    const response = await app.request("/api/health", {
       headers: { Origin: UNKNOWN_ORIGIN },
     });
-    expect(res.status).toBe(200);
-    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 });

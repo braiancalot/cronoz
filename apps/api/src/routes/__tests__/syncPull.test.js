@@ -17,14 +17,18 @@ import { PROJECT_2, makeProject } from "../../../test/projectFixtures.js";
 
 describe("POST /api/sync/pull", () => {
   it("returns 401 without Authorization", async () => {
-    const res = await post("/api/sync/pull", { cursor: 0 });
-    expect(res.status).toBe(401);
+    const response = await post("/api/sync/pull", { cursor: 0 });
+    expect(response.status).toBe(401);
   });
 
   it("returns 400 for invalid body", async () => {
     const { credential } = await pair(DEVICE_A, DEVICE_B);
-    const res = await post("/api/sync/pull", { cursor: "abc" }, credential);
-    expect(res.status).toBe(400);
+    const response = await post(
+      "/api/sync/pull",
+      { cursor: "abc" },
+      credential,
+    );
+    expect(response.status).toBe(400);
   });
 
   it("returns all records of the group when cursor is 0", async () => {
@@ -39,9 +43,9 @@ describe("POST /api/sync/pull", () => {
       credential,
     );
 
-    const res = await post("/api/sync/pull", { cursor: 0 }, credential);
-    expect(res.status).toBe(200);
-    const body = await res.json();
+    const response = await post("/api/sync/pull", { cursor: 0 }, credential);
+    expect(response.status).toBe(200);
+    const body = await response.json();
     expect(body.projects).toHaveLength(1);
     expect(body.projects[0]).toEqual(project);
     expect(body.settings).toHaveLength(1);
@@ -62,12 +66,12 @@ describe("POST /api/sync/pull", () => {
     );
     const { serverTimestamp } = await pushRes.json();
 
-    const res = await post(
+    const response = await post(
       "/api/sync/pull",
       { cursor: serverTimestamp },
       credential,
     );
-    const body = await res.json();
+    const body = await response.json();
     expect(body.projects).toHaveLength(0);
     expect(body.settings).toHaveLength(0);
     expect(body.cursor).toBe(serverTimestamp);
@@ -81,8 +85,8 @@ describe("POST /api/sync/pull", () => {
       credential,
     );
 
-    const res = await post("/api/sync/pull", { cursor: 0 }, credential);
-    const body = await res.json();
+    const response = await post("/api/sync/pull", { cursor: 0 }, credential);
+    const body = await response.json();
 
     const [cursorRow] = await db
       .select()
@@ -100,8 +104,8 @@ describe("POST /api/sync/pull", () => {
     );
 
     const { credential: credentialC } = await pair(DEVICE_C, DEVICE_D);
-    const res = await post("/api/sync/pull", { cursor: 0 }, credentialC);
-    const body = await res.json();
+    const response = await post("/api/sync/pull", { cursor: 0 }, credentialC);
+    const body = await response.json();
     expect(body.projects).toHaveLength(0);
   });
 
@@ -116,8 +120,8 @@ describe("POST /api/sync/pull", () => {
       credential,
     );
 
-    const res = await post("/api/sync/pull", { cursor: 0 }, credential);
-    const body = await res.json();
+    const response = await post("/api/sync/pull", { cursor: 0 }, credential);
+    const body = await response.json();
     expect(body.projects).toHaveLength(1);
     expect(body.projects[0].deletedAt).toBe(2000);
   });

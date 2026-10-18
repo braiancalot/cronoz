@@ -24,16 +24,16 @@ async function joinAfterOwnCode(seedOwnGroup = async () => {}) {
   const ownGroupId = await groupOf(DEVICE_A);
   await seedOwnGroup(ownGroupId);
   const code = await initiate(DEVICE_B);
-  const res = await join(DEVICE_A, code);
-  return { res, ownGroupId };
+  const response = await join(DEVICE_A, code);
+  return { response, ownGroupId };
 }
 
 describe("POST /api/pair/join from a device that generated a code first", () => {
   it("moves the device into the group it joined", async () => {
-    const { res } = await joinAfterOwnCode();
+    const { response } = await joinAfterOwnCode();
 
-    expect(res.status).toBe(200);
-    const { syncGroupId } = await res.json();
+    expect(response.status).toBe(200);
+    const { syncGroupId } = await response.json();
     expect(syncGroupId).toBe(await groupOf(DEVICE_B));
     expect(await groupOf(DEVICE_A)).toBe(syncGroupId);
   });
@@ -50,7 +50,7 @@ describe("POST /api/pair/join from a device that generated a code first", () => 
 
   it("answers 409 when the device's own group holds projects", async () => {
     const project = makeProject();
-    const { res, ownGroupId } = await joinAfterOwnCode((syncGroupId) =>
+    const { response, ownGroupId } = await joinAfterOwnCode((syncGroupId) =>
       db.insert(projects).values({
         id: project.id,
         syncGroupId,
@@ -60,12 +60,12 @@ describe("POST /api/pair/join from a device that generated a code first", () => 
       }),
     );
 
-    expect(res.status).toBe(409);
+    expect(response.status).toBe(409);
     expect(await groupOf(DEVICE_A)).toBe(ownGroupId);
   });
 
   it("answers 409 when the device's own group holds settings", async () => {
-    const { res, ownGroupId } = await joinAfterOwnCode((syncGroupId) =>
+    const { response, ownGroupId } = await joinAfterOwnCode((syncGroupId) =>
       db.insert(settings).values({
         syncGroupId,
         key: "hourlyPrice",
@@ -75,7 +75,7 @@ describe("POST /api/pair/join from a device that generated a code first", () => 
       }),
     );
 
-    expect(res.status).toBe(409);
+    expect(response.status).toBe(409);
     expect(await groupOf(DEVICE_A)).toBe(ownGroupId);
   });
 });

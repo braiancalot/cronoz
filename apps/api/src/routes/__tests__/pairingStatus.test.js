@@ -14,9 +14,13 @@ import {
 } from "../../../test/pairingFixtures.js";
 
 async function statusOf(deviceId, code) {
-  const res = await post("/api/pair/status", { code }, credentialOf(deviceId));
-  expect(res.status).toBe(200);
-  return (await res.json()).status;
+  const response = await post(
+    "/api/pair/status",
+    { code },
+    credentialOf(deviceId),
+  );
+  expect(response.status).toBe(200);
+  return (await response.json()).status;
 }
 
 function editCode(code, changes) {
@@ -64,11 +68,11 @@ describe("POST /api/pair/status", () => {
   });
 
   it("returns 400 for a malformed code", async () => {
-    const res = await post(
+    const response = await post(
       "/api/pair/status",
       { code: "0000OOOO" },
       credentialOf(DEVICE_A),
     );
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
   });
 });
