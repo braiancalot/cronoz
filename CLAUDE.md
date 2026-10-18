@@ -178,6 +178,10 @@ Schema changes go through versioned migrations in `apps/api/drizzle/`, committed
 Production runs `db:migrate` manually from local, pointed at Neon, **before** deploying the
 API that needs it. Each migration MUST stay compatible with the API version already live.
 
+The web and the API deploy together: Vercel builds both from the same push to `main`, so
+there is no order to follow between them. A change that crosses them only has to survive
+the minutes when one build is already live and the other isn't.
+
 `db:push` is gone on purpose: in production it can propose a `DROP` on a renamed column and
 lose data. Never reintroduce it.
 
@@ -335,7 +339,7 @@ Claude is the driver, the user is the navigator/architect. Before making large c
 2. Wait for user confirmation before proceeding
 3. Small, localized changes can be made directly
 
-**Never launch the dev server or verify a UI change yourself** (no autonomous browser/screenshot checks). The user runs the app and looks at it themselves. Ask them to check and send a screenshot when visual verification is needed.
+**UI checks:** Claude MAY run the app and take its own screenshots when that saves the user a step, but MUST NOT start a second instance while the user is already checking the change live. Manual test instructions stay short: two or three quick checks of what is new or risky. Detailed coverage belongs in the automated tests.
 
 ### Test-Driven Development (TDD)
 
