@@ -17,6 +17,7 @@ vi.mock("@/services/syncService.js", async () => {
       push: vi.fn(),
       pull: vi.fn(),
       getDeviceCount: vi.fn(),
+      leaveGroup: vi.fn(),
     },
   };
 });
