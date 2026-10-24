@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import SettingsPage from "@/pages/SettingsPage.jsx";
 import settingsRepository from "@/services/settingsRepository.js";
 import { useHidePrice } from "@/hooks/useHidePrice.js";
+import { VOICE_COMMANDS_KEY } from "@cronoz/shared";
+import db from "@/services/db.js";
+import internalRepository from "@/services/internalRepository.js";
+import { FakeSpeechRecognition } from "@/test/FakeSpeechRecognition.js";
 
 vi.mock("@/services/settingsRepository.js", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -79,5 +83,31 @@ describe("SettingsPage", () => {
     fireEvent.blur(input);
 
     expect(input).toHaveValue(10);
+  });
+
+  describe("voice commands", () => {
+    beforeEach(() => db.internal.clear());
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("stores the choice on this device only", async () => {
+      vi.stubGlobal("webkitSpeechRecognition", FakeSpeechRecognition);
+      renderPage();
+
+      fireEvent.click(screen.getByLabelText("Comandos de voz"));
+
+      await waitFor(async () =>
+        expect(await internalRepository.get(VOICE_COMMANDS_KEY)).toBe(true),
+      );
+      expect(settingsRepository.set).not.toHaveBeenCalled();
+    });
+
+    it("cannot be turned on in a browser without speech recognition", () => {
+      renderPage();
+
+      expect(screen.getByLabelText("Comandos de voz")).toBeDisabled();
+      expect(
+        screen.getByText("Este navegador não tem reconhecimento de voz."),
+      ).toBeInTheDocument();
+    });
   });
 });
