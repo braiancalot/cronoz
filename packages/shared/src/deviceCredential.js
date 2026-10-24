@@ -3,7 +3,7 @@ import { z } from "zod";
 export const DEVICE_SECRET_BYTES = 32;
 
 const SECRET_SHAPE = new RegExp(`^[0-9a-f]{${DEVICE_SECRET_BYTES * 2}}$`);
-const deviceIdSchema = z.string().uuid();
+const deviceIdSchema = z.guid();
 
 function fillWithCsprng(bytes) {
   return crypto.getRandomValues(bytes);

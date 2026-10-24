@@ -7,7 +7,7 @@ const pairingCodeSchema = z
 
 export const pairInitiateResponseSchema = z.object({
   code: pairingCodeSchema,
-  expiresAt: z.string().datetime(),
+  expiresAt: z.iso.datetime(),
 });
 
 export const pairJoinRequestSchema = z.object({
@@ -15,7 +15,7 @@ export const pairJoinRequestSchema = z.object({
 });
 
 export const pairJoinResponseSchema = z.object({
-  syncGroupId: z.string().uuid(),
+  syncGroupId: z.guid(),
 });
 
 export const PAIRING_STATUSES = ["waiting", "joined", "expired", "burned"];

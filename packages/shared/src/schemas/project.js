@@ -8,7 +8,7 @@ import {
 } from "../constants.js";
 
 export const lapSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   name: z.string().max(MAX_LAP_NAME_LENGTH),
   lapTime: z.number(),
   createdAt: z.number(),
@@ -30,7 +30,7 @@ export const stopwatchSchema = z.object({
 });
 
 export const projectSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   name: z.string().max(MAX_PROJECT_NAME_LENGTH),
   completedAt: z.number().nullable(),
   createdAt: z.number(),
