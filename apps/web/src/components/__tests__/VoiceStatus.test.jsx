@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { VoiceStatus } from "@/components/VoiceStatus.jsx";
 
 describe("VoiceStatus", () => {
@@ -27,9 +27,12 @@ describe("VoiceStatus", () => {
     ).toBeInTheDocument();
   });
 
-  it("warns that the microphone is blocked", () => {
+  it("explains a blocked microphone only when its icon is tapped", () => {
     render(<VoiceStatus status="blocked" message={null} />);
+    expect(screen.queryByText(/Microfone bloqueado/)).not.toBeInTheDocument();
 
-    expect(screen.getByText("Microfone bloqueado")).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("Comandos de voz"));
+
+    expect(screen.getByText(/Microfone bloqueado/)).toBeInTheDocument();
   });
 });
