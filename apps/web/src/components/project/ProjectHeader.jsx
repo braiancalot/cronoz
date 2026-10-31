@@ -20,7 +20,6 @@ export function ProjectHeader({
   onOpenPiP,
   onViewRealTime,
   realTimeStatus,
-  voiceStatus,
 }) {
   const {
     isEditing: isRenaming,
@@ -72,8 +71,6 @@ export function ProjectHeader({
           />
         ) : (
           <>
-            {voiceStatus}
-
             {onOpenPiP && (
               <Button
                 variant="ghost"

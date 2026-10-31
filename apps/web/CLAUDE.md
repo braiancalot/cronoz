@@ -96,8 +96,7 @@ a bad file is refused before anything is written. Backups export `projects` and 
   `style-src` keeps `'unsafe-inline'` for the `<style>` tags Radix, Sonner and the PiP window
   inject.
 - **Permissions-Policy** in the same file disables browser features by default. A feature the app
-  starts using (the microphone for voice commands) MUST be allowed there with `(self)`, or
-  production denies it while localhost works.
+  starts using MUST be allowed there with `(self)`, or production denies it while localhost works.
 - Font: IBM Plex Sans from `@fontsource/ibm-plex-sans`, bundled for offline use.
 
 ## UI Rules

@@ -6,7 +6,6 @@ export const LAST_PUSHED_AT_KEY = "lastPushedAt";
 export const LAST_SYNCED_AT_KEY = "lastSyncedAt";
 export const SYNC_REVOKED_KEY = "syncRevoked";
 export const PENDING_PAIRING_KEY = "pendingPairing";
-export const VOICE_COMMANDS_KEY = "voiceCommands";
 
 export const PAIRING_CODE_LENGTH = 8;
 // No 0/O, 1/I/L or U: codes are read aloud and typed by hand.

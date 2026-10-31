@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { SyncCard } from "@/components/sync/SyncCard.jsx";
 import { BackupCard } from "@/components/BackupCard.jsx";
-import { VoiceCommandsSetting } from "@/components/VoiceCommandsSetting.jsx";
 
 export default function SettingsPage() {
   const hourlyPrice = useHourlyPrice();
@@ -125,8 +124,6 @@ export default function SettingsPage() {
                 onCheckedChange={(checked) => setSetting("hideTags", checked)}
               />
             </div>
-
-            <VoiceCommandsSetting />
           </CardContent>
         </Card>
 

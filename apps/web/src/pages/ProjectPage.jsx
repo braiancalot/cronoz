@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router";
 
 import { useProject } from "@/hooks/useProject.js";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
-import { useProjectVoiceCommands } from "@/hooks/useProjectVoiceCommands.js";
 import { useControlsLayout } from "@/hooks/useControlsLayout.js";
 import {
   useNarrowViewport,
@@ -26,7 +25,6 @@ import { PiPPlaceholder } from "@/components/pip/PiPPlaceholder.jsx";
 import { RealTimeDialog } from "@/components/RealTimeDialog.jsx";
 import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
 import { RunningOverlay } from "@/components/RunningOverlay.jsx";
-import { VoiceStatus } from "@/components/VoiceStatus.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { EmptyState } from "@/components/EmptyState.jsx";
@@ -71,11 +69,6 @@ export default function ProjectPage() {
   } = usePiPWindow(pause);
 
   useKeyboardShortcuts({ onToggle: toggle, pipWindow, enabled: !isAdjusting });
-  const voiceCommands = useProjectVoiceCommands({
-    onStart: start,
-    onPause: pause,
-    isAdjusting,
-  });
 
   const isNarrow = useNarrowViewport();
   const isSliver = useSliverViewport();
@@ -220,14 +213,6 @@ export default function ProjectPage() {
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
         onViewRealTime={handleViewRealTime}
         realTimeStatus={getRealTimeStatus(project.stopwatch)}
-        voiceStatus={
-          voiceCommands.enabled && (
-            <VoiceStatus
-              status={voiceCommands.status}
-              message={voiceCommands.message}
-            />
-          )
-        }
       />
 
       <TimerStage
