@@ -3,8 +3,8 @@
 Read this index before a non-trivial task. One line per file; keep it current.
 
 - [IDEA.md](IDEA.md): the founding brief. Problem, use cases, stack, scope. Belongs to the user.
-- [research-voice-commands.md](research-voice-commands.md): cloud Web Speech API chosen; Chrome
-  on-device model returns no results; Vosk untried.
+- [research-voice-commands.md](research-voice-commands.md): voice commands shipped and removed, why
+  they failed, and the hands-free need still open.
 - [runbook-database-migrations.md](runbook-database-migrations.md): making a schema change,
   migrating Neon before a deploy, marking the baseline.
 - [runbook-secret-scan.md](runbook-secret-scan.md): the gitleaks job, scanning history locally,
