@@ -8,8 +8,9 @@ import {
 } from "@/lib/stopwatchTransitions.js";
 
 // vi.hoisted runs before vi.mock hoisting, making these available to factories
-const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
+const { mockUseLiveQuery, mockRepository, mockIgnoreMs } = vi.hoisted(() => ({
   mockUseLiveQuery: vi.fn(),
+  mockIgnoreMs: vi.fn(() => false),
   mockRepository: {
     getById: vi.fn(),
     updateStopwatch: vi.fn(),
@@ -25,6 +26,10 @@ const { mockUseLiveQuery, mockRepository } = vi.hoisted(() => ({
 
 vi.mock("dexie-react-hooks", () => ({
   useLiveQuery: (...args) => mockUseLiveQuery(...args),
+}));
+
+vi.mock("@/hooks/useIgnoreMilliseconds.js", () => ({
+  useIgnoreMilliseconds: () => mockIgnoreMs(),
 }));
 
 vi.mock("@/services/projectRepository.js", async (importOriginal) => {
@@ -950,6 +955,44 @@ describe("useProject", () => {
       expect(result.current.displayTime).toBe(4000);
     });
 
+    it("holds the discard of a running project across frames", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(10_000));
+      load(createProject({ isRunning: true, startTimestamp: 7000 }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      await act(() => result.current.discardCurrentTime());
+      await act(() => vi.advanceTimersByTime(50));
+
+      expect(result.current.project.stopwatch.isRunning).toBe(false);
+      expect(result.current.displayTime).toBe(0);
+      vi.useRealTimers();
+    });
+
+    it("restores the discarded time when undo comes before the live query", async () => {
+      load(createProject({ currentLapTime: 4000 }));
+      const { result } = renderHook(() => useProject("test-id"));
+
+      let undoer;
+      await act(async () => {
+        undoer = await result.current.discardCurrentTime();
+      });
+      await act(() => undoer.undo());
+
+      expect(result.current.displayTime).toBe(4000);
+    });
+
+    it("lets a newer live record win over the adjusted time", async () => {
+      load(createProject({ currentLapTime: 4000 }));
+      const { result, rerender } = renderHook(() => useProject("test-id"));
+      await act(() => result.current.setCurrentTime(15000));
+
+      load(createProject({ currentLapTime: 9000 }));
+      rerender();
+
+      expect(result.current.displayTime).toBe(9000);
+    });
+
     it("holds the adjusted time", async () => {
       load(createProject({ currentLapTime: 4000 }));
       const { result, rerender } = renderHook(() => useProject("test-id"));
@@ -960,6 +1003,35 @@ describe("useProject", () => {
       expect(result.current.project.stopwatch.currentLapTime).toBe(15000);
       expect(result.current.displayTime).toBe(15000);
     });
+  });
+
+  it("re-renders only when a shown second changes while ignoring milliseconds", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(100_000));
+    mockIgnoreMs.mockReturnValue(true);
+    load(
+      createProject({
+        isRunning: true,
+        startTimestamp: 100_000,
+        lastActiveAt: 100_000,
+      }),
+    );
+    let renderCount = 0;
+    renderHook(() => {
+      renderCount += 1;
+      return useProject("test-id");
+    });
+    await act(() => vi.advanceTimersByTime(16));
+    const rendersAfterFirstFrame = renderCount;
+
+    for (let frame = 0; frame < 60; frame += 1) {
+      await act(() => vi.advanceTimersByTime(16));
+    }
+
+    // React MAY render once more before bailing out on an equal state.
+    expect(renderCount - rendersAfterFirstFrame).toBeLessThanOrEqual(2);
+    mockIgnoreMs.mockReturnValue(false);
+    vi.useRealTimers();
   });
 
   describe("play and pause before the live query catches up", () => {

@@ -1,20 +1,22 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 function useMaxWidth(px) {
-  const query = `(max-width: ${px}px)`;
+  const mediaQuery = useMemo(
+    () => window.matchMedia(`(max-width: ${px}px)`),
+    [px],
+  );
 
   const subscribe = useCallback(
     (onChange) => {
-      const mediaQuery = window.matchMedia(query);
       mediaQuery.addEventListener("change", onChange);
       return () => mediaQuery.removeEventListener("change", onChange);
     },
-    [query],
+    [mediaQuery],
   );
 
   return useSyncExternalStore(
     subscribe,
-    () => window.matchMedia(query).matches,
+    () => mediaQuery.matches,
     () => false,
   );
 }

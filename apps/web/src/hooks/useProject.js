@@ -23,7 +23,7 @@ import { useWakeLock } from "./useWakeLock.js";
 const CHECKPOINT_INTERVAL = 10_000;
 
 export function useProject(projectId) {
-  const [, setFrame] = useState(0);
+  const [, setShownTimes] = useState("");
   const [stopwatchOverride, setStopwatchOverride] = useState(null);
 
   const liveProject = useLiveQuery(
@@ -85,7 +85,10 @@ export function useProject(projectId) {
     let lastCheckpoint = project.stopwatch.lastActiveAt ?? Date.now();
 
     const tick = () => {
-      setFrame((frame) => frame + 1);
+      // A key of both shown values, so React skips frames that change neither.
+      setShownTimes(
+        `${calculateTotalTime(project.stopwatch, { ignoreMs })}:${calculateSplitTime(project.stopwatch, { ignoreMs })}`,
+      );
 
       const now = Date.now();
       if (now - lastCheckpoint >= CHECKPOINT_INTERVAL) {
@@ -101,7 +104,7 @@ export function useProject(projectId) {
     frameId = requestAnimationFrame(tick);
 
     return () => cancelAnimationFrame(frameId);
-  }, [project]);
+  }, [project, ignoreMs]);
 
   useAutoPause(pause);
   useWakeLock(project?.stopwatch?.isRunning ?? false);
