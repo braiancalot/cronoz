@@ -2,6 +2,7 @@ import { FormattedTime } from "@/components/FormattedTime.jsx";
 import { useHidePrice } from "@/hooks/useHidePrice.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
 import { copyFromEvent } from "@/lib/clipboard.js";
+import { formatBrl } from "@/lib/currency.js";
 import { formatTimeCompact, calculateTotalPrice } from "@/lib/stopwatch.js";
 import { cn } from "@/lib/utils.js";
 import { RunningIndicator } from "./RunningIndicator.jsx";
@@ -23,10 +24,7 @@ export function TimerDisplay({
   const hidePrice = useHidePrice();
 
   const priceBase = totalTime !== null ? totalTime : time;
-  const priceFormatted = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(calculateTotalPrice(priceBase, hourlyPrice));
+  const priceFormatted = formatBrl(calculateTotalPrice(priceBase, hourlyPrice));
 
   return (
     <div

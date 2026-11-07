@@ -9,14 +9,10 @@ import {
 import { Button } from "@/components/ui/button.jsx";
 import { useHidePrice } from "@/hooks/useHidePrice.js";
 import { copyWithToast } from "@/lib/clipboard.js";
+import { formatBrl } from "@/lib/currency.js";
 import { summarizeRealTime } from "@/lib/realTime.js";
 import { formatHms } from "@/lib/stopwatch.js";
 import { cn } from "@/lib/utils.js";
-
-const brl = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
 
 // The difference goes both ways: edits can add time or remove it.
 function signOf(value, signed) {
@@ -38,7 +34,7 @@ function Row({
   const valueClass = emphasized ? "font-medium" : "text-muted-foreground";
   const prefix = signOf(time, signed);
   const timeText = formatHms(Math.abs(time), { fraction });
-  const copyText = hidePrice ? timeText : `${timeText} (${brl.format(price)})`;
+  const copyText = hidePrice ? timeText : `${timeText} (${formatBrl(price)})`;
 
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -51,7 +47,7 @@ function Row({
         <span className={valueClass}>{`${prefix}${timeText}`}</span>
         {!hidePrice && (
           <span className={cn(valueClass, emphasized && "text-primary")}>
-            {`${prefix}${brl.format(Math.abs(price))}`}
+            {`${prefix}${formatBrl(Math.abs(price))}`}
           </span>
         )}
 
