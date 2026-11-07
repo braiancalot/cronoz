@@ -20,6 +20,8 @@ export function ProjectHeader({
   onOpenPiP,
   onViewRealTime,
   realTimeStatus,
+  onViewAllLaps,
+  canViewAllLaps,
 }) {
   const {
     isEditing: isRenaming,
@@ -91,6 +93,8 @@ export function ProjectHeader({
               canAdjust={canAdjust}
               onViewRealTime={onViewRealTime}
               realTimeStatus={realTimeStatus}
+              onViewAllLaps={onViewAllLaps}
+              canViewAllLaps={canViewAllLaps}
               onDiscardCurrentTime={onDiscardCurrentTime}
               canDiscardCurrentTime={canDiscardCurrentTime}
               onDelete={onDelete}

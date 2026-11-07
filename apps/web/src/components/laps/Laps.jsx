@@ -2,25 +2,13 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
-import { anyReachesAnHour, truncateToSecond } from "@/lib/stopwatch.js";
+import { summarizeLaps } from "@/lib/lapsSummary.js";
+import { timeColumnWidth } from "@/lib/stopwatch.js";
 import { showUndoToast } from "@/lib/undoToast.js";
 import { cn } from "@/lib/utils.js";
 import { LapCard } from "./LapCard.jsx";
 import { LapItem } from "./LapItem.jsx";
 import { LapNameForm } from "./LapNameForm.jsx";
-
-// No grid spans the cards, so the list picks one width and every row holds it.
-const LAP_TIME_WIDTH = { short: "w-[4.5ch]", withHours: "w-[7ch]" };
-
-function totalsByLapId(laps, ignoreMs) {
-  const totals = new Map();
-  let acc = 0;
-  for (let i = laps.length - 1; i >= 0; i--) {
-    acc += ignoreMs ? truncateToSecond(laps[i].lapTime) : laps[i].lapTime;
-    totals.set(laps[i].id, acc);
-  }
-  return totals;
-}
 
 export function Laps({
   laps,
@@ -36,11 +24,15 @@ export function Laps({
   const ignoreMs = useIgnoreMilliseconds();
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  const activeLaps = laps?.filter((lap) => !lap.deletedAt) ?? [];
-  const cumulative = totalsByLapId(activeLaps, ignoreMs);
-  const lapTimeWidth = anyReachesAnHour(activeLaps.map((lap) => lap.lapTime))
-    ? LAP_TIME_WIDTH.withHours
-    : LAP_TIME_WIDTH.short;
+  const lapSummaries = summarizeLaps({
+    laps,
+    currentLapTime: 0,
+    ignoreMs,
+  }).reverse();
+  // No grid spans the cards, so the list picks one width and every row holds it.
+  const lapTimeWidth = timeColumnWidth(
+    Math.max(0, ...lapSummaries.map((lap) => lap.lapTime)),
+  );
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
@@ -70,12 +62,12 @@ export function Laps({
                 />
               </LapCard>
             )}
-            {activeLaps.map((lap) => (
+            {lapSummaries.map((lap) => (
               <LapItem
                 key={lap.id}
                 lap={lap}
-                lapTime={ignoreMs ? truncateToSecond(lap.lapTime) : lap.lapTime}
-                cumulativeTime={cumulative.get(lap.id)}
+                lapTime={lap.lapTime}
+                cumulativeTime={lap.cumulativeTime}
                 lapTimeWidth={lapTimeWidth}
                 onRename={onRenameLap}
                 onRequestDelete={setPendingDelete}

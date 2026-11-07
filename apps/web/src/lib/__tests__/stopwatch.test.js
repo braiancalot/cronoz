@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  timeColumnWidth,
   formatTime,
   formatTimeCompact,
   formatHms,
@@ -397,6 +398,17 @@ describe("anyReachesAnHour", () => {
     expect(anyReachesAnHour([3_600_000])).toBe(
       hasHours(formatTime(3_600_000).hours),
     );
+  });
+});
+
+describe("timeColumnWidth", () => {
+  it("fits minutes and seconds under an hour", () => {
+    expect(timeColumnWidth(59 * 60_000)).toBe("4.5ch");
+  });
+
+  it("widens for two hour digits and keeps growing past them", () => {
+    expect(timeColumnWidth(3_600_000)).toBe("7ch");
+    expect(timeColumnWidth(100 * 3_600_000)).toBe("8ch");
   });
 });
 

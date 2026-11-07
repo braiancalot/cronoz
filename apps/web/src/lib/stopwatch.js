@@ -116,6 +116,13 @@ export function anyReachesAnHour(times) {
   return times.some((ms) => ms >= 3600000);
 }
 
+// FormattedTime's digits are 1ch each (tabular) and its colons about half.
+export function timeColumnWidth(ms) {
+  const hours = Math.floor(ms / MS_PER_HOUR);
+  if (hours === 0) return "4.5ch";
+  return `${Math.max(2, String(hours).length) + 5}ch`;
+}
+
 export function formatTimeCompact(ms) {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms / 60000) % 60);

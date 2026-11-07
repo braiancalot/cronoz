@@ -3,6 +3,7 @@ import {
   ClockIcon,
   DotsThreeVerticalIcon,
   EraserIcon,
+  ListNumbersIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -27,6 +28,8 @@ export function ProjectMenu({
   canAdjust,
   onViewRealTime,
   realTimeStatus,
+  onViewAllLaps,
+  canViewAllLaps,
   onDiscardCurrentTime,
   canDiscardCurrentTime,
   onDelete,
@@ -54,6 +57,14 @@ export function ProjectMenu({
           Ajustar tempo
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="info"
+          onSelect={onViewAllLaps}
+          disabled={!canViewAllLaps}
+        >
+          <ListNumbersIcon />
+          Ver todas as voltas
+        </DropdownMenuItem>
         <DropdownMenuItem
           variant="info"
           onSelect={onViewRealTime}

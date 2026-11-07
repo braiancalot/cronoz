@@ -65,11 +65,7 @@ export function LapItem({
             label="Tempo acumulado"
             className="text-muted-foreground"
           />
-          <LapTime
-            time={lapTime}
-            label="Tempo da volta"
-            widthClassName={lapTimeWidth}
-          />
+          <LapTime time={lapTime} label="Tempo da volta" width={lapTimeWidth} />
         </div>
       </div>
     </LapCard>

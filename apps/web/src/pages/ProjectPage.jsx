@@ -200,6 +200,8 @@ export default function ProjectPage() {
         onOpenPiP={isPiPSupported && !pipWindow ? openPiP : null}
         onViewRealTime={handleViewRealTime}
         realTimeStatus={getRealTimeStatus(project.stopwatch)}
+        onViewAllLaps={() => navigate(`/project/${id}/laps`)}
+        canViewAllLaps={hasLaps && !isPiPActive}
       />
 
       <TimerStage

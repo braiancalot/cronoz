@@ -4,12 +4,13 @@ PWA built with Vite, React 19 and React Router v7. Rules here apply on top of th
 
 ## Structure
 
-| Route          | Page                     | What it does                                                         |
-| -------------- | ------------------------ | -------------------------------------------------------------------- |
-| `/`            | `pages/Home.jsx`         | Lists projects, creates, completes, reopens, deletes, filters by tag |
-| `/project/:id` | `pages/ProjectPage.jsx`  | Stopwatch, laps, adjust, discard, real time, PiP                     |
-| `/settings`    | `pages/SettingsPage.jsx` | Preferences, sync pairing, backup                                    |
-| `/design`      | `pages/DesignPage.jsx`   | Design system showcase                                               |
+| Route               | Page                     | What it does                                                         |
+| ------------------- | ------------------------ | -------------------------------------------------------------------- |
+| `/`                 | `pages/Home.jsx`         | Lists projects, creates, completes, reopens, deletes, filters by tag |
+| `/project/:id`      | `pages/ProjectPage.jsx`  | Stopwatch, laps, adjust, discard, real time, PiP                     |
+| `/project/:id/laps` | `pages/LapsPage.jsx`     | Every lap in columns, copies the summary                             |
+| `/settings`         | `pages/SettingsPage.jsx` | Preferences, sync pairing, backup                                    |
+| `/design`           | `pages/DesignPage.jsx`   | Design system showcase                                               |
 
 - `components/`: presentational components, grouped by family in subfolders (`laps/`, `timer/`,
   `pip/`, `project/`, `sync/`, `tag/`, `ui/` for shadcn primitives), each with its own

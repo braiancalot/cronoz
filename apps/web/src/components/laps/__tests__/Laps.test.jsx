@@ -74,7 +74,7 @@ describe("Laps", () => {
 
     expect(accumulated.every((c) => !/\bw-\[/.test(c))).toBe(true);
     lapTimeCells(container).forEach((cell) =>
-      expect(cell).toHaveClass("w-[4.5ch]"),
+      expect(cell).toHaveStyle({ width: "4.5ch" }),
     );
   });
 
@@ -84,7 +84,7 @@ describe("Laps", () => {
     );
 
     lapTimeCells(container).forEach((cell) =>
-      expect(cell).toHaveClass("w-[4.5ch]"),
+      expect(cell).toHaveStyle({ width: "4.5ch" }),
     );
 
     rerender(
@@ -101,7 +101,7 @@ describe("Laps", () => {
     // Every row widens, not just the long one, otherwise they stop aligning.
     const widened = lapTimeCells(container);
     expect(widened).toHaveLength(3);
-    widened.forEach((cell) => expect(cell).toHaveClass("w-[7ch]"));
+    widened.forEach((cell) => expect(cell).toHaveStyle({ width: "7ch" }));
   });
 
   it("makes the name the only part of the row that gives", () => {
