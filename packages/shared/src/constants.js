@@ -20,5 +20,6 @@ export const MAX_LAPS_PER_PROJECT = 5000;
 export const MAX_TAG_LENGTH = 24;
 export const MAX_TAGS_PER_PROJECT = 20;
 export const MAX_SETTING_KEY_LENGTH = 64;
+export const MAX_SETTING_STRING_LENGTH = 100;
 export const MAX_PUSH_PROJECTS = 500;
 export const MAX_PUSH_SETTINGS = 50;

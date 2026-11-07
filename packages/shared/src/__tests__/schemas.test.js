@@ -7,6 +7,7 @@ import {
   pushRequestSchema,
   pullRequestSchema,
   pairJoinRequestSchema,
+  MAX_SETTING_STRING_LENGTH,
 } from "../index.js";
 
 describe("lapSchema", () => {
@@ -262,9 +263,19 @@ describe("settingSchema", () => {
     expect(settingSchema.parse(setting)).toEqual(setting);
   });
 
-  it("rejects a value that is not a number or boolean", () => {
-    expect(() => settingSchema.parse({ key: "k", value: "x" })).toThrow();
+  it("accepts a string value", () => {
+    const setting = { key: "lapNameTemplate", value: "{dia}/{mes}" };
+    expect(settingSchema.parse(setting)).toEqual(setting);
+  });
+
+  it("rejects a string value over the limit", () => {
+    const value = "x".repeat(MAX_SETTING_STRING_LENGTH + 1);
+    expect(() => settingSchema.parse({ key: "k", value })).toThrow();
+  });
+
+  it("rejects a value that is not a number, boolean or string", () => {
     expect(() => settingSchema.parse({ key: "k", value: { a: 1 } })).toThrow();
+    expect(() => settingSchema.parse({ key: "k", value: null })).toThrow();
   });
 
   it("accepts a setting with updatedAt", () => {
