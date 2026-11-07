@@ -58,9 +58,9 @@ a new transition MUST be added to its `opArb`.
 re-emits on a later tick. Every write the user watches holds an optimistic value until the live
 query catches up, and a newer live record always wins over it. Use the existing mechanisms:
 `useInlineRename` for names, the overrides in `Home.jsx` for cards and tags, the stopwatch
-override in `useProject` (`runTransition`, `holdAfterWrite`) for the timer and laps, whose times
-derive from it, `useSetSetting` for settings. See
-`docs/postmortem-live-query-flash.md`.
+override in `useProject` (`runTransition`, `holdAfterWrite`) for the timer and laps, and
+`useSetSetting` for settings. The timer's shown times derive from the held stopwatch, so they
+never need an override of their own. See `docs/postmortem-live-query-flash.md`.
 
 **Backup import** is the other way a record enters IndexedDB without a repository.
 `backupService.parseBackup` runs each record through the shared schemas and keeps Zod's output, so

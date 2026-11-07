@@ -25,7 +25,8 @@ live value (another tab, sync) wins over it.
 | Timer, play/pause, laps    | the stopwatch override in `hooks/useProject.js`       |
 | Settings                   | `useSetSetting` from `providers/SettingsProvider.jsx` |
 
-`addLap`, `removeLap` and `undeleteLap` return the `{ previous, next }` change from
-`updateStopwatch` so the hook can hold `next`. The hourly price field keeps a draft
+Play, pause, discard and adjust hold the transition's result through `runTransition`. `addLap`,
+`removeLap`, `undeleteLap` and the discard undo return the `{ previous, next }` change from
+`updateStopwatch`, and `holdAfterWrite` holds its `next`. The hourly price field keeps a draft
 (`hooks/useHourlyPriceDraft.js`) so it can be cleared while typing; it saves only a valid number
 of 0 or more and drops the draft on blur.
