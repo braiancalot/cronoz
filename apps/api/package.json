@@ -26,7 +26,6 @@
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
     "eslint": "^10",
-    "eslint-config-prettier": "^10.1.8",
-    "vitest": "^4.1.12"
+    "eslint-config-prettier": "^10.1.8"
   }
 }
