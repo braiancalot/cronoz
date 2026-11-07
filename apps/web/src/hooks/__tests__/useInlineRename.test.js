@@ -89,6 +89,24 @@ describe("useInlineRename", () => {
     expect(result.current.displayName).toBe("FromSync");
   });
 
+  it("does not bring the optimistic value back when the prop returns to the old name", async () => {
+    const onRename = vi.fn().mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(
+      ({ name }) => useInlineRename(name, onRename),
+      { initialProps: { name: "Old" } },
+    );
+
+    act(() => result.current.start());
+    act(() => result.current.setDraft("New"));
+    await act(async () => {
+      await result.current.submit();
+    });
+
+    rerender({ name: "FromSync" });
+    rerender({ name: "Old" });
+    expect(result.current.displayName).toBe("Old");
+  });
+
   it("submit with empty draft does nothing", async () => {
     const onRename = vi.fn();
     const { result } = renderHook(() => useInlineRename("Old", onRename));

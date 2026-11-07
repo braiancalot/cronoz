@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 // Optimistic display: the submitted name is held until the live `currentName`
 // catches up, hiding the one-frame flash of the old name while useLiveQuery
@@ -6,13 +6,10 @@ import { useCallback, useEffect, useState } from "react";
 export function useInlineRename(currentName, onRename) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
-  const [optimisticName, setOptimisticName] = useState(null);
+  const [optimistic, setOptimistic] = useState(null);
 
-  const displayName = optimisticName ?? currentName;
-
-  useEffect(() => {
-    setOptimisticName(null);
-  }, [currentName]);
+  if (optimistic && optimistic.base !== currentName) setOptimistic(null);
+  const displayName = optimistic?.name ?? currentName;
 
   const start = useCallback(() => {
     setDraft(currentName);
@@ -26,11 +23,11 @@ export function useInlineRename(currentName, onRename) {
 
   const submit = useCallback(async () => {
     if (!draft) return;
-    setOptimisticName(draft);
+    setOptimistic({ name: draft, base: currentName });
     setIsEditing(false);
     setDraft("");
     await onRename(draft);
-  }, [draft, onRename]);
+  }, [draft, currentName, onRename]);
 
   return { isEditing, draft, setDraft, displayName, start, cancel, submit };
 }

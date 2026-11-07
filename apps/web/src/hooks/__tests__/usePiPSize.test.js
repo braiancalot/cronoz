@@ -59,6 +59,18 @@ describe("usePiPSize", () => {
     expect(result.current).toBe("compact");
   });
 
+  it("reads the new window's size when it changes", () => {
+    const { result, rerender } = renderHook(({ w }) => usePiPSize(w), {
+      initialProps: { w: makeFakeWindow(200, 170) },
+    });
+
+    rerender({ w: makeFakeWindow(480, 300) });
+    expect(result.current).toBe("default");
+
+    rerender({ w: null });
+    expect(result.current).toBe("mini");
+  });
+
   it("stops listening when the window changes", () => {
     const win = makeFakeWindow(200, 170);
     const { rerender } = renderHook(({ w }) => usePiPSize(w), {

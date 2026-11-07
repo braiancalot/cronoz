@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 // Maps the PiP window's live dimensions onto the TimerDisplay tiers. Both axes
 // must clear a threshold to step up, so a window that grows in one direction
@@ -16,21 +16,18 @@ export function pickPiPSize(width, height) {
 }
 
 export function usePiPSize(pipWindow) {
-  const [size, setSize] = useState("mini");
+  const subscribe = useCallback(
+    (onResize) => {
+      if (!pipWindow) return () => {};
+      pipWindow.addEventListener("resize", onResize);
+      return () => pipWindow.removeEventListener("resize", onResize);
+    },
+    [pipWindow],
+  );
 
-  useEffect(() => {
-    if (!pipWindow) {
-      setSize("mini");
-      return;
-    }
-
-    const update = () =>
-      setSize(pickPiPSize(pipWindow.innerWidth, pipWindow.innerHeight));
-
-    update();
-    pipWindow.addEventListener("resize", update);
-    return () => pipWindow.removeEventListener("resize", update);
-  }, [pipWindow]);
-
-  return size;
+  return useSyncExternalStore(subscribe, () =>
+    pipWindow
+      ? pickPiPSize(pipWindow.innerWidth, pipWindow.innerHeight)
+      : "mini",
+  );
 }
