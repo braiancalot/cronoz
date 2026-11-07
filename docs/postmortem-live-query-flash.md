@@ -18,12 +18,12 @@ Every write the user watches holds an optimistic value until the live query catc
 override is `{ base, next }`: it applies only while the live record is still `base`, so any newer
 live value (another tab, sync) wins over it.
 
-| Write                      | Mechanism                                                  |
-| -------------------------- | ---------------------------------------------------------- |
-| Project and lap names      | `useInlineRename`                                          |
-| Cards and tags on the list | the overrides in `pages/Home.jsx`                          |
-| Timer, play/pause, laps    | `holdStopwatch` / `showStopwatch` in `hooks/useProject.js` |
-| Settings                   | `useSetSetting` from `providers/SettingsProvider.jsx`      |
+| Write                      | Mechanism                                             |
+| -------------------------- | ----------------------------------------------------- |
+| Project and lap names      | `useInlineRename`                                     |
+| Cards and tags on the list | the overrides in `pages/Home.jsx`                     |
+| Timer, play/pause, laps    | the stopwatch override in `hooks/useProject.js`       |
+| Settings                   | `useSetSetting` from `providers/SettingsProvider.jsx` |
 
 `addLap`, `removeLap` and `undeleteLap` return the `{ previous, next }` change from
 `updateStopwatch` so the hook can hold `next`. The hourly price field keeps a draft

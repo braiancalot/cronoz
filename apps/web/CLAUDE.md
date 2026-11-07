@@ -57,8 +57,9 @@ a new transition MUST be added to its `opArb`.
 **Optimistic display.** Awaiting a Dexie write does not mean the screen has it: `useLiveQuery`
 re-emits on a later tick. Every write the user watches holds an optimistic value until the live
 query catches up, and a newer live record always wins over it. Use the existing mechanisms:
-`useInlineRename` for names, the overrides in `Home.jsx` for cards and tags, `holdStopwatch` and
-`showStopwatch` in `useProject` for the timer and laps, `useSetSetting` for settings. See
+`useInlineRename` for names, the overrides in `Home.jsx` for cards and tags, the stopwatch
+override in `useProject` (`runTransition`, `holdAfterWrite`) for the timer and laps, whose times
+derive from it, `useSetSetting` for settings. See
 `docs/postmortem-live-query-flash.md`.
 
 **Backup import** is the other way a record enters IndexedDB without a repository.

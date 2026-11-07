@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import projectRepository from "@/services/projectRepository.js";
@@ -23,9 +23,7 @@ import { useWakeLock } from "./useWakeLock.js";
 const CHECKPOINT_INTERVAL = 10_000;
 
 export function useProject(projectId) {
-  const [displayTime, setDisplayTime] = useState(0);
-  const [splitDisplayTime, setSplitDisplayTime] = useState(0);
-
+  const [, setFrame] = useState(0);
   const [stopwatchOverride, setStopwatchOverride] = useState(null);
 
   const liveProject = useLiveQuery(
@@ -49,9 +47,13 @@ export function useProject(projectId) {
   const isLoading = liveProject === undefined;
   // Read at write time: the delete undo runs from a toast, renders later.
   const liveStopwatchRef = useRef(null);
-  liveStopwatchRef.current = liveProject?.stopwatch;
+  useLayoutEffect(() => {
+    liveStopwatchRef.current = liveProject?.stopwatch;
+  }, [liveProject]);
 
   const ignoreMs = useIgnoreMilliseconds();
+  const displayTime = calculateTotalTime(project?.stopwatch, { ignoreMs });
+  const splitDisplayTime = calculateSplitTime(project?.stopwatch, { ignoreMs });
 
   // Recovery + checkpoint live in a single effect to avoid a race: if recovery
   // is in another effect, the checkpoint loop can fire a stale write before
@@ -77,18 +79,13 @@ export function useProject(projectId) {
       return;
     }
 
-    if (!project.stopwatch?.isRunning) {
-      setDisplayTime(calculateTotalTime(project.stopwatch, { ignoreMs }));
-      setSplitDisplayTime(calculateSplitTime(project.stopwatch, { ignoreMs }));
-      return;
-    }
+    if (!project.stopwatch?.isRunning) return;
 
     let frameId;
     let lastCheckpoint = project.stopwatch.lastActiveAt ?? Date.now();
 
     const tick = () => {
-      setDisplayTime(calculateTotalTime(project.stopwatch, { ignoreMs }));
-      setSplitDisplayTime(calculateSplitTime(project.stopwatch, { ignoreMs }));
+      setFrame((frame) => frame + 1);
 
       const now = Date.now();
       if (now - lastCheckpoint >= CHECKPOINT_INTERVAL) {
@@ -104,35 +101,25 @@ export function useProject(projectId) {
     frameId = requestAnimationFrame(tick);
 
     return () => cancelAnimationFrame(frameId);
-  }, [project, ignoreMs]);
+  }, [project]);
 
   useAutoPause(pause);
   useWakeLock(project?.stopwatch?.isRunning ?? false);
 
-  // Reflect a stopwatch write in the display immediately, bridging the gap
-  // until useLiveQuery re-emits, otherwise the old time flashes for a frame.
-  function showStopwatch(stopwatch) {
-    setDisplayTime(calculateTotalTime(stopwatch, { ignoreMs }));
-    setSplitDisplayTime(calculateSplitTime(stopwatch, { ignoreMs }));
-  }
-
-  function holdStopwatch(base, next) {
-    setStopwatchOverride({ base, next });
-    showStopwatch(next);
-  }
-
-  // The lap id is minted inside the repository, so the override waits for it.
-  async function writeLap(write) {
+  // For writes whose result only the repository knows, like a minted lap id.
+  async function holdAfterWrite(write) {
     const base = liveStopwatchRef.current;
     const change = await write();
-    if (change) holdStopwatch(base, change.next);
+    if (change) setStopwatchOverride({ base, next: change.next });
   }
 
   // Same `now` on both sides, so the live record lands on the shown value.
-  function runTransition(transition) {
-    const now = Date.now();
-    holdStopwatch(liveStopwatchRef.current, transition(project.stopwatch, now));
-    projectRepository.updateStopwatch(project.id, (stopwatch) =>
+  function runTransition(transition, now = Date.now()) {
+    setStopwatchOverride({
+      base: liveStopwatchRef.current,
+      next: transition(project.stopwatch, now),
+    });
+    return projectRepository.updateStopwatch(project.id, (stopwatch) =>
       transition(stopwatch, now),
     );
   }
@@ -151,30 +138,23 @@ export function useProject(projectId) {
   async function discardCurrentTime() {
     const id = project.id;
     const now = Date.now();
-    showStopwatch(discardCurrent(project.stopwatch, now));
-
-    const change = await projectRepository.updateStopwatch(id, (stopwatch) =>
-      discardCurrent(stopwatch, now),
-    );
+    const change = await runTransition(discardCurrent, now);
     const amount = change ? pauseRun(change.previous, now).currentLapTime : 0;
 
     return {
-      undo: async () => {
-        const restored = await projectRepository.updateStopwatch(
-          id,
-          (stopwatch) => restoreDiscarded(stopwatch, amount),
-        );
-        if (restored) showStopwatch(restored.next);
-      },
+      undo: () =>
+        holdAfterWrite(() =>
+          projectRepository.updateStopwatch(id, (stopwatch) =>
+            restoreDiscarded(stopwatch, amount),
+          ),
+        ),
     };
   }
 
   // Commit an adjusted in-progress segment (clamped at 0). Called only while
   // paused (adjust mode pauses on entry) with the value confirmed in the UI.
   async function setCurrentTime(value) {
-    const now = Date.now();
-    showStopwatch(adjustCurrent(project.stopwatch, value, now));
-    await projectRepository.updateStopwatch(project.id, (stopwatch) =>
+    await runTransition((stopwatch, now) =>
       adjustCurrent(stopwatch, value, now),
     );
   }
@@ -190,7 +170,7 @@ export function useProject(projectId) {
 
   async function addLap(name) {
     const id = project.id;
-    await writeLap(() => projectRepository.addLap({ id, name }));
+    await holdAfterWrite(() => projectRepository.addLap({ id, name }));
   }
 
   async function deleteProject() {
@@ -205,9 +185,10 @@ export function useProject(projectId) {
 
   async function deleteLap(lapId) {
     const id = project.id;
-    await writeLap(() => projectRepository.removeLap({ id, lapId }));
+    await holdAfterWrite(() => projectRepository.removeLap({ id, lapId }));
     return {
-      undo: () => writeLap(() => projectRepository.undeleteLap({ id, lapId })),
+      undo: () =>
+        holdAfterWrite(() => projectRepository.undeleteLap({ id, lapId })),
     };
   }
 

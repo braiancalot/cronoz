@@ -918,6 +918,50 @@ describe("useProject", () => {
     });
   });
 
+  describe("discard and adjust before the live query catches up", () => {
+    it("shows the stored time of a paused project on the first render", () => {
+      load(createProject({ currentLapTime: 5000 }));
+      const shownTimes = [];
+
+      renderHook(() => {
+        const hook = useProject("test-id");
+        shownTimes.push(hook.displayTime);
+        return hook;
+      });
+
+      expect(shownTimes[0]).toBe(5000);
+    });
+
+    it("holds the discarded state and restores it on undo", async () => {
+      load(createProject({ currentLapTime: 4000 }));
+      const { result, rerender } = renderHook(() => useProject("test-id"));
+
+      let undoer;
+      await act(async () => {
+        undoer = await result.current.discardCurrentTime();
+      });
+      rerender();
+      expect(result.current.project.stopwatch.currentLapTime).toBe(0);
+      expect(result.current.displayTime).toBe(0);
+
+      await act(() => undoer.undo());
+      rerender();
+      expect(result.current.project.stopwatch.currentLapTime).toBe(4000);
+      expect(result.current.displayTime).toBe(4000);
+    });
+
+    it("holds the adjusted time", async () => {
+      load(createProject({ currentLapTime: 4000 }));
+      const { result, rerender } = renderHook(() => useProject("test-id"));
+
+      await act(() => result.current.setCurrentTime(15000));
+      rerender();
+
+      expect(result.current.project.stopwatch.currentLapTime).toBe(15000);
+      expect(result.current.displayTime).toBe(15000);
+    });
+  });
+
   describe("play and pause before the live query catches up", () => {
     it("shows the clock running as soon as start is called", () => {
       load(createProject({ currentLapTime: 3000 }));
