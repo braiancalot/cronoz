@@ -31,6 +31,7 @@ describe("getResolved", () => {
       ignoreMilliseconds: false,
       hideTags: false,
       hidePrice: false,
+      lapNameTemplate: "{n}º ",
     });
   });
 
@@ -42,7 +43,16 @@ describe("getResolved", () => {
       ignoreMilliseconds: true,
       hideTags: false,
       hidePrice: false,
+      lapNameTemplate: "{n}º ",
     });
+  });
+
+  it("falls back to the default when a stored value has the wrong type", async () => {
+    await settingsRepository.set("lapNameTemplate", 5);
+    await settingsRepository.set("hourlyPrice", "abc");
+    const resolved = await settingsRepository.getResolved();
+    expect(resolved.lapNameTemplate).toBe("{n}º ");
+    expect(resolved.hourlyPrice).toBe(10);
   });
 
   it("preserves a stored falsy value instead of the default", async () => {

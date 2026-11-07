@@ -6,6 +6,7 @@ import { TimerAdjuster } from "@/components/timer/TimerAdjuster.jsx";
 import { AdjustActions } from "@/components/timer/AdjustActions.jsx";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { usePiPSize } from "@/hooks/usePiPSize.js";
+import { useNextLapName } from "@/hooks/useNextLapName.js";
 
 export function PiPContent({
   name,
@@ -27,10 +28,11 @@ export function PiPContent({
   const [mode, setMode] = useState("idle");
   const [lapName, setLapName] = useState("");
   const draft = useAdjustDraft();
+  const nextLapName = useNextLapName();
 
   function handleStartLap() {
     onPause();
-    setLapName(`${lapCount + 1}º `);
+    setLapName(nextLapName(lapCount + 1));
     setMode("lap");
   }
 

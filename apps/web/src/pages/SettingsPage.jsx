@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import {
   useHourlyPrice,
   useSetSetting,
+  useSettings,
 } from "@/providers/SettingsProvider.jsx";
 import { useHourlyPriceDraft } from "@/hooks/useHourlyPriceDraft.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
@@ -22,12 +23,14 @@ import { Button } from "@/components/ui/button.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { SyncCard } from "@/components/sync/SyncCard.jsx";
 import { BackupCard } from "@/components/BackupCard.jsx";
+import { LapNameTemplateField } from "@/components/laps/LapNameTemplateField.jsx";
 
 export default function SettingsPage() {
   const hourlyPrice = useHourlyPrice();
   const ignoreMilliseconds = useIgnoreMilliseconds();
   const hideTags = useHideTags();
   const hidePrice = useHidePrice();
+  const { lapNameTemplate } = useSettings();
 
   const setSetting = useSetSetting();
   const priceField = useHourlyPriceDraft({
@@ -124,6 +127,11 @@ export default function SettingsPage() {
                 onCheckedChange={(checked) => setSetting("hideTags", checked)}
               />
             </div>
+
+            <LapNameTemplateField
+              template={lapNameTemplate}
+              onChange={(value) => setSetting("lapNameTemplate", value)}
+            />
           </CardContent>
         </Card>
 

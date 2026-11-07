@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useNarrowViewport.js";
 import { useAdjustDraft } from "@/hooks/useAdjustDraft.js";
 import { useIgnoreMilliseconds } from "@/hooks/useIgnoreMilliseconds.js";
+import { useNextLapName } from "@/hooks/useNextLapName.js";
 import { useHourlyPrice } from "@/providers/SettingsProvider.jsx";
 import { adjustPreview } from "@/lib/stopwatch.js";
 import { getRealTimeStatus } from "@/lib/realTime.js";
@@ -71,6 +72,7 @@ export default function ProjectPage() {
   const isSliver = useSliverViewport();
   const ignoreMs = useIgnoreMilliseconds();
   const draft = useAdjustDraft();
+  const nextLapName = useNextLapName();
 
   const hasLaps = project?.stopwatch?.laps?.length > 0;
   const hasLapsSection = hasLaps || isAddingLap;
@@ -81,7 +83,7 @@ export default function ProjectPage() {
   function handleStartAddLap() {
     pause();
     const lapNumber = (project.stopwatch.laps?.length ?? 0) + 1;
-    setLapName(`${lapNumber}º `);
+    setLapName(nextLapName(lapNumber));
     setIsAddingLap(true);
   }
 
