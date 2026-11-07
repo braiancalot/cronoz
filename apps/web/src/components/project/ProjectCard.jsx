@@ -27,14 +27,9 @@ import {
 } from "@/lib/floatingMenuLayout.js";
 import { cn } from "@/lib/utils.js";
 
-export const PROJECT_TIME_WIDTH = {
-  short: "w-[5.5ch]",
-  withHours: "w-[8.5ch]",
-};
-
 export function ProjectCard({
   project,
-  timeWidth = PROJECT_TIME_WIDTH.withHours,
+  timeWidth,
   hideTags = false,
   onManageTags,
   onToggleComplete,
@@ -136,13 +131,15 @@ export function ProjectCard({
             {hasTags && <DynamicTagRow tags={tags} />}
           </div>
 
-          <FormattedTime
-            time={displayTime}
-            className={cn(
-              "ml-auto shrink-0 justify-end leading-none text-muted-foreground",
-              timeWidth,
-            )}
-          />
+          <div
+            className="ml-auto flex shrink-0 justify-end tabular-nums font-medium"
+            style={{ width: timeWidth }}
+          >
+            <FormattedTime
+              time={displayTime}
+              className="leading-none text-muted-foreground"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

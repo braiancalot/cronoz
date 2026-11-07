@@ -112,10 +112,6 @@ export function hasHours(hours) {
   return hours !== "00";
 }
 
-export function anyReachesAnHour(times) {
-  return times.some((ms) => ms >= 3600000);
-}
-
 // FormattedTime's digits are 1ch each (tabular) and its colons about half.
 export function timeColumnWidth(ms) {
   const hours = Math.floor(ms / MS_PER_HOUR);

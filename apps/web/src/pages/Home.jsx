@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import projectRepository from "@/services/projectRepository.js";
-import {
-  PROJECT_TIME_WIDTH,
-  ProjectCard,
-} from "@/components/project/ProjectCard.jsx";
+import { ProjectCard } from "@/components/project/ProjectCard.jsx";
 import { ProjectFilters } from "@/components/tag/ProjectFilters.jsx";
 import { TagManagerDialog } from "@/components/tag/TagManagerDialog.jsx";
 import { AppHeader } from "@/components/AppHeader.jsx";
@@ -22,7 +19,7 @@ import {
   removeTagFromList,
   tagKey,
 } from "@/lib/tags.js";
-import { anyReachesAnHour, calculateTotalTime } from "@/lib/stopwatch.js";
+import { calculateTotalTime, timeColumnWidth } from "@/lib/stopwatch.js";
 import { showUndoToast, UNDO_ON_LIST } from "@/lib/undoToast.js";
 import { cn } from "@/lib/utils.js";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -269,13 +266,10 @@ export default function Home() {
   const hasFilterOptions = allTags.length > 0 || showCompletedFilter;
   const noFilteredProjects =
     !isEmpty && activeProjects.length === 0 && completedProjects.length === 0;
-  const timeWidth = anyReachesAnHour(
-    listProjects.map((project) =>
-      calculateTotalTime(project.stopwatch, { ignoreMs }),
-    ),
-  )
-    ? PROJECT_TIME_WIDTH.withHours
-    : PROJECT_TIME_WIDTH.short;
+  const projectTimes = listProjects.map((project) =>
+    calculateTotalTime(project.stopwatch, { ignoreMs }),
+  );
+  const timeWidth = timeColumnWidth(Math.max(0, ...projectTimes));
   const managedProject = merged.find(
     (project) => project.id === managedProjectId,
   );
