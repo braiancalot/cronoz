@@ -15,8 +15,6 @@ import { adjustPreview } from "@/lib/stopwatch.js";
 import { getRealTimeStatus } from "@/lib/realTime.js";
 import { pauseRun } from "@/lib/stopwatchTransitions.js";
 
-import { ArrowLeftIcon } from "@phosphor-icons/react";
-
 import { usePiPWindow } from "@/hooks/usePiPWindow.js";
 import { TimerStage } from "@/components/timer/TimerStage.jsx";
 import { PiPTimer } from "@/components/pip/PiPTimer.jsx";
@@ -24,11 +22,10 @@ import { PiPContent } from "@/components/pip/PiPContent.jsx";
 import { PiPPlaceholder } from "@/components/pip/PiPPlaceholder.jsx";
 import { RealTimeDialog } from "@/components/RealTimeDialog.jsx";
 import { ProjectHeader } from "@/components/project/ProjectHeader.jsx";
+import { ProjectNotFound } from "@/components/project/ProjectNotFound.jsx";
 import { RunningOverlay } from "@/components/RunningOverlay.jsx";
 import { PageContainer } from "@/components/PageContainer.jsx";
 import { ConfirmDialog } from "@/components/ConfirmDialog.jsx";
-import { EmptyState } from "@/components/EmptyState.jsx";
-import { Button } from "@/components/ui/button.jsx";
 import { showUndoToast, UNDO_ON_LIST } from "@/lib/undoToast.js";
 
 export default function ProjectPage() {
@@ -153,17 +150,7 @@ export default function ProjectPage() {
     showUndoToast("Tempo atual descartado", undo);
   }
 
-  if (!project) {
-    return (
-      <PageContainer className="items-center justify-center">
-        <EmptyState message="Projeto não encontrado.">
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeftIcon /> Voltar para a tela inicial
-          </Button>
-        </EmptyState>
-      </PageContainer>
-    );
-  }
+  if (!project) return <ProjectNotFound />;
 
   const canDiscardCurrentTime =
     project.stopwatch.isRunning || project.stopwatch.currentLapTime > 0;
