@@ -13,9 +13,6 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // TODO: back to error once the hooks flagged by react-hooks v7 are fixed.
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
       "react-refresh/only-export-components": "warn",
     },
   },
